@@ -30,7 +30,7 @@ export class LandingComponent {
   responderChat(tema: 'precios' | 'demo' | 'plan' | 'persona'): void {
     const respuestas = {
       precios: {
-        texto: 'LunaLav Básico cuesta S/20 al mes. Si necesitas emitir comprobantes electrónicos, LunaLav Factura cuesta S/50 al mes.',
+        texto: 'LunaLav Básico cuesta S/20, LunaLav Factura S/50 y Multisede empieza en S/80 al mes.',
         accion: 'Ver planes',
         url: '#precios'
       },
@@ -40,7 +40,7 @@ export class LandingComponent {
         url: this.demoUrl
       },
       plan: {
-        texto: 'Elige Básico para administrar pedidos y caja. Elige LunaLav Factura si también necesitas emitir boletas y facturas electrónicas.',
+        texto: 'Elige Básico para pedidos y caja; Factura para emitir comprobantes electrónicos; o Multisede si administras dos o más locales.',
         accion: 'Comparar planes',
         url: '#precios'
       },

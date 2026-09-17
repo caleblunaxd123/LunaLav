@@ -134,7 +134,7 @@
 .mini-stats b { display: block; color: var(--blue); font-size: 19px; margin-bottom: 3px; }
 
 .pricing { width: min(1180px, calc(100% - 40px)); }
-.pricing__grid { width: min(790px, 100%); margin: 0 auto; display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; align-items: stretch; }
+.pricing__grid { width: 100%; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: stretch; }
 .price-card { position: relative; display: flex; flex-direction: column; padding: 34px 31px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 12px 35px rgba(16,35,63,.06); }
 .price-card--featured { border: 2px solid var(--cyan); box-shadow: 0 22px 55px rgba(7,95,134,.16); transform: translateY(-10px); }
 .price-card__badge { position: absolute; top: -14px; right: 22px; padding: 7px 12px; border-radius: 20px; background: linear-gradient(120deg, var(--blue), var(--cyan)); color: #fff; font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: .06em; }
