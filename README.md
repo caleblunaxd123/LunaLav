@@ -14,6 +14,9 @@ reportes, facturación y administración multiempresa.
 La demo y producción deben usar bases de datos, secretos y procesos separados.
 Nunca se deben copiar datos, archivos ni credenciales de un cliente a la demo.
 
+La ruta `/` contiene la web comercial de LunaLav. Sus llamadas a la acción llevan
+a la demo pública y al correo `hola@lunalav.pe`.
+
 ## Arquitectura
 
 - Frontend: Angular.

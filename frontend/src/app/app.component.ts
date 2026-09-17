@@ -15,7 +15,7 @@ import { VersionCheckService } from './core/services/version-check.service';
 const SEGMENTOS_RUTA_APP = new Set([
   'login', 'ticket', 'cuadre-caja', 'seleccionar-sede', 'inicio', 'pedidos', 'registrar',
   'registro-antiguo', 'clientes', 'promociones', 'reportes', 'inventario', 'ajustes',
-  'facturacion', 'assets', 'plataforma', 'seguimiento', 'repartidor', 'recibo-suscripcion',
+  'facturacion', 'assets', 'plataforma', 'seguimiento', 'repartidor', 'recibo-suscripcion', 'nosotros',
 ]);
 
 @Component({

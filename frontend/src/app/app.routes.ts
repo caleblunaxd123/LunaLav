@@ -3,6 +3,11 @@ import { authGuard, guestGuard, moduloGuard, rolGuard } from './core/guards/auth
 
 export const routes: Routes = [
   {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () => import('./pages/landing/landing.component').then(m => m.LandingComponent)
+  },
+  {
     path: 'login',
     canActivate: [guestGuard],
     loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent)
@@ -64,7 +69,6 @@ export const routes: Routes = [
     path: '',
     canActivate: [authGuard],
     children: [
-      { path: '', redirectTo: 'inicio', pathMatch: 'full' },
       {
         path: 'inicio',
         canActivate: [moduloGuard('INICIO')],

@@ -15,7 +15,7 @@ import { TenantContextService } from '../services/tenant-context.service';
 const SEGMENTOS_RESERVADOS = new Set([
   'login', 'ticket', 'cuadre-caja', 'seleccionar-sede', 'inicio', 'pedidos', 'registrar',
   'registro-antiguo', 'clientes', 'promociones', 'reportes', 'inventario', 'ajustes',
-  'facturacion', 'assets', 'plataforma', 'seguimiento', 'repartidor', 'recibo-suscripcion',
+  'facturacion', 'assets', 'plataforma', 'seguimiento', 'repartidor', 'recibo-suscripcion', 'nosotros',
 ]);
 
 const SLUG_VALIDO = /^[a-z0-9][a-z0-9-]{1,49}$/i;

@@ -1,0 +1,191 @@
+<div class="landing">
+  <header class="site-header">
+    <a class="brand" href="#inicio" aria-label="LunaLav, inicio">
+      <img src="lunalav-logo-color.svg" alt="LunaLav" />
+    </a>
+
+    <button class="menu-button" type="button" (click)="alternarMenu()"
+      [attr.aria-expanded]="menuAbierto" aria-controls="menu-principal" aria-label="Abrir menú">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav id="menu-principal" class="site-nav" [class.site-nav--open]="menuAbierto" aria-label="Navegación principal">
+      <a href="#funciones" (click)="cerrarMenu()">Funciones</a>
+      <a href="#como-funciona" (click)="cerrarMenu()">Cómo funciona</a>
+      <a href="#preguntas" (click)="cerrarMenu()">Preguntas</a>
+      <a class="nav-login" href="/login">Ingresar</a>
+      <a class="nav-cta" [href]="demoUrl">Probar demo</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="inicio" class="hero">
+      <div class="hero__glow hero__glow--one"></div>
+      <div class="hero__glow hero__glow--two"></div>
+      <div class="hero__content">
+        <div class="eyebrow"><span></span> Software para lavanderías del Perú</div>
+        <h1>Tu lavandería en orden, <em>desde cada prenda hasta cada sol.</em></h1>
+        <p class="hero__lead">
+          Centraliza pedidos, caja, clientes, inventario y entregas en un solo sistema.
+          Menos cuadernos, menos confusión y más control para hacer crecer tu negocio.
+        </p>
+        <div class="hero__actions">
+          <a class="button button--primary" [href]="demoUrl">
+            Probar la demo <span aria-hidden="true">→</span>
+          </a>
+          <a class="button button--ghost" href="mailto:hola@lunalav.pe?subject=Quiero conocer LunaLav">
+            Solicitar asesoría
+          </a>
+        </div>
+        <div class="hero__trust">
+          <span>✓ Implementación acompañada</span>
+          <span>✓ Acceso desde PC o celular</span>
+          <span>✓ Sin equipos costosos</span>
+        </div>
+      </div>
+
+      <div class="product-stage" aria-label="Vista previa del panel de LunaLav">
+        <div class="stage-orbit stage-orbit--one"></div>
+        <div class="stage-orbit stage-orbit--two"></div>
+        <div class="app-window">
+          <div class="app-window__bar">
+            <div class="app-window__dots"><i></i><i></i><i></i></div>
+            <span>Panel principal</span>
+            <div class="app-window__user">CL</div>
+          </div>
+          <div class="app-window__body">
+            <aside class="mock-sidebar">
+              <img src="lunalav-icon.svg" alt="" />
+              <i class="active"></i><i></i><i></i><i></i><i></i>
+            </aside>
+            <div class="mock-dashboard">
+              <div class="mock-title">
+                <div><small>Buenos días</small><strong>Así va tu lavandería</strong></div>
+                <button>+ Nuevo pedido</button>
+              </div>
+              <div class="metric-grid">
+                <article><span>Pedidos de hoy</span><strong>24</strong><small>↑ 12% esta semana</small></article>
+                <article><span>Por entregar</span><strong>08</strong><small>3 listos para recoger</small></article>
+                <article><span>Ventas del día</span><strong>S/ 684</strong><small>Meta diaria: 82%</small></article>
+              </div>
+              <div class="mock-lower">
+                <article class="mock-chart">
+                  <div class="mock-card-title"><strong>Ventas de la semana</strong><span>Últimos 7 días</span></div>
+                  <div class="bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                </article>
+                <article class="mock-orders">
+                  <div class="mock-card-title"><strong>Pedidos recientes</strong><span>Ver todos</span></div>
+                  <div><b>LM-0248</b><span class="pill pill--green">Listo</span></div>
+                  <div><b>LM-0247</b><span class="pill pill--blue">Lavado</span></div>
+                  <div><b>LM-0246</b><span class="pill pill--amber">Recepción</span></div>
+                </article>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="floating-card floating-card--top"><span>✓</span><div><strong>Pedido listo</strong><small>Cliente notificado</small></div></div>
+        <div class="floating-card floating-card--bottom"><span>S/</span><div><strong>Caja al día</strong><small>Todo conciliado</small></div></div>
+      </div>
+    </section>
+
+    <section class="proof-strip" aria-label="Beneficios principales">
+      <p>Hecho para la operación real de una lavandería</p>
+      <div><span>Pedidos claros</span><i></i><span>Caja controlada</span><i></i><span>Clientes informados</span><i></i><span>Decisiones con datos</span></div>
+    </section>
+
+    <section id="funciones" class="section features">
+      <div class="section-heading">
+        <span class="section-kicker">Todo conectado</span>
+        <h2>Un sistema que acompaña cada parte de tu operación</h2>
+        <p>Desde que recibes la ropa hasta que el cliente paga y se lleva su pedido.</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature feature--large">
+          <div class="feature__icon">01</div>
+          <h3>Pedidos sin confusión</h3>
+          <p>Registra prendas, servicios, adelantos y fechas de entrega. Consulta el avance sin buscar entre papeles.</p>
+          <div class="mini-flow"><span>Recibido</span><b></b><span>En proceso</span><b></b><span>Listo</span></div>
+        </article>
+        <article class="feature">
+          <div class="feature__icon">02</div>
+          <h3>Caja bajo control</h3>
+          <p>Conoce ingresos, gastos, adelantos y saldos pendientes al cerrar el día.</p>
+        </article>
+        <article class="feature">
+          <div class="feature__icon">03</div>
+          <h3>Clientes conectados</h3>
+          <p>Envía por WhatsApp el estado del pedido, el comprobante y el enlace de seguimiento.</p>
+        </article>
+        <article class="feature">
+          <div class="feature__icon">04</div>
+          <h3>Inventario visible</h3>
+          <p>Controla insumos, materiales, equipos, movimientos y alertas de stock.</p>
+        </article>
+        <article class="feature feature--wide">
+          <div class="feature__icon">05</div>
+          <div><h3>Información para decidir</h3><p>Revisa ventas, productividad, clientes frecuentes y resultados por sede desde un panel gerencial.</p></div>
+          <div class="mini-stats"><span><b>+18%</b> ventas</span><span><b>92%</b> entregas a tiempo</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="como-funciona" class="section steps">
+      <div class="steps__intro">
+        <span class="section-kicker section-kicker--light">Empezar es sencillo</span>
+        <h2>Tu operación digital, sin complicarte</h2>
+        <p>Adaptamos LunaLav a la forma de trabajar de tu lavandería y acompañamos a tu equipo.</p>
+        <a class="text-link" [href]="demoUrl">Explorar la demo <span>→</span></a>
+      </div>
+      <ol class="steps__list">
+        <li><span>1</span><div><h3>Conocemos tu operación</h3><p>Revisamos servicios, precios, personal y flujo de atención.</p></div></li>
+        <li><span>2</span><div><h3>Configuramos tu espacio</h3><p>Creamos tu acceso con la identidad y reglas de tu negocio.</p></div></li>
+        <li><span>3</span><div><h3>Te acompañamos al iniciar</h3><p>Capacitamos a tu equipo y resolvemos las dudas del uso diario.</p></div></li>
+      </ol>
+    </section>
+
+    <section class="section audience">
+      <div class="audience__card">
+        <div>
+          <span class="section-kicker">Crece a tu ritmo</span>
+          <h2>Para una lavandería que quiere trabajar con más orden</h2>
+        </div>
+        <div class="audience__points">
+          <p><span>✓</span> Lavanderías independientes</p>
+          <p><span>✓</span> Negocios con una o varias sedes</p>
+          <p><span>✓</span> Equipos que aún dependen de cuadernos o Excel</p>
+          <p><span>✓</span> Operaciones con recojo y delivery</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="preguntas" class="section faq">
+      <div class="section-heading section-heading--left">
+        <span class="section-kicker">Preguntas frecuentes</span>
+        <h2>Lo que necesitas saber antes de empezar</h2>
+      </div>
+      <div class="faq__grid">
+        <details open><summary>¿Necesito instalar algo?</summary><p>No. LunaLav funciona desde el navegador en una computadora, tablet o celular con conexión a Internet.</p></details>
+        <details><summary>¿Puedo usar el nombre y logo de mi lavandería?</summary><p>Sí. Tu espacio se configura con el nombre, colores, logotipo y datos propios de tu negocio.</p></details>
+        <details><summary>¿Sirve si tengo más de una sede?</summary><p>Sí. Puedes separar la operación por sede y mantener una vista consolidada para la administración.</p></details>
+        <details><summary>¿Me ayudan a aprender a usarlo?</summary><p>Sí. La implementación incluye acompañamiento inicial para configurar el sistema y capacitar a tu equipo.</p></details>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="final-cta__moon"></div>
+      <span class="section-kicker section-kicker--light">Da el siguiente paso</span>
+      <h2>Conoce cómo se vería tu lavandería trabajando con LunaLav</h2>
+      <p>Prueba el sistema con información ficticia o conversemos sobre tu operación.</p>
+      <div class="hero__actions hero__actions--center">
+        <a class="button button--light" [href]="demoUrl">Entrar a la demo <span>→</span></a>
+        <a class="button button--outline-light" href="mailto:hola@lunalav.pe?subject=Quiero una demostración de LunaLav">Quiero una demostración</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div><img src="lunalav-logo-white.svg" alt="LunaLav" /><p>Tu lavandería, clara y en movimiento.</p></div>
+    <div class="site-footer__links"><a href="#funciones">Funciones</a><a [href]="demoUrl">Demo</a><a href="mailto:hola@lunalav.pe">hola@lunalav.pe</a></div>
+    <p class="site-footer__copy">© {{ anio }} LunaLav · Un producto de LunaIT Solution</p>
+  </footer>
+</div>
