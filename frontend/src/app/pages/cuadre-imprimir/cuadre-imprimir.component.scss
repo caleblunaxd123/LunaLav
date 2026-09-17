@@ -1,0 +1,344 @@
+// ============================================================
+// Cuadre de caja imprimible (A4)
+// ============================================================
+
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #e9edf3;
+  font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+// Barra superior (solo pantalla)
+.acciones-print {
+  background: var(--azul-oscuro);
+  color: #fff;
+  padding: 14px 16px;
+
+  &__inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    gap: 10px;
+  }
+}
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  &--primario { background: var(--naranja); color: var(--texto-sobre-acento, #fff); }
+  &--wsp { background: #25d366; color: #fff; }
+  &--mail { background: #2563eb; color: #fff; }
+  &--ghost {
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,.35);
+  }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
+
+.msg {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+
+  &.error { color: var(--rojo); }
+}
+
+.doc-wrap {
+  padding: 24px 16px 60px;
+  display: flex;
+  justify-content: center;
+}
+
+.doc {
+  background: #fff;
+  color: #1a202c;
+  width: 100%;
+  max-width: 210mm;
+  min-height: 100mm;
+  padding: 18mm 15mm;
+  box-shadow: 0 4px 20px rgba(0,0,0,.12);
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--azul-oscuro);
+    margin-bottom: 20px;
+  }
+
+  &__brand {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+
+    img {
+      max-width: 200px;
+      max-height: 90px;
+      object-fit: contain;
+      // Respeta el color/contraste del logo al imprimir o "Guardar como PDF".
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 20px;
+      color: var(--azul-oscuro);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    p {
+      margin: 1px 0;
+      font-size: 11px;
+      color: #4a5568;
+    }
+  }
+
+  &__meta {
+    text-align: right;
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: var(--azul-oscuro);
+      letter-spacing: 1px;
+    }
+
+    p {
+      margin: 2px 0;
+      font-size: 11px;
+      color: #4a5568;
+    }
+  }
+
+  &__footer {
+    margin-top: 30px;
+    padding-top: 10px;
+    border-top: 1px solid var(--gris-borde);
+    text-align: center;
+
+    span {
+      font-size: 9.5px;
+      color: #94a3b8;
+    }
+  }
+}
+
+// Caja de resultado
+.estado-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  border: 2px solid;
+
+  &__label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: .7;
+  }
+
+  strong {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+
+  &__monto {
+    font-size: 15px;
+
+    strong { font-size: 22px; }
+  }
+
+  &--cuadra {
+    background: #e6f9ee;
+    border-color: #147a45;
+    color: #147a45;
+  }
+
+  &--sobra {
+    background: #fff4e0;
+    border-color: #b7791f;
+    color: #b7791f;
+  }
+
+  &--falta {
+    background: #fde8e8;
+    border-color: var(--rojo);
+    color: var(--rojo);
+  }
+}
+
+// Bloques con tabla
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.bloque {
+  h3 {
+    margin: 0 0 8px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--azul-oscuro);
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--gris-borde);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+
+    td {
+      padding: 6px 4px;
+      border-bottom: 1px dotted #e2e8f0;
+    }
+
+    .right {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    tr.total td {
+      padding-top: 10px;
+      border-top: 2px solid var(--azul-oscuro);
+      border-bottom: none;
+      font-weight: 800;
+      font-size: 13.5px;
+      color: var(--azul-oscuro);
+    }
+
+    tr.total--rojo td { color: var(--rojo); border-top-color: var(--rojo); }
+    tr.total--naranja td { color: #b7791f; border-top-color: #b7791f; }
+  }
+}
+
+.obs {
+  margin-bottom: 20px;
+
+  h3 {
+    margin: 0 0 6px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--azul-oscuro);
+  }
+
+  p {
+    margin: 0;
+    font-size: 12px;
+    color: #4a5568;
+    padding: 8px 10px;
+    background: #f7f9fc;
+    border-radius: 6px;
+  }
+}
+
+.firmas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-top: 40px;
+}
+
+.firma {
+  text-align: center;
+
+  &__linea {
+    border-top: 1px solid #1a202c;
+    margin-bottom: 6px;
+    margin-top: 30px;
+  }
+
+  p {
+    margin: 2px 0;
+    font-size: 11px;
+    color: #64748b;
+  }
+
+  &__nombre {
+    color: #1a202c !important;
+    font-weight: 700;
+  }
+}
+
+// ============================================================
+// Responsive: preview en pantalla (móvil) antes de imprimir
+// ============================================================
+@media (max-width: 720px) {
+  .doc-wrap { padding: 14px 10px 40px; }
+
+  .doc { padding: 20px 16px; }
+
+  .doc__header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .doc__meta { text-align: left; }
+
+  .estado-box {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .grid-2 { grid-template-columns: 1fr; gap: 20px; }
+
+  .firmas { grid-template-columns: 1fr; gap: 24px; }
+}
+
+// ============================================================
+// PRINT: ocultar barra + optimizar para A4
+// ============================================================
+@media print {
+  :host {
+    background: #fff;
+    min-height: 0;
+  }
+
+  .acciones-print { display: none !important; }
+
+  .doc-wrap {
+    padding: 0;
+  }
+
+  .doc {
+    width: 100%;
+    max-width: none;
+    padding: 15mm;
+    box-shadow: none;
+  }
+
+  .doc__header { flex-direction: row; }
+  .doc__meta { text-align: right; }
+  .estado-box { flex-direction: row; align-items: center; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .firmas { grid-template-columns: 1fr 1fr; }
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
+}

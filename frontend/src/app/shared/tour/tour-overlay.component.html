@@ -1,0 +1,44 @@
+@if (tour.activo()) {
+  <!-- Capa oscura: si el paso tiene foco, el recuadro recorta la sombra; si no, oscurece todo. -->
+  @if (foco(); as f) {
+    <div class="tour-foco"
+      [style.top.px]="f.top" [style.left.px]="f.left"
+      [style.width.px]="f.width" [style.height.px]="f.height"></div>
+  } @else {
+    <div class="tour-backdrop"></div>
+  }
+
+  @if (tour.pasoActual(); as paso) {
+    <div class="tour-card" [ngStyle]="posicionTarjeta()">
+      <div class="tour-card__head">
+        <span class="tour-card__paso">Paso {{ tour.indice() + 1 }} de {{ tour.total() }}</span>
+        <button type="button" class="tour-card__cerrar" (click)="tour.cerrar()" aria-label="Cerrar tutorial">
+          <app-icon name="close" [size]="14"></app-icon>
+        </button>
+      </div>
+
+      <h4 class="tour-card__titulo">{{ paso.titulo }}</h4>
+      <p class="tour-card__texto">{{ paso.texto }}</p>
+
+      <!-- Puntos de progreso -->
+      <div class="tour-card__puntos">
+        @for (p of tour.pasos(); track $index) {
+          <span class="punto" [class.is-activo]="$index === tour.indice()"
+            (click)="tour.irA($index)"></span>
+        }
+      </div>
+
+      <div class="tour-card__acciones">
+        <button type="button" class="tour-btn tour-btn--ghost" (click)="tour.cerrar()">Saltar</button>
+        <div class="tour-card__nav">
+          @if (!tour.esPrimero()) {
+            <button type="button" class="tour-btn tour-btn--ghost" (click)="tour.anterior()">Anterior</button>
+          }
+          <button type="button" class="tour-btn tour-btn--primario" (click)="tour.siguiente()">
+            {{ tour.esUltimo() ? 'Entendido' : 'Siguiente' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+}

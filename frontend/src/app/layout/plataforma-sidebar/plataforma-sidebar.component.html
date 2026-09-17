@@ -1,0 +1,56 @@
+<!-- Barra superior compacta: SOLO en móvil (hamburguesa + marca + salir) -->
+<header class="mtop">
+  <button type="button" class="mtop__burger" (click)="toggleMenu()" aria-label="Menú"
+          [attr.aria-expanded]="menuAbierto()" aria-controls="plataforma-nav">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="mtop__brand"><strong>Panel de Plataforma</strong></div>
+  <button type="button" class="mtop__logout" (click)="logout()" title="Cerrar sesión" aria-label="Cerrar sesión">
+    <app-icon name="exit-run" [size]="21"></app-icon>
+  </button>
+</header>
+
+<!-- Fondo oscuro para cerrar el sidebar en móvil -->
+@if (menuAbierto()) {
+  <div class="sb-backdrop" (click)="cerrarMenu()"></div>
+}
+
+<!-- Sidebar: fijo en escritorio, cajón deslizable en móvil -->
+<aside id="plataforma-nav" class="sidebar" [class.is-open]="menuAbierto()">
+  <div class="sidebar__brand sidebar__brand--logo">
+    <img src="lunalav-logo-white.svg" alt="LunaLav" class="sidebar__logo-full" />
+    <span class="sidebar__brand-caption">Panel de Plataforma</span>
+  </div>
+
+  <nav class="sidebar__nav">
+    <p class="sidebar__group">General</p>
+    @for (link of general; track link.path) {
+      <a [routerLink]="link.path" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: !!link.exact }"
+         class="sidebar__link" (click)="cerrarMenu()">
+        <app-icon [name]="link.icono" [size]="18"></app-icon>
+        <span class="sidebar__label">{{ link.label }}</span>
+      </a>
+    }
+
+    <p class="sidebar__group">Administración</p>
+    @for (link of administracion; track link.path) {
+      <a [routerLink]="link.path" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: !!link.exact }"
+         class="sidebar__link" (click)="cerrarMenu()">
+        <app-icon [name]="link.icono" [size]="18"></app-icon>
+        <span class="sidebar__label">{{ link.label }}</span>
+      </a>
+    }
+  </nav>
+
+  <div class="sidebar__user">
+    <div class="sidebar__user-info">
+      <strong>{{ usuario()?.nombreCompleto || 'Propietario' }}</strong>
+      <span>{{ usuario()?.rol || 'PROPIETARIO' }}</span>
+    </div>
+    <button type="button" class="sidebar__logout" (click)="logout()" title="Cerrar sesión" aria-label="Cerrar sesión">
+      <app-icon name="exit-run" [size]="19"></app-icon>
+    </button>
+  </div>
+
+  <p class="sidebar__dev">{{ desarrolladorCredito }}</p>
+</aside>

@@ -1,0 +1,26 @@
+@if (volverTexto) {
+  <button type="button" class="ph__volver" (click)="volver.emit()"
+    [attr.aria-label]="'Volver a ' + volverTexto" [attr.title]="'Volver a ' + volverTexto">
+    <span class="ph__volver-flecha"><app-icon name="arrow-left" [size]="16"></app-icon></span>
+    <span>Volver a {{ volverTexto }}</span>
+  </button>
+}
+<header class="ph" [attr.data-color]="color">
+  @if (icono) {
+    <div class="ph__chip"><app-icon [name]="icono" [size]="24"></app-icon></div>
+  }
+  <div class="ph__texto">
+    <h2 class="ph__titulo">{{ titulo }}</h2>
+    @if (subtitulo) { <p class="ph__sub">{{ subtitulo }}</p> }
+  </div>
+  <div class="ph__acciones">
+    <ng-content></ng-content>
+    @if (tieneTour) {
+      <button type="button" class="ph__ayuda" (click)="iniciarTour()"
+        title="¿Cómo funciona esta pantalla?" aria-label="Ver tutorial de esta pantalla">
+        <app-icon name="info" [size]="15"></app-icon>
+        <span>¿Cómo funciona?</span>
+      </button>
+    }
+  </div>
+</header>

@@ -1,0 +1,377 @@
+<div class="page">
+  <app-page-header icono="note" color="azul" titulo="Comprobantes emitidos"
+    subtitulo="Boletas y facturas electrónicas emitidas ante SUNAT."
+    volverTexto="Pedidos" (volver)="volver()"></app-page-header>
+
+  <!-- Respaldo local obligatorio (SUNAT): XML+CDR+PDF se guardan en disco al aceptar cada comprobante. -->
+  <section class="card respaldo-fe">
+    <div class="respaldo-fe__info">
+      <strong>Respaldo local (SUNAT)</strong>
+      <p>Cada comprobante aceptado se guarda automáticamente (XML + CDR + PDF) en:</p>
+      <code>{{ carpetaRespaldo() || 'Cargando…' }}</code>
+    </div>
+    <button class="btn btn--secundario" (click)="respaldarTodos()" [disabled]="respaldando()">
+      <app-icon name="download" [size]="15"></app-icon>
+      {{ respaldando() ? 'Respaldando…' : 'Respaldar todos ahora' }}
+    </button>
+  </section>
+
+  <section class="card filtros-fe">
+    <input type="search" placeholder="Comprobante, pedido, cliente o documento" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" (keyup.enter)="aplicarFiltros()" />
+    <select [ngModel]="tipo()" (ngModelChange)="tipo.set($event)"><option value="">Todos los tipos</option><option value="BOLETA">Boletas</option><option value="FACTURA">Facturas</option><option value="NOTA_CREDITO">Notas de crédito</option><option value="NOTA_DEBITO">Notas de débito</option><option value="GUIA_REMISION">Guías de remisión</option></select>
+    <select [ngModel]="estado()" (ngModelChange)="estado.set($event)"><option value="">Todos los estados</option><option value="PENDIENTE">Pendiente</option><option value="ACEPTADO">Aceptado</option><option value="RECHAZADO">Rechazado</option><option value="ERROR">Error</option><option value="ANULADO">Anulado</option><option value="SIMULADO">Simulado</option></select>
+    <input type="date" aria-label="Desde" [ngModel]="desde()" (ngModelChange)="desde.set($event)" />
+    <input type="date" aria-label="Hasta" [ngModel]="hasta()" (ngModelChange)="hasta.set($event)" />
+    <button class="btn btn--primario" (click)="aplicarFiltros()">Buscar</button>
+    <button class="btn btn--ghost" (click)="limpiarFiltros()">Limpiar</button>
+  </section>
+
+  <!-- KPI mensual de boletas y facturas -->
+  @if (mesActual(); as m) {
+    <section class="kpi-comprobantes card">
+      <div class="kpi-comprobantes__head">
+        <h3>Boletas y facturas · {{ nombreMes(m.mes) }} {{ m.anio }}</h3>
+        <span class="hint">KPI mensual — esta sede</span>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-box kpi-box--boleta">
+          <span class="kpi-box__label">Boletas</span>
+          <strong class="kpi-box__num">{{ m.boletasCantidad }}</strong>
+          <span class="kpi-box__monto">S/ {{ m.boletasMonto | number:'1.2-2' }}</span>
+        </div>
+        <div class="kpi-box kpi-box--factura">
+          <span class="kpi-box__label">Facturas</span>
+          <strong class="kpi-box__num">{{ m.facturasCantidad }}</strong>
+          <span class="kpi-box__monto">S/ {{ m.facturasMonto | number:'1.2-2' }}</span>
+        </div>
+        <div class="kpi-box kpi-box--total">
+          <span class="kpi-box__label">Total emitido</span>
+          <strong class="kpi-box__num">{{ m.totalCantidad }}</strong>
+          <span class="kpi-box__monto">S/ {{ m.totalMonto | number:'1.2-2' }}</span>
+        </div>
+      </div>
+      <div class="kpi-trend">
+        <span class="kpi-trend__title">Últimos meses (por monto emitido)</span>
+        <div class="kpi-trend__bars">
+          @for (mm of kpi(); track mm.anio + '-' + mm.mes) {
+            <div class="kpi-trend__col"
+              [title]="nombreMes(mm.mes) + ' ' + mm.anio + ': ' + mm.totalCantidad + ' comprobantes · S/ ' + (mm.totalMonto | number:'1.2-2')">
+              <span class="kpi-trend__val">{{ mm.totalCantidad }}</span>
+              <div class="kpi-trend__track">
+                <div class="kpi-trend__bar" [style.height.%]="mm.totalMonto / maxMontoSerie() * 100"></div>
+              </div>
+              <span class="kpi-trend__lbl">{{ nombreMes(mm.mes) }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (error()) {
+    <app-empty-state icono="error" titulo="No se pudo cargar" [mensaje]="error()!">
+      <button class="btn btn--primario" (click)="cargar()">Reintentar</button>
+    </app-empty-state>
+  } @else if (comprobantes().length === 0) {
+    <app-empty-state icono="lista" titulo="Sin comprobantes aún" mensaje="Emite tu primer comprobante desde un pedido pagado."></app-empty-state>
+  } @else {
+    <!-- Acciones reutilizables (tabla en escritorio, cards en móvil). -->
+    <ng-template #accComp let-c>
+      <button class="btn btn--sm btn--ver" (click)="verDetalle(c)">Detalle</button>
+      <button class="btn btn--sm btn--ver" (click)="verPdf(c)" [disabled]="descargandoId() === c.id" title="Ver PDF"><app-icon name="printer" [size]="14"></app-icon> PDF</button>
+      @if (c.estado === 'PENDIENTE' && !c.esSimulado) {
+        <button class="btn btn--sm btn--ver" (click)="sincronizar(c)"><app-icon name="refresh" [size]="14"></app-icon> Sincronizar</button>
+      }
+      @if (c.estado === 'ERROR') {
+        <button class="btn btn--sm btn--desactivar" (click)="reenviar(c)" [disabled]="reenviandoId() === c.id" title="Reenviar al proveedor"><app-icon name="refresh" [size]="14"></app-icon> Reenviar</button>
+      }
+      @if (c.estado === 'RECHAZADO') {
+        <button class="btn btn--sm btn--desactivar" (click)="irAlPedido(c)" title="Corregir y emitir con nueva numeración">Corregir pedido</button>
+      }
+      @if (c.estado === 'ACEPTADO' && !c.esSimulado && c.estadoAnulacion !== 'PENDIENTE') {
+        <button class="btn btn--sm btn--desactivar" (click)="pedirAnular(c)" title="Solicitar anulación"><app-icon name="disable" [size]="14"></app-icon> Anular</button>
+      }
+      @if (c.estado === 'ACEPTADO' && esVenta(c) && c.estadoAnulacion !== 'ANULADO') {
+        <button class="btn btn--sm btn--nc" (click)="pedirNotaCredito(c)" title="Emitir nota de crédito"><app-icon name="note" [size]="14"></app-icon> Nota de crédito</button>
+        <button class="btn btn--sm btn--nd" (click)="pedirNotaDebito(c)" title="Emitir nota de débito"><app-icon name="note" [size]="14"></app-icon> Nota de débito</button>
+        <button class="btn btn--sm btn--guia" (click)="pedirGuia(c)" title="Emitir guía de remisión"><app-icon name="truck" [size]="14"></app-icon> Guía de remisión</button>
+      }
+    </ng-template>
+
+    <div class="card tabla-wrap">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>N° Comprobante</th><th>Pedido</th><th>Cliente</th><th>Documento</th>
+            <th>Total</th><th>Estado</th><th>Fecha</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of comprobantes(); track c.id) {
+            <tr>
+              <td class="nombre">
+                {{ c.numeroCompleto }} <span class="tipo" [class.tipo--nc]="esNotaCredito(c)" [class.tipo--nd]="esNotaDebito(c)" [class.tipo--guia]="esGuia(c)">{{ etiquetaTipo(c.tipo) }}</span>
+                @if (esNota(c) && c.docRefSerieNumero) { <div class="ref-nc">ref. {{ c.docRefSerieNumero }}</div> }
+                @if (esGuia(c) && c.pedidoNumero) { <div class="ref-nc">traslado · pedido #{{ c.pedidoNumero }}</div> }
+              </td>
+              <td>{{ c.pedidoNumero ? '#' + c.pedidoNumero : '—' }}</td>
+              <td>{{ c.clienteNombre }}</td>
+              <td>{{ c.clienteNumDoc || '—' }}</td>
+              <td>S/ {{ c.total.toFixed(2) }}</td>
+              <td><span [class]="'badge ' + claseEstado(c.estado)">{{ c.estado }}</span></td>
+              <td>{{ c.fechaEmision | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td class="acciones-row acciones-texto">
+                <ng-container *ngTemplateOutlet="accComp; context: { $implicit: c }"></ng-container>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Vista de tarjetas (solo móvil) -->
+    <div class="cards-comp">
+      @for (c of comprobantes(); track c.id) {
+        <div class="comp-card">
+          <div class="comp-card__top">
+            <div class="comp-card__num">
+              {{ c.numeroCompleto }}
+              <span class="tipo" [class.tipo--nc]="esNotaCredito(c)" [class.tipo--nd]="esNotaDebito(c)" [class.tipo--guia]="esGuia(c)">{{ etiquetaTipo(c.tipo) }}</span>
+            </div>
+            <span [class]="'badge ' + claseEstado(c.estado)">{{ c.estado }}</span>
+          </div>
+          @if (esNota(c) && c.docRefSerieNumero) { <div class="ref-nc">ref. {{ c.docRefSerieNumero }}</div> }
+          @if (esGuia(c) && c.pedidoNumero) { <div class="ref-nc">traslado · pedido #{{ c.pedidoNumero }}</div> }
+          <div class="comp-card__row"><span>Cliente</span><strong>{{ c.clienteNombre }}</strong></div>
+          <div class="comp-card__row"><span>Documento</span><strong>{{ c.clienteNumDoc || '—' }}</strong></div>
+          <div class="comp-card__row"><span>Pedido</span><strong>{{ c.pedidoNumero ? '#' + c.pedidoNumero : '—' }}</strong></div>
+          <div class="comp-card__row"><span>Total</span><strong>S/ {{ c.total.toFixed(2) }}</strong></div>
+          <div class="comp-card__row"><span>Fecha</span><strong>{{ c.fechaEmision | date:'dd/MM/yyyy HH:mm' }}</strong></div>
+          <div class="comp-card__acciones">
+            <ng-container *ngTemplateOutlet="accComp; context: { $implicit: c }"></ng-container>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="card paginacion-wrap">
+      <app-paginacion
+        [pagina]="pagina()"
+        [tamanoPagina]="tamanoPagina()"
+        [total]="total()"
+        (paginaChange)="cambiarPagina($event)"
+        (tamanoPaginaChange)="cambiarTamanoPagina($event)">
+      </app-paginacion>
+    </div>
+  }
+</div>
+
+@if (confirmarAnular(); as c) {
+  <div class="modal-backdrop" (click)="confirmarAnular.set(null)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Anular comprobante?</h3>
+      <button class="modal__close" (click)="confirmarAnular.set(null)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <p>Vas a solicitar la anulación de <strong>{{ c.numeroCompleto }}</strong> ({{ c.clienteNombre }}, S/ {{ c.total.toFixed(2) }}).</p>
+      <label>Motivo de anulación *</label>
+      <textarea rows="3" maxlength="200" [ngModel]="motivoAnulacion()" (ngModelChange)="motivoAnulacion.set($event)" placeholder="Motivo que se enviará al proveedor"></textarea>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarAnular.set(null)">Cancelar</button>
+        <button class="btn btn--danger" (click)="confirmarAnularOk()">Sí, anular</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (notaCredito(); as c) {
+  <div class="modal-backdrop" (click)="notaCredito.set(null)"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>Emitir nota de crédito</h3>
+      <button class="modal__close" (click)="notaCredito.set(null)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <p class="hint">Se emitirá una nota de crédito que acredita <strong>{{ c.numeroCompleto }}</strong> ({{ c.clienteNombre }}, S/ {{ c.total.toFixed(2) }}). Referencia la boleta/factura original ante SUNAT.</p>
+      <label>Motivo (catálogo 09 SUNAT)</label>
+      <select [ngModel]="ncMotivoCodigo()" (ngModelChange)="elegirMotivoNc($event)">
+        @for (m of motivosNc; track m.codigo) { <option [value]="m.codigo">{{ m.codigo }} — {{ m.texto }}</option> }
+      </select>
+      <label>Descripción del motivo *</label>
+      <textarea rows="2" maxlength="250" [ngModel]="ncMotivo()" (ngModelChange)="ncMotivo.set($event)" placeholder="Detalle del motivo de la nota de crédito"></textarea>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="notaCredito.set(null)">Cancelar</button>
+        <button class="btn btn--primario" [disabled]="emitiendoNc()" (click)="confirmarNotaCredito()">
+          {{ emitiendoNc() ? 'Emitiendo…' : 'Emitir nota de crédito' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (notaDebito(); as c) {
+  <div class="modal-backdrop" (click)="notaDebito.set(null)"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>Emitir nota de débito</h3>
+      <button class="modal__close" (click)="notaDebito.set(null)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <p class="hint">Se emitirá una nota de débito que incrementa lo facturado en <strong>{{ c.numeroCompleto }}</strong> ({{ c.clienteNombre }}, S/ {{ c.total.toFixed(2) }}). Referencia la boleta/factura original ante SUNAT.</p>
+      <label>Motivo (catálogo 10 SUNAT)</label>
+      <select [ngModel]="ndMotivoCodigo()" (ngModelChange)="elegirMotivoNd($event)">
+        @for (m of motivosNd; track m.codigo) { <option [value]="m.codigo">{{ m.codigo }} — {{ m.texto }}</option> }
+      </select>
+      <label>Descripción del motivo *</label>
+      <textarea rows="2" maxlength="250" [ngModel]="ndMotivo()" (ngModelChange)="ndMotivo.set($event)" placeholder="Detalle del motivo de la nota de débito"></textarea>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="notaDebito.set(null)">Cancelar</button>
+        <button class="btn btn--primario" [disabled]="emitiendoNd()" (click)="confirmarNotaDebito()">
+          {{ emitiendoNd() ? 'Emitiendo…' : 'Emitir nota de débito' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (guia(); as c) {
+  <div class="modal-backdrop" (click)="guia.set(null)"></div>
+  <div class="modal modal--lg">
+    <div class="modal__header">
+      <h3>Emitir guía de remisión</h3>
+      <button class="modal__close" (click)="guia.set(null)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <p class="hint">Traslado de los bienes de <strong>{{ c.numeroCompleto }}</strong> ({{ c.clienteNombre }}). El envío a SUNAT usa el canal GRE, que se habilita con credenciales de producción.</p>
+
+      <div class="guia-grid">
+        <div class="campo">
+          <label>Motivo de traslado (catálogo 20)</label>
+          <select [(ngModel)]="guiaForm.motivoCodigo">
+            @for (m of motivosTraslado; track m.codigo) { <option [value]="m.codigo">{{ m.codigo }} — {{ m.texto }}</option> }
+          </select>
+        </div>
+        @if (guiaForm.motivoCodigo === '13') {
+          <div class="campo campo--full">
+            <label>Descripción del motivo *</label>
+            <input type="text" maxlength="100" [(ngModel)]="guiaForm.motivoDescripcion" placeholder="Detalle del motivo de traslado" />
+          </div>
+        }
+        <div class="campo">
+          <label>Fecha de inicio de traslado</label>
+          <input type="date" [(ngModel)]="guiaForm.fechaInicioTraslado" />
+        </div>
+        <div class="campo">
+          <label>Peso bruto total</label>
+          <input type="number" min="0.001" step="0.1" [(ngModel)]="guiaForm.pesoBrutoTotal" />
+        </div>
+        <div class="campo campo--sm">
+          <label>Unidad</label>
+          <select [(ngModel)]="guiaForm.unidadPeso"><option value="KGM">KGM (kg)</option><option value="TNE">TNE (t)</option></select>
+        </div>
+        <div class="campo campo--sm">
+          <label>N.º bultos</label>
+          <input type="number" min="1" step="1" [(ngModel)]="guiaForm.numeroBultos" />
+        </div>
+      </div>
+
+      <h4 class="guia-sub">Punto de partida</h4>
+      <div class="guia-grid">
+        <div class="campo campo--sm"><label>Ubigeo *</label><input type="text" maxlength="6" [(ngModel)]="guiaForm.partidaUbigeo" placeholder="150101" /></div>
+        <div class="campo campo--full"><label>Dirección *</label><input type="text" maxlength="150" [(ngModel)]="guiaForm.partidaDireccion" placeholder="Dirección del local de la lavandería" /></div>
+      </div>
+      <h4 class="guia-sub">Punto de llegada</h4>
+      <div class="guia-grid">
+        <div class="campo campo--sm"><label>Ubigeo *</label><input type="text" maxlength="6" [(ngModel)]="guiaForm.llegadaUbigeo" placeholder="150101" /></div>
+        <div class="campo campo--full"><label>Dirección *</label><input type="text" maxlength="150" [(ngModel)]="guiaForm.llegadaDireccion" placeholder="Dirección de entrega del cliente" /></div>
+      </div>
+
+      <h4 class="guia-sub">Transporte</h4>
+      <div class="guia-modalidad">
+        <label [class.activo]="guiaForm.modalidadTransporte === '02'"><input type="radio" name="modalidad" value="02" [(ngModel)]="guiaForm.modalidadTransporte" /> Privado (vehículo propio)</label>
+        <label [class.activo]="guiaForm.modalidadTransporte === '01'"><input type="radio" name="modalidad" value="01" [(ngModel)]="guiaForm.modalidadTransporte" /> Público (transportista)</label>
+      </div>
+      @if (guiaForm.modalidadTransporte === '02') {
+        <div class="guia-grid">
+          <div class="campo campo--sm"><label>Placa del vehículo *</label><input type="text" maxlength="8" [(ngModel)]="guiaForm.vehiculoPlaca" placeholder="ABC-123" /></div>
+          <div class="campo campo--sm"><label>Doc. conductor *</label><input type="text" maxlength="15" [(ngModel)]="guiaForm.conductorNumDoc" placeholder="DNI" /></div>
+          <div class="campo"><label>Nombres del conductor *</label><input type="text" maxlength="100" [(ngModel)]="guiaForm.conductorNombres" placeholder="Nombres y apellidos" /></div>
+          <div class="campo campo--sm"><label>Licencia *</label><input type="text" maxlength="20" [(ngModel)]="guiaForm.conductorLicencia" placeholder="Q12345678" /></div>
+        </div>
+      } @else {
+        <div class="guia-grid">
+          <div class="campo campo--sm"><label>RUC transportista *</label><input type="text" maxlength="11" [(ngModel)]="guiaForm.transportistaNumDoc" placeholder="20123456789" /></div>
+          <div class="campo campo--full"><label>Razón social del transportista *</label><input type="text" maxlength="150" [(ngModel)]="guiaForm.transportistaRazonSocial" placeholder="Empresa de transportes S.A.C." /></div>
+        </div>
+      }
+
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="guia.set(null)">Cancelar</button>
+        <button class="btn btn--primario" [disabled]="emitiendoGuia()" (click)="confirmarGuia()">
+          {{ emitiendoGuia() ? 'Registrando…' : 'Registrar guía de remisión' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (detalle(); as c) {
+  <div class="modal-backdrop" (click)="detalle.set(null)"></div>
+  <div class="modal modal--lg">
+    <div class="modal__header">
+      <h3>{{ c.numeroCompleto }}</h3>
+      <button class="modal__close" (click)="detalle.set(null)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal__body detalle-fe">
+      <div class="detalle-fe__meta">
+        <span><strong>Estado:</strong> {{ c.estado }}</span><span><strong>Proveedor:</strong> {{ c.proveedor }}</span>
+        <span><strong>Ambiente:</strong> {{ c.ambiente }}</span><span><strong>Cliente:</strong> {{ c.clienteNombre }}</span>
+        @if (c.estadoAnulacion) { <span><strong>Anulación:</strong> {{ c.estadoAnulacion }}</span> }
+      </div>
+      @if (c.guia; as g) {
+        <div class="guia-detalle">
+          <h4>Datos de traslado</h4>
+          <div class="guia-detalle__grid">
+            <span><strong>Motivo:</strong> {{ g.motivoTrasladoCodigo }}{{ g.motivoTrasladoDescripcion ? ' — ' + g.motivoTrasladoDescripcion : '' }}</span>
+            <span><strong>Inicio:</strong> {{ g.fechaInicioTraslado | date:'dd/MM/yyyy' }}</span>
+            <span><strong>Peso:</strong> {{ g.pesoBrutoTotal }} {{ g.unidadPeso }}</span>
+            <span><strong>Bultos:</strong> {{ g.numeroBultos ?? '—' }}</span>
+            <span><strong>Partida:</strong> {{ g.partidaDireccion }} ({{ g.partidaUbigeo }})</span>
+            <span><strong>Llegada:</strong> {{ g.llegadaDireccion }} ({{ g.llegadaUbigeo }})</span>
+            @if (g.modalidadTransporte === '02') {
+              <span><strong>Transporte:</strong> Privado · placa {{ g.vehiculoPlaca }}</span>
+              <span><strong>Conductor:</strong> {{ g.conductorNombres }} · doc {{ g.conductorNumDoc }} · lic. {{ g.conductorLicencia }}</span>
+            } @else {
+              <span><strong>Transporte:</strong> Público</span>
+              <span><strong>Transportista:</strong> {{ g.transportistaRazonSocial }} (RUC {{ g.transportistaNumDoc }})</span>
+            }
+          </div>
+        </div>
+      }
+      <div class="tabla-wrap"><table class="tabla"><thead><tr><th>Cant.</th><th>Descripción</th><th>P. unit.</th><th>Total</th></tr></thead><tbody>
+        @for (d of c.detalles; track d.numeroLinea) { <tr><td>{{ d.cantidad }}</td><td>{{ d.descripcion }}</td><td>S/ {{ d.precioUnitarioIgv | number:'1.2-2' }}</td><td>S/ {{ d.total | number:'1.2-2' }}</td></tr> }
+      </tbody></table></div>
+      @if (c.descripcionRespuestaSunat) { <p class="respuesta-fe">{{ c.descripcionRespuestaSunat }}</p> }
+      @if (c.intentos.length) {
+        <div class="historial-fe">
+          <h4>Historial de comunicación</h4>
+          @for (intento of c.intentos; track intento.id) {
+            <div class="historial-fe__item">
+              <span><strong>{{ intento.accion }}</strong> · {{ intento.estado }}</span>
+              <time>{{ intento.fecha | date:'dd/MM/yyyy HH:mm:ss' }}</time>
+              @if (intento.descripcion) { <p>{{ intento.descripcion }}</p> }
+            </div>
+          }
+        </div>
+      }
+      <div class="modal__actions">
+        <button class="btn btn--ghost" [disabled]="!c.tieneXml" [title]="c.tieneXml ? 'Descargar XML firmado' : 'XML aún no disponible'" (click)="descargarArchivo(c, 'xml')">Descargar XML</button>
+        <button class="btn btn--ghost" [disabled]="!c.tieneCdr" [title]="c.tieneCdr ? 'Descargar constancia CDR' : 'CDR aún no disponible'" (click)="descargarArchivo(c, 'cdr')">Descargar CDR</button>
+        <button class="btn btn--primario" (click)="verPdf(c)">Abrir PDF</button>
+      </div>
+    </div>
+  </div>
+}

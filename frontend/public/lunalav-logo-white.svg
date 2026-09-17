@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" role="img" aria-labelledby="title">
+  <title id="title">LunaLav</title>
+  <g transform="translate(18 18)">
+    <circle cx="92" cy="92" r="78" fill="#a78bfa"/>
+    <circle cx="126" cy="60" r="75" fill="#10233f"/>
+    <path d="M128 72c-27 34-39 50-39 68a39 39 0 0 0 78 0c0-18-12-34-39-68Z" fill="#2dd4bf"/>
+    <path d="M115 141c6 8 17 11 27 7" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".85"/>
+  </g>
+  <text x="218" y="126" font-family="Montserrat,Segoe UI,sans-serif" font-size="88" font-weight="800" letter-spacing="-4" fill="#fff">LunaLav</text>
+  <text x="224" y="166" font-family="Montserrat,Segoe UI,sans-serif" font-size="22" font-weight="600" letter-spacing="4" fill="#99f6e4">GESTIÓN PARA LAVANDERÍAS</text>
+</svg>

@@ -1,0 +1,59 @@
+<div class="mapa-toolbar">
+  <div>
+    <strong>Punto exacto en el mapa</strong>
+    <span>Toca el mapa o usa la ubicación del dispositivo.</span>
+  </div>
+  <div class="mapa-acciones">
+    @if (latitud !== null && longitud !== null) {
+      <button type="button" class="btn-mapa btn-mapa--limpiar" (click)="limpiar()" title="Quitar punto del mapa">
+        Quitar
+      </button>
+    }
+    <button type="button" class="btn-mapa" (click)="buscarDireccion()"
+            [disabled]="buscandoDireccion || geocodificando || ubicando || !direccion.trim() || !distrito.trim()">
+      <app-icon name="search" [size]="14"></app-icon>
+      {{ buscandoDireccion ? 'Buscando...' : 'Buscar dirección' }}
+    </button>
+    <button type="button" class="btn-mapa" (click)="usarMiUbicacion()"
+            [disabled]="ubicando || buscandoDireccion || geocodificando">
+      <app-icon name="pin" [size]="14"></app-icon>
+      {{ ubicando ? 'Ubicando...' : 'Usar mi ubicación' }}
+    </button>
+  </div>
+</div>
+
+@if (resultados.length > 0) {
+  <div class="resultados" role="listbox" aria-label="Coincidencias de dirección">
+    <div class="resultados__head">
+      <strong>Selecciona la coincidencia correcta</strong>
+      <span>Resultados © OpenStreetMap contributors</span>
+    </div>
+    @for (resultado of resultados; track resultado.id) {
+      <button type="button" class="resultado" role="option" (click)="seleccionarResultado(resultado)">
+        <app-icon name="pin" [size]="14"></app-icon>
+        <span>{{ resultado.etiqueta }}</span>
+      </button>
+    }
+  </div>
+}
+
+<div #mapa class="mapa" role="application" aria-label="Seleccionar punto exacto de entrega"></div>
+
+@if (latitud !== null && longitud !== null) {
+  @if (confirmada) {
+    <p class="coordenadas"><app-icon name="check" [size]="13"></app-icon> Dirección y punto confirmados</p>
+  } @else {
+    <p class="coordenadas coordenadas--pendiente" role="alert">
+      <app-icon name="warning" [size]="13"></app-icon>
+      La dirección cambió. Vuelve a buscarla o marca nuevamente el punto.
+    </p>
+  }
+} @else {
+  <p class="ayuda"><strong>Obligatorio:</strong> busca la dirección o marca el punto exacto antes de registrar.</p>
+}
+@if (geocodificando) {
+  <p class="ayuda">Comprobando la dirección del punto seleccionado...</p>
+}
+@if (errorUbicacion) {
+  <p class="error" role="alert">{{ errorUbicacion }}</p>
+}

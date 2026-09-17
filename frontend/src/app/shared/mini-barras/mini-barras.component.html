@@ -1,0 +1,28 @@
+<div class="mini-barras card" [class]="'mini-barras--' + color">
+  <div class="mini-barras__head">
+    <div class="mini-barras__titulo">{{ titulo }}</div>
+    @if (subtitulo) { <div class="mini-barras__sub">{{ subtitulo }}</div> }
+  </div>
+
+  @if (cargando) {
+    <div class="mini-barras__estado">Cargando…</div>
+  } @else if (!hayDatos()) {
+    <div class="mini-barras__estado">Aún no hay datos para mostrar.</div>
+  } @else {
+    <div class="mini-barras__grafico">
+      @for (p of datos; track $index; let ultimo = $last) {
+        <div class="mini-barras__col">
+          <span class="mini-barras__valor" [class.mini-barras__valor--hoy]="ultimo">{{ p.valor }}</span>
+          <div class="mini-barras__barra" [class.mini-barras__barra--hoy]="ultimo"
+               [style.height.%]="altura(p.valor)"
+               [attr.title]="p.etiqueta + ': ' + p.valor"></div>
+        </div>
+      }
+    </div>
+    <div class="mini-barras__ejex">
+      @for (p of datos; track $index) {
+        <span class="mini-barras__lbl">{{ p.etiqueta }}</span>
+      }
+    </div>
+  }
+</div>

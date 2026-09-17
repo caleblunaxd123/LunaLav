@@ -1,0 +1,525 @@
+<div class="page">
+  <app-page-header icono="clipboard" color="azul" titulo="Lista de Pedidos" tourId="pedidos"
+    [subtitulo]="total() + (total() === 1 ? ' pedido en este filtro' : ' pedidos en este filtro')">
+    <a routerLink="/registro-antiguo" class="btn btn--ghost">Registro Antiguos</a>
+    <a routerLink="/registrar" class="btn btn--primario">+ Nuevo Pedido</a>
+  </app-page-header>
+
+  @if (abandonados().length > 0 && mostrarAbandonados()) {
+    <div class="alerta-abandonados">
+      <div class="alerta-abandonados__head">
+        <span><app-icon name="warning" [size]="15"></app-icon> {{ abandonados().length }} pedido{{ abandonados().length === 1 ? '' : 's' }} listo{{ abandonados().length === 1 ? '' : 's' }} sin recoger hace más de 3 días</span>
+        <button type="button" class="alerta-abandonados__cerrar" (click)="mostrarAbandonados.set(false)"><app-icon name="close" [size]="14"></app-icon></button>
+      </div>
+      <div class="alerta-abandonados__lista">
+        @for (a of abandonados(); track a.pedidoId) {
+          <div class="alerta-abandonados__item" (click)="abrirDetallePorId(a.pedidoId)"
+               (keydown.enter)="abrirDetallePorId(a.pedidoId)" role="button" tabindex="0"
+               [attr.aria-label]="'Abrir pedido ' + a.numero + ' de ' + a.clienteNombre">
+            <div>
+              <strong>#{{ a.numero }}</strong> {{ a.clienteNombre }}
+              <span class="alerta-abandonados__dias">{{ a.diasEsperando }} días esperando</span>
+            </div>
+            <button type="button" class="btn-wsp" (click)="$event.stopPropagation(); avisarAbandonoWhatsapp(a)" title="Recordar por WhatsApp">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Zm5.6 14.2c-.2.6-1.4 1.2-1.9 1.3-.5.1-1.1.2-3.6-.8-3-1.2-4.9-4.2-5.1-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.4.6c-.1.2-.3.4-.1.7.2.4 1 1.5 2.1 2.4 1.4 1.2 2.5 1.6 2.9 1.8.3.1.5.1.7-.1l.9-1c.2-.3.4-.2.7-.1l1.8.9c.2.1.4.2.5.3.1.2.1.9-.1 1.5Z"/>
+              </svg>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  @if (metaMensual() > 0) {
+    <div class="meta-mensual card" [class.meta-mensual--cumplida]="progresoMetaPct() >= 100">
+      <div class="meta-mensual__cabecera">
+        <span class="meta-mensual__label">
+          <app-icon name="package" [size]="15"></app-icon>
+          Meta del mes
+        </span>
+        <span class="meta-mensual__pct" [class.meta-mensual__pct--ok]="progresoMetaPct() >= 100">{{ progresoMetaPct() }}%</span>
+      </div>
+
+      <!-- Termómetro horizontal: bulbo a la izquierda, tubo con el mercurio y la escala numérica
+           marcada sobre la propia barra (0 · ¼ · ½ · ¾ · meta), como un termómetro de verdad. -->
+      <div class="termo" role="progressbar"
+           [attr.aria-valuenow]="pedidosDelMes()" aria-valuemin="0" [attr.aria-valuemax]="metaMensual()">
+        <span class="termo__bulbo">{{ pedidosDelMes() }}</span>
+        <div class="termo__tubo">
+          <div class="termo__mercurio" [class.termo__mercurio--ok]="progresoMetaPct() >= 100"
+               [style.width.%]="progresoMetaPct()"></div>
+          @for (marca of escalaMeta(); track marca.pct) {
+            <span class="termo__marca" [style.left.%]="marca.pct" [class.termo__marca--fin]="marca.pct === 100">
+              <i class="termo__tick"></i>
+              <b class="termo__num">{{ marca.valor }}</b>
+            </span>
+          }
+        </div>
+      </div>
+
+      <div class="meta-mensual__pie">
+        <span class="meta-mensual__valor">
+          <strong>{{ pedidosDelMes() }}</strong> de <strong>{{ metaMensual() }}</strong> pedidos registrados
+        </span>
+        @if (progresoMetaPct() >= 100) {
+          <span class="meta-mensual__festejo">🎉 ¡Meta cumplida!</span>
+        } @else {
+          <span class="meta-mensual__faltan">Faltan {{ metaMensual() - pedidosDelMes() }} para lograrla</span>
+        }
+      </div>
+    </div>
+  }
+
+  @if (tendencia(); as t) {
+    <div class="tendencias-grid">
+      <app-mini-barras titulo="Pedidos recibidos por día" subtitulo="Quincena (últimos 15 días)" color="azul" [datos]="t.recibidos"></app-mini-barras>
+      <app-mini-barras titulo="Pedidos entregados por día" subtitulo="Quincena (últimos 15 días)" color="verde" [datos]="t.entregados"></app-mini-barras>
+    </div>
+  }
+
+  <div class="busqueda" data-tour="pedidos-buscador">
+    <input #buscadorInput type="text" class="busqueda__input"
+      placeholder="N° de ticket → Enter para abrir directo · o busca por celular, nombre o DNI…"
+      [ngModel]="busqueda()" (ngModelChange)="onBuscarInput($event)"
+      (keydown.enter)="buscarPorNumeroYAbrir()" />
+    @if (busqueda()) {
+      <button type="button" class="busqueda__limpiar" (click)="limpiarBusqueda()"><app-icon name="close" [size]="13"></app-icon></button>
+    }
+  </div>
+
+  <div class="filtros-row">
+    <div class="filtros" data-tour="pedidos-filtros" [class.filtros--deshabilitado]="!!busqueda()">
+      <button class="filtros__item filtros__item--con-badge" [class.is-active]="filtro()==='ultimos' && !destacadoActivo()"
+        (click)="cambiarFiltro('ultimos')" title="Los pedidos más recientes, de todos los estados">
+        @if (totalUltimosTab() > 0) { <span class="filtros__badge">{{ totalUltimosTab() }}</span> }
+        Últimos
+      </button>
+      <button class="filtros__item filtros__item--con-badge" [class.is-active]="filtro()==='pendientes' && !destacadoActivo()"
+        (click)="cambiarFiltro('pendientes')" title="Pedidos aún en proceso (sin entregar)">
+        @if (totalPendientesTab() > 0) { <span class="filtros__badge">{{ totalPendientesTab() }}</span> }
+        Pendientes
+      </button>
+      <button class="filtros__item filtros__item--con-badge" [class.is-active]="filtro()==='otros' && !destacadoActivo()"
+        (click)="cambiarFiltro('otros')" title="Pedidos ya entregados o anulados">
+        @if (totalOtrosTab() > 0) { <span class="filtros__badge">{{ totalOtrosTab() }}</span> }
+        Entregados / Cerrados
+      </button>
+      <button class="filtros__item" [class.is-active]="filtro()==='fecha' && !destacadoActivo()"
+        (click)="modalTipoConsulta.set(true)" title="Filtrar por rango de fechas">
+        Fecha
+      </button>
+    </div>
+    <div class="vista-switch" data-tour="pedidos-vista" role="group" aria-label="Vista de pedidos">
+      <button type="button"
+        [class.is-active]="vista() === 'lista'"
+        [attr.aria-pressed]="vista() === 'lista'"
+        (click)="cambiarVista('lista')"
+        title="Ver como lista">
+        <app-icon name="list" [size]="15"></app-icon>
+        <span>Lista</span>
+      </button>
+      <button type="button"
+        [class.is-active]="vista() === 'tablero'"
+        [attr.aria-pressed]="vista() === 'tablero'"
+        (click)="cambiarVista('tablero')"
+        title="Ver como tablero">
+        <app-icon name="kanban" [size]="15"></app-icon>
+        <span>Tablero</span>
+      </button>
+    </div>
+    <button type="button" class="btn-leyenda" (click)="leyendaAbierta.set(!leyendaAbierta())" title="Leyenda de filas">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+    </button>
+    @if (leyendaAbierta()) {
+      <div class="leyenda">
+        <strong>Leyenda de Filas</strong>
+        <div class="leyenda__grid">
+          <div><span class="leyenda-swatch leyenda-swatch--entregado"></span> Entregado</div>
+          <div><span class="leyenda-swatch leyenda-swatch--anulado"></span> Anulado</div>
+          <div><span class="leyenda-swatch leyenda-swatch--pendiente"></span> No Entregado</div>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (bannerDestacado(); as bd) {
+    <div class="fuera-tiempo-banner">
+      <div class="fuera-tiempo-banner__info">
+        <span class="fuera-tiempo-banner__icon"><app-icon name="warning" [size]="18"></app-icon></span>
+        <div class="fuera-tiempo-banner__texto">
+          <strong>{{ bd.titulo }} — {{ resumenDestacado().cantidad }} pedido{{ resumenDestacado().cantidad === 1 ? '' : 's' }}</strong>
+          <span>{{ bd.desc }} · Monto total <b>S/ {{ resumenDestacado().totalDinero | number:'1.2-2' }}</b> · Falta cobrar <b>S/ {{ resumenDestacado().saldoPorCobrar | number:'1.2-2' }}</b></span>
+        </div>
+      </div>
+      <button type="button" class="btn btn--ghost btn--sm" (click)="salirDestacado()">Ver todos los pedidos</button>
+    </div>
+  } @else if (descripcionFiltro(); as desc) {
+    <p class="filtro-desc"><app-icon name="info" [size]="13"></app-icon> {{ desc }}</p>
+  }
+
+  @if (resumenFiltroFecha(); as resumenFecha) {
+    <div class="filtro-fecha card">
+      <span>{{ resumenFecha }}</span>
+      <button type="button" class="btn btn--ghost btn--sm" (click)="limpiarFiltroFecha()">Quitar filtro</button>
+    </div>
+  }
+
+  @if (cargando()) {
+    <div class="card"><app-skeleton variant="table" [rows]="6" [columns]="8"></app-skeleton></div>
+  } @else if (error()) {
+    <app-empty-state icono="error" titulo="No se pudo cargar" [mensaje]="error()!">
+      <button class="btn btn--primario" (click)="recargar()">Reintentar</button>
+    </app-empty-state>
+  } @else if (pedidos().length === 0) {
+    <app-empty-state
+      icono="ok"
+      titulo="Sin pedidos por mostrar"
+      mensaje="No hay pedidos que coincidan con este filtro. Registra el primero o cambia de vista.">
+      <a routerLink="/registrar" class="btn btn--primario">+ Nuevo Pedido</a>
+    </app-empty-state>
+  } @else {
+    @if (vista() === 'tablero') {
+      <section class="kanban" aria-label="Tablero de pedidos">
+        @for (columna of kanbanColumns(); track columna.key) {
+          <section class="kanban-column" [attr.data-tone]="columna.tone"
+            [attr.data-empty]="columna.pedidos.length === 0"
+            [attr.aria-label]="columna.titulo + ': ' + columna.pedidos.length + ' pedidos'">
+            <header class="kanban-column__head">
+              <div>
+                <strong>{{ columna.titulo }}</strong>
+                <span>{{ columna.subtitulo }}</span>
+              </div>
+              <span class="kanban-column__count">{{ columna.pedidos.length }}</span>
+            </header>
+
+            <div class="kanban-column__body">
+              @for (p of columna.pedidos; track p.id) {
+                <article class="kanban-card"
+                  [class.kanban-card--urgent]="p.esUrgente"
+                  [class.kanban-card--overdue]="entregaVencida(p)"
+                  [class.is-updated]="pedidoAnimadoId() === p.id">
+                  <button type="button" class="kanban-card__open" (click)="abrirDetalle(p)"
+                    [attr.aria-label]="'Abrir pedido ' + p.numero + ' de ' + p.clienteNombre">
+                    <span class="kanban-card__top">
+                      <strong>#{{ p.numero }}</strong>
+                      <span class="kanban-card__badges">
+                        @if (p.esUrgente) {
+                          <span class="badge badge--urgente"><app-icon name="fire" [size]="11"></app-icon> Urgente</span>
+                        }
+                        <span class="badge"
+                          [class.badge--verde]="saldoPedido(p) <= 0"
+                          [class.badge--gris]="saldoPedido(p) > 0">
+                          {{ saldoPedido(p) <= 0 ? 'PAGADO' : 'PAGO ' + p.estadoPago }}
+                        </span>
+                      </span>
+                    </span>
+
+                    <span class="kanban-card__client">
+                      <strong>{{ p.clienteNombre }}</strong>
+                      @if (p.clienteCelular) { <small>{{ p.clienteCelular }}</small> }
+                    </span>
+
+                    <span class="kanban-card__items">
+                      @for (item of p.items.slice(0, 2); track item.id) {
+                        <span>{{ item.cantidad }} x {{ item.servicioNombre }}</span>
+                      }
+                      @if (p.items.length > 2) {
+                        <small>+{{ p.items.length - 2 }} artículo{{ p.items.length - 2 === 1 ? '' : 's' }}</small>
+                      }
+                    </span>
+
+                    <span class="kanban-card__delivery" [class.is-overdue]="entregaVencida(p)">
+                      <app-icon [name]="p.modalidad === 'Delivery' ? 'pin' : 'package'" [size]="13"></app-icon>
+                      <span>
+                        <small>{{ p.modalidad }} · {{ entregaVencida(p) ? 'Entrega vencida' : 'Entrega' }}</small>
+                        <strong>{{ p.fechaEntregaEst ? (p.fechaEntregaEst | date:'dd/MM · HH:mm') : 'Sin fecha definida' }}</strong>
+                      </span>
+                    </span>
+
+                    <span class="kanban-card__money">
+                      <span><small>Total</small><strong>S/ {{ p.total | number:'1.2-2' }}</strong></span>
+                      <span [class.has-debt]="saldoPedido(p) > 0">
+                        <small>{{ saldoPedido(p) > 0 ? 'Saldo' : 'Cobrado' }}</small>
+                        <strong>S/ {{ (saldoPedido(p) > 0 ? saldoPedido(p) : p.montoPagado) | number:'1.2-2' }}</strong>
+                      </span>
+                    </span>
+                  </button>
+
+                  <footer class="kanban-card__actions">
+                    @if (flujoInconsistente(p)) {
+                      <span class="kanban-card__warning"><app-icon name="warning" [size]="13"></app-icon> Revisar flujo</span>
+                    }
+                    @if (puedeAvanzar(p)) {
+                      <button type="button" class="kanban-card__advance" data-tour="pedidos-avanzar"
+                        [class.is-loading]="avanzandoId() === p.id"
+                        (click)="avanzarEtapa(p)" [disabled]="avanzando()">
+                        @if (avanzandoId() === p.id) {
+                          <span class="btn-spinner" aria-hidden="true"></span> Actualizando
+                        } @else {
+                          {{ kanbanActionLabel(p) }} <app-icon name="arrow-right" [size]="14"></app-icon>
+                        }
+                      </button>
+                    }
+                    <button type="button" class="btn-wsp" (click)="abrirWhatsapp(p)"
+                      title="Notificar por WhatsApp" [attr.aria-label]="'Notificar pedido ' + p.numero + ' por WhatsApp'">
+                      <app-icon name="whatsapp" [size]="16"></app-icon>
+                    </button>
+                  </footer>
+                </article>
+              } @empty {
+                <div class="kanban-empty">
+                  <span><app-icon name="check" [size]="15"></app-icon></span>
+                  Sin pedidos
+                </div>
+              }
+            </div>
+          </section>
+        }
+      </section>
+      @if (total() > 100) {
+        <p class="kanban-limit">Mostrando los primeros 100 pedidos. Usa la búsqueda o los filtros para acotar el tablero.</p>
+      }
+    } @else {
+    <!-- Desktop: tabla -->
+    <div class="card tabla-wrap">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>N°</th>
+            <th>Cliente</th>
+            <th>DNI</th>
+            <th>Items</th>
+            <th>Ingreso</th>
+            <th>Ubicación</th>
+            <th>Fecha entrega</th>
+            <th>Total</th>
+            <th>Área actual</th>
+            <th>Estado</th>
+            <th>Pago</th>
+            <th>Días</th>
+            <th></th>
+          </tr>
+          <tr class="filtros-col">
+            <th><input type="text" placeholder="N°" [ngModel]="filtrosColumna().numero" (ngModelChange)="actualizarFiltroCol('numero', $event)" /></th>
+            <th><input type="text" placeholder="Cliente" [ngModel]="filtrosColumna().cliente" (ngModelChange)="actualizarFiltroCol('cliente', $event)" /></th>
+            <th><input type="text" placeholder="DNI" [ngModel]="filtrosColumna().dni" (ngModelChange)="actualizarFiltroCol('dni', $event)" /></th>
+            <th><input type="text" placeholder="Item" [ngModel]="filtrosColumna().items" (ngModelChange)="actualizarFiltroCol('items', $event)" /></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th><input type="text" placeholder="Área" [ngModel]="filtrosColumna().area" (ngModelChange)="actualizarFiltroCol('area', $event)" /></th>
+            <th><input type="text" placeholder="Estado" [ngModel]="filtrosColumna().estado" (ngModelChange)="actualizarFiltroCol('estado', $event)" /></th>
+            <th><input type="text" placeholder="Pago" [ngModel]="filtrosColumna().pago" (ngModelChange)="actualizarFiltroCol('pago', $event)" /></th>
+            <th></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of pedidosFiltrados(); track p.id) {
+            <tr (click)="abrirDetalle(p)" (keydown.enter)="abrirDetalle(p)" role="button" tabindex="0"
+                [attr.aria-label]="'Abrir pedido ' + p.numero + ' de ' + p.clienteNombre"
+                class="tabla__row" [class.is-updated]="pedidoAnimadoId() === p.id" [ngClass]="claseFila(p)">
+              <td class="mono">
+                #{{ p.numero }}
+                @if (p.esUrgente) { <span class="badge-urgente" title="Servicio urgente"><app-icon name="fire" [size]="13"></app-icon></span> }
+              </td>
+              <td>
+                <div class="cliente">
+                  <strong>{{ p.clienteNombre }}</strong>
+                  @if (p.clienteCelular) { <span>{{ p.clienteCelular }}</span> }
+                </div>
+              </td>
+              <td class="mono">{{ p.clienteDni || '—' }}</td>
+              <td>
+                <div class="items">
+                  @for (it of p.items.slice(0, 3); track it.id) {
+                    <span class="items__chip">{{ it.servicioNombre }} · {{ it.cantidad }}</span>
+                  }
+                  @if (p.items.length > 3) {
+                    <span class="items__chip items__chip--more">+{{ p.items.length - 3 }}</span>
+                  }
+                </div>
+              </td>
+              <td class="mono">{{ p.fechaIngreso | date:'dd/MM HH:mm' }}</td>
+              <td>
+                <span class="badge" [class.badge--azul]="p.modalidad === 'Delivery'" [class.badge--verde]="p.modalidad === 'Tienda'">
+                  {{ p.modalidad }}
+                </span>
+              </td>
+              <td class="mono">{{ p.fechaEntregaEst ? (p.fechaEntregaEst | date:'dd/MM HH:mm') : '—' }}</td>
+              <td class="mono">S/ {{ p.total | number:'1.2-2' }}</td>
+              <td>
+                @if (p.areaActualNombre) {
+                  <span class="area area--activa">{{ p.areaActualNombre }}</span>
+                } @else {
+                  <span class="area area--espera">Sin iniciar</span>
+                }
+              </td>
+              <td>
+                <span [class]="claseEstado(p.estadoProceso)">{{ etiquetaEstado(p.estadoProceso) }}</span>
+              </td>
+              <td>
+                <div class="pago-resumen">
+                  <span class="badge"
+                        [class.badge--verde]="p.estadoPago === 'PAGADO'"
+                        [class.badge--gris]="p.estadoPago !== 'PAGADO'">
+                    {{ p.estadoPago }}
+                  </span>
+                  @if (saldoPedido(p) > 0) {
+                    <span class="pago-resumen__saldo">Saldo S/ {{ saldoPedido(p) | number:'1.2-2' }}</span>
+                  } @else {
+                    <span class="pago-resumen__ok">Sin deuda</span>
+                  }
+                </div>
+              </td>
+              <td>
+                <span class="badge" [class.badge--rojo]="diasEnProceso(p) >= 3" [class.badge--gris]="diasEnProceso(p) < 3">
+                  {{ diasEnProceso(p) }} día{{ diasEnProceso(p) === 1 ? '' : 's' }}
+                </span>
+              </td>
+              <td class="acciones" (click)="$event.stopPropagation()">
+                @if (flujoInconsistente(p)) {
+                  <span class="flujo-alerta" title="Estado inconsistente: falta el área actual">Revisar flujo</span>
+                }
+                @if (puedeAvanzar(p)) {
+                  <button class="btn btn--avanzar" [class.is-loading]="avanzandoId() === p.id"
+                    (click)="avanzarEtapa(p)" [disabled]="avanzando()">
+                    @if (avanzandoId() === p.id) { <span class="btn-spinner" aria-hidden="true"></span> Actualizando }
+                    @else { {{ botonAvanzarLabel(p) }} }
+                  </button>
+                }
+                <button class="btn-wsp" (click)="abrirWhatsapp(p)" title="Notificar por WhatsApp">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Zm5.6 14.2c-.2.6-1.4 1.2-1.9 1.3-.5.1-1.1.2-3.6-.8-3-1.2-4.9-4.2-5.1-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.4.6c-.1.2-.3.4-.1.7.2.4 1 1.5 2.1 2.4 1.4 1.2 2.5 1.6 2.9 1.8.3.1.5.1.7-.1l.9-1c.2-.3.4-.2.7-.1l1.8.9c.2.1.4.2.5.3.1.2.1.9-.1 1.5Z"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile: cards apiladas -->
+    <div class="cards">
+      @for (p of pedidosFiltrados(); track p.id) {
+        <article class="pedido-card card" [class.is-updated]="pedidoAnimadoId() === p.id" [ngClass]="claseFila(p)" (click)="abrirDetalle(p)">
+          <header class="pedido-card__head">
+            <div class="pedido-card__numero">
+              <span class="pedido-card__label">Orden</span>
+              <strong>#{{ p.numero }}</strong>
+              @if (p.esUrgente) { <span class="badge-urgente" title="Servicio urgente"><app-icon name="fire" [size]="13"></app-icon></span> }
+            </div>
+            <span [class]="claseEstado(p.estadoProceso)">{{ etiquetaEstado(p.estadoProceso) }}</span>
+          </header>
+
+          <div class="pedido-card__cliente">
+            <strong>{{ p.clienteNombre }}</strong>
+            @if (p.clienteCelular) { <span>{{ p.clienteCelular }}</span> }
+          </div>
+
+          <div class="pedido-card__items">
+            @for (it of p.items.slice(0, 2); track it.id) {
+              <span class="items__chip">{{ it.servicioNombre }} · {{ it.cantidad }}</span>
+            }
+            @if (p.items.length > 2) {
+              <span class="items__chip items__chip--more">+{{ p.items.length - 2 }}</span>
+            }
+          </div>
+
+          <div class="pedido-card__area">
+            @if (p.areaActualNombre) {
+              <span class="area area--activa"><app-icon name="pin" [size]="12"></app-icon> {{ p.areaActualNombre }}</span>
+            }
+            <span class="badge" [class.badge--azul]="p.modalidad === 'Delivery'" [class.badge--verde]="p.modalidad === 'Tienda'">
+              {{ p.modalidad }}
+            </span>
+            <span class="badge" [class.badge--rojo]="diasEnProceso(p) >= 3" [class.badge--gris]="diasEnProceso(p) < 3">
+              {{ diasEnProceso(p) }} día{{ diasEnProceso(p) === 1 ? '' : 's' }}
+            </span>
+          </div>
+
+          <footer class="pedido-card__foot" (click)="$event.stopPropagation()">
+            <div class="pedido-card__precio">
+              <span class="pedido-card__label">Total</span>
+              <strong class="pedido-card__total">S/ {{ p.total | number:'1.2-2' }}</strong>
+              @if (saldoPedido(p) > 0) {
+                <span class="pedido-card__saldo">Saldo S/ {{ saldoPedido(p) | number:'1.2-2' }}</span>
+              } @else {
+                <span class="pedido-card__pagado">Sin deuda</span>
+              }
+            </div>
+            <div class="pedido-card__acciones">
+              @if (flujoInconsistente(p)) {
+                <span class="flujo-alerta" title="Estado inconsistente: falta el área actual">Revisar flujo</span>
+              }
+              @if (puedeAvanzar(p)) {
+                <button class="btn btn--primario btn--sm" [class.is-loading]="avanzandoId() === p.id"
+                  (click)="avanzarEtapa(p)" [disabled]="avanzando()">
+                  @if (avanzandoId() === p.id) { <span class="btn-spinner" aria-hidden="true"></span> Actualizando }
+                  @else { {{ botonAvanzarLabel(p) }} }
+                </button>
+              }
+              <button class="btn-wsp" (click)="abrirWhatsapp(p)" title="Notificar por WhatsApp">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Zm5.6 14.2c-.2.6-1.4 1.2-1.9 1.3-.5.1-1.1.2-3.6-.8-3-1.2-4.9-4.2-5.1-4.4-.1-.2-1.2-1.6-1.2-3s.7-2.1 1-2.4c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.4.6c-.1.2-.3.4-.1.7.2.4 1 1.5 2.1 2.4 1.4 1.2 2.5 1.6 2.9 1.8.3.1.5.1.7-.1l.9-1c.2-.3.4-.2.7-.1l1.8.9c.2.1.4.2.5.3.1.2.1.9-.1 1.5Z"/>
+                </svg>
+              </button>
+            </div>
+          </footer>
+        </article>
+      }
+    </div>
+
+    <div class="card paginacion-wrap">
+      <app-paginacion
+        [pagina]="pagina()"
+        [tamanoPagina]="tamanoPagina()"
+        [total]="total()"
+        (paginaChange)="cambiarPagina($event)"
+        (tamanoPaginaChange)="cambiarTamanoPagina($event)">
+      </app-paginacion>
+    </div>
+    }
+  }
+</div>
+
+
+@if (modalTipoConsulta()) {
+  <div class="modal-backdrop" (click)="modalTipoConsulta.set(false)"></div>
+  <div class="modal-simple">
+    <div class="modal-simple__head">
+      <h3>TIPO DE CONSULTA</h3>
+      <button (click)="modalTipoConsulta.set(false)"><app-icon name="close" [size]="14"></app-icon></button>
+    </div>
+    <div class="modal-simple__body">
+      <p class="hint">Elige el campo de fecha por el que quieres filtrar.</p>
+
+      <label>Consultar por</label>
+      <div class="switch-row">
+        <button type="button" class="switch-btn" [class.is-active]="tipoFechaConsulta()==='ingreso'" (click)="tipoFechaConsulta.set('ingreso')">Fecha de Ingreso</button>
+        <button type="button" class="switch-btn" [class.is-active]="tipoFechaConsulta()==='entrega'" (click)="tipoFechaConsulta.set('entrega')">Fecha de Entrega</button>
+      </div>
+
+      <div class="row-2">
+        <div>
+          <label>Desde</label>
+          <input type="date" [(ngModel)]="fechaFiltroDesde" />
+        </div>
+        <div>
+          <label>Hasta</label>
+          <input type="date" [(ngModel)]="fechaFiltroHasta" />
+        </div>
+      </div>
+
+      <div class="modal-simple__actions">
+        <button class="btn btn--ghost" (click)="modalTipoConsulta.set(false)">Cancelar</button>
+        <button class="btn btn--primario" (click)="cambiarFiltro('fecha'); modalTipoConsulta.set(false)">Aceptar</button>
+      </div>
+    </div>
+  </div>
+}

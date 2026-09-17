@@ -1,0 +1,140 @@
+<div class="page">
+  <app-page-header icono="smartphone" color="naranja" titulo="Repartidores"
+    subtitulo="Administra a los motorizados que puedes asignar a los pedidos con delivery."
+    volverTexto="Ajustes" (volver)="volver()">
+    <button class="btn btn--primario" (click)="abrirCrear()">+ Nuevo repartidor</button>
+  </app-page-header>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (error()) {
+    <app-empty-state icono="error" titulo="No se pudo cargar" [mensaje]="error()!">
+      <button class="btn btn--primario" (click)="cargar()">Reintentar</button>
+    </app-empty-state>
+  } @else if (motorizados().length === 0) {
+    <app-empty-state icono="lista" titulo="Sin repartidores aún" mensaje="Registra al primer motorizado para poder asignarlo a pedidos delivery.">
+      <button class="btn btn--primario" (click)="abrirCrear()">+ Nuevo repartidor</button>
+    </app-empty-state>
+  } @else {
+    <div class="buscador-lista">
+      <app-icon name="search" [size]="16"></app-icon>
+      <input type="search" placeholder="Buscar repartidor por nombre…"
+        [ngModel]="busqueda()" (ngModelChange)="actualizarBusqueda($event)" aria-label="Buscar repartidor" />
+      @if (busqueda()) { <button type="button" (click)="actualizarBusqueda('')" title="Limpiar" aria-label="Limpiar búsqueda">×</button> }
+    </div>
+    @if (motorizadosFiltrados().length === 0) {
+      <p class="hint">Sin coincidencias para “{{ busqueda() }}”.</p>
+    }
+    <div class="card tabla-wrap">
+      <table class="tabla">
+        <thead><tr><th>Nombre</th><th>Celular</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          @for (m of motorizadosPaginados(); track m.id) {
+            <tr [class.inactivo]="!m.activo">
+              <td class="nombre">{{ m.nombre }}</td>
+              <td class="mono">{{ m.celular || '—' }}</td>
+              <td>
+                <span [class]="'badge ' + (m.activo ? 'badge--verde' : 'badge--gris')">
+                  {{ m.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="acciones-row acciones-texto">
+                <button class="btn btn--sm btn--editar" (click)="abrirEditar(m)" title="Editar"><app-icon name="edit" [size]="14"></app-icon> Editar</button>
+                <button class="btn btn--sm btn--desactivar" (click)="toggleActivo(m)" [title]="m.activo ? 'Desactivar' : 'Reactivar'">
+                  @if (m.activo) { <app-icon name="disable" [size]="14"></app-icon> Desactivar } @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile: cards -->
+    <div class="cards">
+      @for (m of motorizadosPaginados(); track m.id) {
+        <div class="card area-card" [class.inactivo]="!m.activo">
+          <div class="area-card__head">
+            <strong>{{ m.nombre }}</strong>
+            <span [class]="'badge ' + (m.activo ? 'badge--verde' : 'badge--gris')">
+              {{ m.activo ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+          <div class="area-card__body">
+            <div><span>Celular:</span> {{ m.celular || '—' }}</div>
+          </div>
+          <div class="area-card__acciones">
+            <button class="btn btn--sm btn--editar" (click)="abrirEditar(m)" title="Editar"><app-icon name="edit" [size]="14"></app-icon> Editar</button>
+            <button class="btn btn--sm btn--desactivar" (click)="toggleActivo(m)" [title]="m.activo ? 'Desactivar' : 'Reactivar'">
+              @if (m.activo) { <app-icon name="disable" [size]="14"></app-icon> Desactivar } @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="card paginacion-wrap">
+      <app-paginacion
+        [pagina]="pagina()"
+        [tamanoPagina]="tamanoPagina()"
+        [total]="motorizadosFiltrados().length"
+        (paginaChange)="cambiarPagina($event)"
+        (tamanoPaginaChange)="cambiarTamanoPagina($event)">
+      </app-paginacion>
+    </div>
+  }
+</div>
+
+@if (modalAbierto()) {
+  <div class="modal-backdrop" (click)="cerrar()"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>{{ editando() ? 'Editar repartidor' : 'Nuevo repartidor' }}</h3>
+      <button class="modal__close" (click)="cerrar()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <form (submit)="guardar(); $event.preventDefault()">
+      <div class="modal__body">
+        <label>Nombre *</label>
+        <input type="text" [(ngModel)]="form.nombre" name="nombre" placeholder="Ej: Juan Pérez"
+          [class.invalid]="err.get('nombre')" (ngModelChange)="err.limpiar('nombre')" />
+        @if (err.get('nombre')) { <small class="campo-error">{{ err.get('nombre') }}</small> }
+
+        <label>Celular</label>
+        <app-telefono-pais [(ngModel)]="form.celular" name="celular" inputId="celular"></app-telefono-pais>
+
+        <label class="checkbox-row">
+          <input type="checkbox" [(ngModel)]="form.activo" name="activo" />
+          Repartidor activo
+        </label>
+
+        @if (errorForm()) {
+          <div class="modal__error" role="alert">{{ errorForm() }}</div>
+        }
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrar()">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (confirmarDesactivar(); as m) {
+  <div class="modal-backdrop" (click)="confirmarDesactivar.set(null)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Desactivar repartidor?</h3>
+      <button class="modal__close" (click)="confirmarDesactivar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p><strong>{{ m.nombre }}</strong> dejará de estar disponible para asignar a nuevos pedidos.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarDesactivar.set(null)">Cancelar</button>
+        <button class="btn btn--danger" (click)="confirmarDesactivarOk()">Sí, desactivar</button>
+      </div>
+    </div>
+  </div>
+}

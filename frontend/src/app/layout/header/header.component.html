@@ -1,0 +1,223 @@
+<!-- Barra superior compacta: SOLO en móvil (hamburguesa + marca + salir) -->
+<header class="mtop">
+  <button type="button" class="mtop__burger" (click)="toggleMenu()" aria-label="Menú"
+          [attr.aria-expanded]="menuAbierto()" aria-controls="sidebar-nav">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="mtop__brand">
+    @if (negocio().logoUrl) {
+      <img [src]="negocio().logoUrl" [alt]="negocio().nombreNegocio" class="mtop__logo" />
+    } @else {
+      <strong>{{ negocio().nombreNegocio }}</strong>
+    }
+  </div>
+  @if (puedeVerAtencion()) {
+    <button type="button" class="mtop__attention" [class.has-alerts]="totalAtencion() > 0"
+      (click)="toggleAtencion()" title="Atención operativa" aria-label="Abrir atención operativa"
+      [attr.aria-expanded]="atencionAbierta()">
+      <app-icon name="bell" [size]="19"></app-icon>
+      @if (totalAtencion() > 0) { <span>{{ totalAtencion() }}</span> }
+    </button>
+  }
+  <button type="button" class="mtop__logout" (click)="logout()" title="Cerrar sesión" aria-label="Cerrar sesión">
+    <app-icon name="exit-run" [size]="21"></app-icon>
+  </button>
+</header>
+
+<!-- Fondo oscuro para cerrar el sidebar en móvil -->
+@if (menuAbierto()) {
+  <div class="sb-backdrop" (click)="cerrarMenu()"></div>
+}
+
+<!-- Plantilla de un ítem del menú (con o sin submenú) -->
+<ng-template #item let-link>
+  @if (hijosVisibles(link).length) {
+    <div class="sidebar__item" [class.is-open]="estaExpandido(link)">
+      <div class="sidebar__link-wrap">
+        <a [routerLink]="link.path" class="sidebar__link sidebar__link--parent"
+           [class.is-active]="esSeccionActiva(link)" (click)="cerrarMenu()">
+          <app-icon [name]="link.icono" [size]="18"></app-icon>
+          <span class="sidebar__label">{{ link.label }}</span>
+        </a>
+        <button type="button" class="sidebar__caret" (click)="toggleGrupo(link, $event)"
+                [attr.aria-expanded]="estaExpandido(link)" [attr.aria-label]="'Desplegar ' + link.label">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+      <div class="sidebar__submenu">
+        <div class="sidebar__submenu-inner">
+          @for (sub of hijosVisibles(link); track sub.path) {
+            <a [routerLink]="sub.path" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }"
+               class="sidebar__sublink" (click)="cerrarMenu()">
+              <span class="sidebar__dot"></span>{{ sub.label }}
+            </a>
+          }
+        </div>
+      </div>
+    </div>
+  } @else {
+    <a [routerLink]="link.path" routerLinkActive="is-active" class="sidebar__link" (click)="cerrarMenu()">
+      <app-icon [name]="link.icono" [size]="18"></app-icon>
+      <span class="sidebar__label">{{ link.label }}</span>
+    </a>
+  }
+</ng-template>
+
+<!-- Sidebar: fijo en escritorio, cajón deslizable en móvil -->
+<aside id="sidebar-nav" class="sidebar" [class.is-open]="menuAbierto()">
+  <div class="sidebar__brand" [class.sidebar__brand--logo]="negocio().logoUrl">
+    @if (negocio().logoUrl) {
+      <!-- Logo del negocio grande y centrado (igual que el panel de propietario) -->
+      <img [src]="negocio().logoUrl" [alt]="negocio().nombreNegocio" class="sidebar__logo-full" />
+    } @else {
+      <span class="sidebar__logo sidebar__logo--icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M12 2c3 4 6 7.5 6 11.5A6 6 0 1 1 6 13.5C6 9.5 9 6 12 2Z" />
+        </svg>
+      </span>
+      <div class="sidebar__brand-text">
+        <strong>{{ negocio().nombreNegocio }}</strong>
+        <span>Sistema de gestión</span>
+      </div>
+    }
+  </div>
+
+  @if (mostrarBadgeSede()) {
+    <div class="sidebar__sede">
+      <button type="button" class="sidebar__sede-btn" (click)="puedeCambiarSede() && toggleSedeMenu()"
+              [disabled]="cambiandoSede()" [class.is-fijo]="!puedeCambiarSede()"
+              [attr.aria-expanded]="puedeCambiarSede() ? sedeMenuAbierto() : null"
+              [attr.aria-label]="puedeCambiarSede() ? 'Cambiar sede activa' : 'Sede activa'">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 21s7-6.5 7-11.5A7 7 0 1 0 5 9.5C5 14.5 12 21 12 21Z" />
+          <circle cx="12" cy="9.5" r="2.5" />
+        </svg>
+        <span>{{ usuario()?.sedeNombre }}</span>
+        @if (puedeCambiarSede()) {
+          <svg class="sidebar__sede-caret" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        }
+      </button>
+      @if (sedeMenuAbierto()) {
+        <div class="sidebar__sede-menu">
+          @for (s of sedes(); track s.id) {
+            <button type="button" class="sidebar__sede-item"
+              [class.is-active]="s.id === usuario()?.sedeId" (click)="elegirSede(s.id)">
+              {{ s.nombre }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (puedeVerAtencion()) {
+    <button type="button" class="sidebar__attention" [class.has-alerts]="totalAtencion() > 0"
+      (click)="toggleAtencion()" [attr.aria-expanded]="atencionAbierta()">
+      <span class="sidebar__attention-icon"><app-icon name="bell" [size]="16"></app-icon></span>
+      <span>Atención operativa</span>
+      @if (cargandoAtencion() && !actualizadoEnAtencion()) {
+        <span class="sidebar__attention-loading" aria-label="Actualizando"></span>
+      } @else if (totalAtencion() > 0) {
+        <strong>{{ totalAtencion() }}</strong>
+      } @else {
+        <app-icon name="check" [size]="14"></app-icon>
+      }
+    </button>
+  }
+
+  <nav class="sidebar__nav">
+    @if (primaryLinks().length) {
+      <p class="sidebar__group">General</p>
+      @for (link of primaryLinks(); track link.path) {
+        <ng-container *ngTemplateOutlet="item; context: { $implicit: link }"></ng-container>
+      }
+    }
+    @if (secondaryLinks().length) {
+      <p class="sidebar__group">Administración</p>
+      @for (link of secondaryLinks(); track link.path) {
+        <ng-container *ngTemplateOutlet="item; context: { $implicit: link }"></ng-container>
+      }
+    }
+  </nav>
+
+  <div class="sidebar__user">
+    <div class="sidebar__user-info">
+      <strong>{{ usuario()?.nombreCompleto }}</strong>
+      <span>{{ usuario()?.rol }}</span>
+    </div>
+    <button type="button" class="sidebar__logout" (click)="logout()" title="Cerrar sesión" aria-label="Cerrar sesión">
+      <app-icon name="exit-run" [size]="19"></app-icon>
+    </button>
+  </div>
+
+  <p class="sidebar__dev">{{ desarrolladorCredito }}</p>
+</aside>
+
+@if (atencionAbierta()) {
+  <button type="button" class="attention-backdrop" (click)="cerrarAtencion()"
+    aria-label="Cerrar atención operativa"></button>
+  <section class="attention-panel" role="dialog" aria-modal="false" aria-labelledby="attention-panel-title">
+    <header class="attention-panel__head">
+      <div>
+        <span>Operación en vivo</span>
+        <h2 id="attention-panel-title">Atención operativa</h2>
+      </div>
+      <div class="attention-panel__head-actions">
+        <button type="button" (click)="cargarAtencion()" [disabled]="cargandoAtencion()"
+          title="Actualizar alertas" aria-label="Actualizar alertas">
+          <app-icon name="refresh" [size]="16"></app-icon>
+        </button>
+        <button type="button" (click)="cerrarAtencion()" title="Cerrar" aria-label="Cerrar atención operativa">
+          <app-icon name="close" [size]="16"></app-icon>
+        </button>
+      </div>
+    </header>
+
+    <div class="attention-panel__body">
+      @if (cargandoAtencion() && !actualizadoEnAtencion()) {
+        <div class="attention-state">
+          <span class="attention-state__spinner"></span>
+          <strong>Revisando la operación</strong>
+          <p>Estamos buscando tareas que requieren atención.</p>
+        </div>
+      } @else if (errorAtencion()) {
+        <div class="attention-state attention-state--error">
+          <span><app-icon name="warning" [size]="19"></app-icon></span>
+          <strong>No pudimos actualizar las alertas</strong>
+          <p>Comprueba la conexión y vuelve a intentarlo.</p>
+          <button type="button" (click)="cargarAtencion()">Reintentar</button>
+        </div>
+      } @else if (alertasAtencion().length === 0) {
+        <div class="attention-state attention-state--ok">
+          <span><app-icon name="check" [size]="20"></app-icon></span>
+          <strong>Todo está bajo control</strong>
+          <p>No hay tareas operativas pendientes en este momento.</p>
+        </div>
+      } @else {
+        <div class="attention-list">
+          @for (alerta of alertasAtencion(); track alerta.clave) {
+            <a [routerLink]="alerta.ruta" [queryParams]="alerta.queryParams ?? null" class="attention-item"
+              [class]="'attention-item attention-item--' + alerta.nivel" (click)="cerrarAtencion()">
+              <span class="attention-item__icon"><app-icon [name]="alerta.icono" [size]="17"></app-icon></span>
+              <span class="attention-item__copy">
+                <strong>{{ alerta.titulo }}</strong>
+                <small>{{ alerta.detalle }}</small>
+              </span>
+              <app-icon name="chevron-right" [size]="16"></app-icon>
+            </a>
+          }
+        </div>
+      }
+    </div>
+
+    <footer class="attention-panel__foot">
+      <span>
+        @if (actualizadoAtencion()) { Actualizado {{ actualizadoAtencion() }} }
+        @else { Resumen de la sede activa }
+      </span>
+      <a routerLink="/inicio" (click)="cerrarAtencion()">Ver resumen completo</a>
+    </footer>
+  </section>
+}

@@ -1,0 +1,794 @@
+<div class="page">
+  <button type="button" class="volver-pill" (click)="volver()">
+    <span class="volver-pill__flecha"><app-icon name="arrow-left" [size]="18"></app-icon></span>
+    <span>Volver a Pedidos</span>
+  </button>
+
+  @if (cargando()) {
+    <div class="card carga"><app-skeleton variant="lines" [rows]="6"></app-skeleton></div>
+  } @else if (error()) {
+    <div class="card error-card">
+      <p>{{ error() }}</p>
+      <button class="btn btn--primario" (click)="volver()">Volver a pedidos</button>
+    </div>
+  } @else if (pedido(); as p) {
+
+    <!-- ═══ Encabezado ═══ -->
+    <header class="cabecera card">
+      <div class="cabecera__info">
+        <h2>
+          Pedido #{{ p.numero }}
+          @if (p.esUrgente) { <span class="badge-urgente"><app-icon name="fire" [size]="13"></app-icon> URGENTE</span> }
+          <span class="chip-estado" [class]="'chip-estado--' + p.estadoProceso.toLowerCase()">{{ etiquetaEstado(p.estadoProceso) }}</span>
+        </h2>
+        <p>
+          Ingresó {{ p.fechaIngreso | date:'d MMM, h:mm a' }}
+          @if (p.usuarioNombre) { · Atendido por {{ p.usuarioNombre }} }
+          · {{ p.modalidad }}
+        </p>
+      </div>
+
+      <div class="cabecera__lado">
+        @if (!p.anulado && p.estadoProceso !== 'ENTREGADO') {
+          <button type="button" class="chip-fecha" (click)="abrirModalFecha()"
+            title="Cambiar fecha">
+            <app-icon name="calendar" [size]="13"></app-icon>
+            {{ p.modalidad === 'Delivery' ? 'Delivery' : 'Recojo' }}:
+            <strong>{{ p.fechaEntregaEst ? (p.fechaEntregaEst | date:'EEE d MMM, h:mm a') : 'sin definir' }}</strong>
+            <app-icon name="edit" [size]="12"></app-icon>
+          </button>
+        }
+        <button type="button" class="btn btn--ayuda" (click)="iniciarTour()"
+          title="¿Cómo funciona esta pantalla?" aria-label="Ver tutorial de esta pantalla">
+          <app-icon name="info" [size]="16"></app-icon>
+          <span>¿Cómo funciona?</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ═══ Avisos de estado final ═══ -->
+    @if (p.anulado) {
+      <div class="banner banner--anulado">
+        <app-icon name="ban" [size]="16"></app-icon>
+        Pedido anulado{{ p.motivoAnulacion ? ': ' + p.motivoAnulacion : '' }}
+      </div>
+    } @else if (p.estadoProceso === 'ENTREGADO') {
+      <div class="banner banner--entregado">
+        <app-icon name="check" [size]="16"></app-icon>
+        Pedido entregado. ¡Trabajo completado!
+      </div>
+    }
+
+    <!-- ═══ Progreso + LA acción ═══ -->
+    @if (!p.anulado && p.estadoProceso !== 'ENTREGADO') {
+      <section class="card progreso-card" data-tour="detalle-progreso">
+        <div class="progreso__pasos">
+          @for (paso of progresoAreas(p); track paso.id) {
+            <div class="progreso__paso"
+                 [class.is-alcanzada]="paso.alcanzada"
+                 [class.is-actual]="paso.actual">
+              <div class="progreso__punto">
+                @if (paso.alcanzada && !paso.actual) { <app-icon name="check" [size]="12"></app-icon> }
+                @else if (paso.actual) { <span class="progreso__pulse"></span> }
+              </div>
+              <span class="progreso__label">{{ paso.nombre }}</span>
+            </div>
+          }
+        </div>
+
+        @if (flujoInconsistente(p)) {
+          <div class="banner banner--alerta">
+            El pedido no tiene un área actual válida. Revisa el historial antes de continuar.
+          </div>
+        }
+      </section>
+    }
+
+    <!-- ═══ Contenido en 2 columnas ═══ -->
+    <div class="grid">
+      <div class="grid__col">
+        <!-- Cliente -->
+        <section class="card seccion" data-tour="detalle-cliente">
+          <div class="seccion__head">
+            <h4>Cliente</h4>
+            @if (!p.anulado) {
+              <button type="button" class="btn btn--ghost btn--sm" (click)="abrirEditarCliente()">
+                <app-icon name="edit" [size]="13"></app-icon> Editar
+              </button>
+            }
+          </div>
+          <strong class="cliente-nombre">{{ p.clienteNombre }}</strong>
+          <div class="cliente-contacto">
+            @if (p.clienteCelular) {
+              <span class="cliente-celular"><app-icon name="smartphone" [size]="13"></app-icon> {{ p.clienteCelular }}</span>
+              <button type="button" class="btn btn--wsp btn--sm" (click)="abrirWhatsapp(p)">
+                <app-icon name="whatsapp" [size]="14"></app-icon> WhatsApp
+              </button>
+            } @else {
+              <span class="hint">Sin celular registrado</span>
+            }
+          </div>
+          @if (p.clienteDni) { <p class="hint">DNI: {{ p.clienteDni }}</p> }
+          @if (esDomicilio() && !p.anulado) {
+            <button class="btn btn--outline-primary btn--block" [disabled]="enviandoLinkPago()" (click)="enviarLinkPago(p)">
+              {{ enviandoLinkPago() ? 'Generando enlace…' : 'Enviar link de seguimiento' }}
+            </button>
+            <p class="hint">El cliente ve el avance de su pedido desde su casa.</p>
+          }
+        </section>
+
+        <!-- Delivery -->
+        @if (p.modalidad === 'Delivery') {
+          <section class="card seccion">
+            <div class="seccion__head">
+              <h4><app-icon name="pin" [size]="14"></app-icon> Entrega a domicilio</h4>
+              @if (!p.anulado && p.estadoProceso !== 'ENTREGADO') {
+                <button type="button" class="btn btn--ghost btn--sm" (click)="abrirDestinoDelivery(p)">Editar</button>
+              }
+            </div>
+            <strong>{{ p.direccionEntrega || 'Dirección por confirmar' }}</strong>
+            <p class="hint">{{ p.distritoEntrega || 'Distrito por confirmar' }}</p>
+            @if (p.referenciaEntrega) { <p class="hint">Ref: {{ p.referenciaEntrega }}</p> }
+            @if (urlMapaPedido(p); as urlMapa) {
+              <a class="link-mapa" [href]="urlMapa" target="_blank" rel="noopener noreferrer">
+                <app-icon name="pin" [size]="12"></app-icon> Ver punto en el mapa
+              </a>
+            }
+
+            @if (!p.anulado) {
+              <label class="lbl-repartidor">Repartidor</label>
+              <select [ngModel]="p.motorizadoId ?? ''" (ngModelChange)="asignarMotorizado(p, $event)"
+                [disabled]="asignandoMotorizado()">
+                <option value="">Sin asignar</option>
+                @for (m of motorizadosActivos(); track m.id) {
+                  <option [value]="m.id">{{ m.nombre }}</option>
+                }
+              </select>
+              @if (p.motorizadoId) {
+                <div class="repartidor-acciones">
+                  <button type="button" class="btn btn--outline-primary btn--sm"
+                    [disabled]="generandoLinkRepartidor()" (click)="enviarLinkRepartidor(p)">
+                    <app-icon name="whatsapp" [size]="13"></app-icon> Link al repartidor
+                  </button>
+                  <button type="button" class="btn btn--ghost btn--sm"
+                    [disabled]="generandoLinkRepartidor()" (click)="copiarLinkRepartidor(p)">
+                    <app-icon name="clipboard" [size]="13"></app-icon> Copiar
+                  </button>
+                  @if (p.clienteCelular) {
+                    <button type="button" class="btn btn--outline-primary btn--sm"
+                      [disabled]="enviandoLinkPago()" (click)="avisarEnCaminoCliente(p)">
+                      <app-icon name="whatsapp" [size]="13"></app-icon> Avisar: va en camino
+                    </button>
+                  }
+                </div>
+              }
+            }
+          </section>
+        }
+      </div>
+
+      <div class="grid__col">
+        <!-- Resumen / ítems -->
+        <section class="card seccion">
+          <div class="seccion__head">
+            <h4>Resumen</h4>
+            @if (!p.anulado && p.estadoProceso !== 'ENTREGADO') {
+              <button type="button" class="btn btn--ghost btn--sm" (click)="abrirModalItem()">+ Agregar ítem</button>
+            }
+          </div>
+          <table class="tabla-items">
+            @for (it of p.items; track it.id) {
+              <tr>
+                <td class="cant">{{ it.cantidad }}</td>
+                <td>
+                  {{ it.servicioNombre }}
+                  @if (it.descripcion) { <div class="item-nota">{{ it.descripcion }}</div> }
+                </td>
+                <td class="num">S/ {{ it.total | number:'1.2-2' }}</td>
+              </tr>
+            }
+            @if (p.esUrgente) {
+              <tr class="fila-recargo">
+                <td colspan="2"><app-icon name="fire" [size]="12"></app-icon> Recargo urgente</td>
+                <td class="num">+ S/ {{ p.recargoUrgente | number:'1.2-2' }}</td>
+              </tr>
+            }
+            @if (p.descuento > 0) {
+              <tr class="fila-descuento">
+                <td colspan="2">Descuento</td>
+                <td class="num">− S/ {{ p.descuento | number:'1.2-2' }}</td>
+              </tr>
+            }
+            <tr class="fila-total">
+              <td colspan="2">Total</td>
+              <td class="num">S/ {{ p.total | number:'1.2-2' }}</td>
+            </tr>
+          </table>
+        </section>
+
+        <!-- Cobro -->
+        <section class="card seccion cobro" data-tour="detalle-pago" [class.cobro--debe]="saldoPendiente() > 0">
+          <div class="seccion__head">
+            <h4>Pago</h4>
+            <span class="chip-pago" [class]="'chip-pago--' + p.estadoPago.toLowerCase()">{{ p.estadoPago }}</span>
+          </div>
+          <div class="cobro__barra">
+            <div class="cobro__fill" [style.width.%]="p.total > 0 ? (p.montoPagado / p.total * 100) : 0"></div>
+          </div>
+          <div class="cobro__montos">
+            <span>Pagado <strong class="txt-verde">S/ {{ p.montoPagado | number:'1.2-2' }}</strong></span>
+            @if (saldoPendiente() > 0) {
+              <span class="cobro__debe">Debe <strong>S/ {{ saldoPendiente() | number:'1.2-2' }}</strong></span>
+            } @else {
+              <span class="txt-verde"><app-icon name="check" [size]="13"></app-icon> Pagado completo</span>
+            }
+          </div>
+          @if (saldoPendiente() > 0 && !p.anulado && p.estadoProceso !== 'LISTO' && p.estadoProceso !== 'ENTREGA_PARCIAL') {
+            <button class="btn btn--verde btn--block" (click)="abrirModalPago()">
+              <app-icon name="cash" [size]="14"></app-icon>
+              {{ p.estadoProceso === 'ENTREGADO' ? 'Cobrar saldo pendiente' : 'Cobrar' }} S/ {{ saldoPendiente() | number:'1.2-2' }}
+            </button>
+          }
+          @if (saldoPendiente() > 0 && (p.estadoProceso === 'LISTO' || p.estadoProceso === 'ENTREGA_PARCIAL')) {
+            <p class="hint">El cobro se hace al entregar (botón verde de "Acciones", más abajo). Puedes cobrar por partes y con varios métodos a la vez.</p>
+          }
+
+          <!-- Desglose de cobros: con qué pagó cada adelanto (efectivo, Yape, ...) -->
+          @if (pagos().length > 0) {
+            <div class="cobros">
+              <h5 class="cobros__titulo">Cobros registrados</h5>
+              <ul class="cobros__lista">
+                @for (pago of pagos(); track pago.id) {
+                  <li class="cobros__item">
+                    <span class="cobros__metodo" [class]="'cobros__metodo--' + pago.metodoPago.toLowerCase()">
+                      {{ etiquetaMetodo(pago.metodoPago) }}
+                    </span>
+                    <span class="cobros__fecha">{{ pago.fecha | date:'dd/MM/yy hh:mm a' }}</span>
+                    <strong class="cobros__monto">S/ {{ pago.monto | number:'1.2-2' }}</strong>
+                    @if (pago.usuarioNombre) {
+                      <small class="cobros__usuario">Cobró: {{ pago.usuarioNombre }}</small>
+                    }
+                  </li>
+                }
+              </ul>
+            </div>
+          } @else if (p.montoPagado > 0) {
+            <p class="hint">Este pedido tiene pagos anteriores al detalle por método.</p>
+          }
+        </section>
+
+        <!-- Entregas registradas (parciales + final) -->
+        @if (entregas().length > 0) {
+          <section class="card seccion entregas-card">
+            <div class="seccion__head"><h4><app-icon name="package" [size]="15"></app-icon> Entregas</h4></div>
+            <ul class="entregas-lista">
+              @for (e of entregas(); track e.id) {
+                <li class="entrega" [class.entrega--final]="e.esFinal">
+                  <div class="entrega__cab">
+                    <span class="entrega__tipo">{{ e.esFinal ? 'Entrega final' : 'Entrega parcial' }}</span>
+                    <span class="entrega__fecha">{{ e.fecha | date:'dd/MM/yy hh:mm a' }}</span>
+                  </div>
+                  @if (e.items.length > 0) {
+                    <div class="entrega__items">
+                      @for (d of e.items; track d.pedidoItemId) {
+                        <span class="entrega__chip">{{ d.cantidad }} {{ d.servicioUnidad }} · {{ d.servicioNombre }}</span>
+                      }
+                    </div>
+                  }
+                  <div class="entrega__pie">
+                    @if (e.montoCobrado > 0) { <span class="entrega__cobro">Cobró S/ {{ e.montoCobrado | number:'1.2-2' }}</span> }
+                    @if (e.recibidoPor) { <span class="entrega__recibio">Recibió: {{ e.recibidoPor }}</span> }
+                    @if (e.usuarioNombre) { <small class="entrega__user">Atendió: {{ e.usuarioNombre }}</small> }
+                  </div>
+                  @if (e.nota) { <p class="entrega__nota">{{ e.nota }}</p> }
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+    </div>
+
+    <!-- ═══ Acciones del pedido (todo visible, sin menús ocultos) ═══ -->
+    <section class="card acciones-pedido" data-tour="detalle-mas">
+      <h4 class="acciones-pedido__titulo">Acciones del pedido</h4>
+
+      @if (puedeAvanzar(p)) {
+        <button class="btn-principal" [class.btn-principal--entrega]="p.estadoProceso === 'LISTO' || p.estadoProceso === 'ENTREGA_PARCIAL'"
+          (click)="accionPrincipal(p)" [disabled]="avanzando()">
+          @if (p.estadoProceso === 'LISTO' || p.estadoProceso === 'ENTREGA_PARCIAL') { <app-icon name="package" [size]="20"></app-icon> }
+          {{ avanzando() ? 'Actualizando…' : accionPrincipalLabel(p) }}
+        </button>
+      }
+
+      <div class="acciones-pedido__secundarias">
+        <button type="button" class="btn btn--accion" (click)="imprimirTicket(p)">
+          <app-icon name="printer" [size]="18"></app-icon> Reimprimir ticket
+        </button>
+        @if (!p.anulado && saldoPendiente() === 0) {
+          <button type="button" class="btn btn--accion" [disabled]="emitiendoComprobante()" (click)="emitirComprobante('BOLETA')">
+            <app-icon name="note" [size]="18"></app-icon> Emitir Boleta
+          </button>
+          @if (!soloBoletas()) {
+            <button type="button" class="btn btn--accion" [disabled]="emitiendoComprobante()" (click)="emitirComprobante('FACTURA')">
+              <app-icon name="note" [size]="18"></app-icon> Emitir Factura
+            </button>
+          }
+        }
+        @if (!p.anulado && p.estadoProceso !== 'ENTREGADO') {
+          <button type="button" class="btn btn--accion" (click)="abrirModalFecha()">
+            <app-icon name="calendar" [size]="18"></app-icon> Cambiar fecha
+          </button>
+          @if (p.modalidad === 'Tienda') {
+            <button type="button" class="btn btn--accion" (click)="abrirDestinoDelivery(p)">
+              <app-icon name="pin" [size]="18"></app-icon> Convertir a Delivery
+            </button>
+          }
+          <button type="button" class="btn btn--accion btn--accion-peligro" (click)="abrirModalAnular()">
+            <app-icon name="ban" [size]="18"></app-icon> Anular pedido
+          </button>
+        }
+      </div>
+    </section>
+
+    <!-- ═══ Secundario, colapsado ═══ -->
+    @if (p.observaciones) {
+      <details class="card plegable" open>
+        <summary><app-icon name="note" [size]="13"></app-icon> Observaciones</summary>
+        <p class="plegable__texto">{{ p.observaciones }}</p>
+      </details>
+    }
+
+    <details class="card plegable">
+      <summary><app-icon name="camera" [size]="13"></app-icon> Fotos de evidencia ({{ fotosPedido().length }})</summary>
+      <div class="plegable__cuerpo">
+        @if (!p.anulado) {
+          <div class="fotos-subir">
+            <select [ngModel]="momentoFotoNueva()" (ngModelChange)="momentoFotoNueva.set($event)" aria-label="Momento de la foto">
+              <option value="RECEPCION">Recepción</option>
+              <option value="ENTREGA">Entrega</option>
+              <option value="OTRO">Otro</option>
+            </select>
+            <label class="btn btn--outline-primary btn--sm">
+              <app-icon name="camera" [size]="14"></app-icon>
+              {{ subiendoFoto() ? 'Subiendo…' : 'Tomar / subir' }}
+              <input type="file" accept="image/*" capture="environment" hidden
+                [disabled]="subiendoFoto()" (change)="onFotoSeleccionada($event)" />
+            </label>
+          </div>
+        }
+        @if (cargandoFotos()) {
+          <p class="hint">Cargando fotos…</p>
+        } @else if (fotosPedido().length === 0) {
+          <p class="hint">Aún no hay fotos. Toma una al revisar o al entregar las prendas.</p>
+        } @else {
+          <div class="fotos-grid">
+            @for (f of fotosPedido(); track f.id) {
+              <figure class="foto-mini">
+                @if (f.url) {
+                  <button type="button" class="foto-mini__ver" (click)="fotoAmpliada.set(f.url)"
+                    [attr.aria-label]="'Ampliar foto de ' + etiquetaMomento(f.momento)">
+                    <img [src]="f.url" [alt]="'Foto de ' + etiquetaMomento(f.momento)" loading="lazy" />
+                  </button>
+                } @else {
+                  <span class="foto-mini__cargando" aria-label="Cargando"></span>
+                }
+                <figcaption>{{ etiquetaMomento(f.momento) }}</figcaption>
+                @if (!p.anulado) {
+                  <button type="button" class="foto-mini__borrar" (click)="eliminarFoto(f.id)"
+                    title="Eliminar foto" aria-label="Eliminar foto"><app-icon name="close" [size]="12"></app-icon></button>
+                }
+              </figure>
+            }
+          </div>
+          <p class="hint"><app-icon name="info" [size]="12"></app-icon> El cliente también ve estas fotos en su enlace de seguimiento.</p>
+        }
+      </div>
+    </details>
+
+    <details class="card plegable">
+      <summary><app-icon name="clipboard" [size]="13"></app-icon> Historial ({{ historial().length }})</summary>
+      <div class="plegable__cuerpo">
+        @if (cargandoHistorial()) {
+          <p class="hint">Cargando historial…</p>
+        } @else if (historial().length === 0) {
+          <p class="hint">Sin registros aún.</p>
+        } @else {
+          <ul class="timeline">
+            @for (h of historial(); track h.id) {
+              <li class="timeline__item"
+                  [class.timeline__item--listo]="h.estadoProceso === 'LISTO'"
+                  [class.timeline__item--entregado]="h.estadoProceso === 'ENTREGADO'"
+                  [class.timeline__item--anulado]="h.estadoProceso === 'ANULADO'">
+                <div class="timeline__punto"></div>
+                <div class="timeline__contenido">
+                  <strong>{{ tituloHistorial(h) }}</strong>
+                  <span class="timeline__fecha">{{ h.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
+                  @if (h.nota) { <p>{{ h.nota }}</p> }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </details>
+  }
+</div>
+
+<!-- Modal: Registrar pago -->
+@if (modalPago()) {
+  <div class="modal-backdrop" (click)="cerrarModales()"></div>
+  <div class="modal-simple" role="dialog" aria-modal="true" aria-labelledby="titulo-pago-pedido">
+    <div class="modal-simple__head">
+      <h3 id="titulo-pago-pedido"><app-icon name="cash" [size]="15"></app-icon> Registrar pago</h3>
+      <button type="button" aria-label="Cerrar registro de pago" (click)="cerrarModales()"><app-icon name="close" [size]="15"></app-icon></button>
+    </div>
+    <div class="modal-simple__body">
+      <p class="modal-simple__info">Saldo pendiente: <strong>S/ {{ saldoPendiente() | number:'1.2-2' }}</strong></p>
+
+      <label for="pago-monto">Monto a cobrar</label>
+      <input id="pago-monto" type="number" step="0.01" min="0.01" inputmode="decimal"
+        [max]="saldoPendiente()" [(ngModel)]="pagoMonto" />
+
+      <label>Método de pago</label>
+      <div class="metodos">
+        <button type="button" class="metodo" [class.is-active]="pagoMetodo==='EFECTIVO'" (click)="pagoMetodo='EFECTIVO'"><app-icon name="cash" [size]="13"></app-icon> Efectivo</button>
+        <button type="button" class="metodo" [class.is-active]="pagoMetodo==='YAPE'" (click)="pagoMetodo='YAPE'"><app-icon name="smartphone" [size]="13"></app-icon> Yape</button>
+        <button type="button" class="metodo" [class.is-active]="pagoMetodo==='PLIN'" (click)="pagoMetodo='PLIN'"><app-icon name="smartphone" [size]="13"></app-icon> Plin</button>
+        <button type="button" class="metodo" [class.is-active]="pagoMetodo==='TRANSFERENCIA'" (click)="pagoMetodo='TRANSFERENCIA'"><app-icon name="bank" [size]="13"></app-icon> Transferencia</button>
+        <button type="button" class="metodo" [class.is-active]="pagoMetodo==='POS'" (click)="pagoMetodo='POS'"><app-icon name="credit-card" [size]="13"></app-icon> POS</button>
+      </div>
+
+      @if (pagoCompletaTotal()) {
+        <label><app-icon name="note" [size]="13"></app-icon> Comprobante a emitir</label>
+        <div class="metodos">
+          <button type="button" class="metodo" [class.is-active]="pagoComprobante==='BOLETA'" (click)="pagoComprobante='BOLETA'"><app-icon name="note" [size]="13"></app-icon> Boleta</button>
+          @if (!soloBoletas()) {
+            <button type="button" class="metodo" [class.is-active]="pagoComprobante==='FACTURA'" (click)="pagoComprobante='FACTURA'"><app-icon name="note" [size]="13"></app-icon> Factura</button>
+          }
+          <button type="button" class="metodo" [class.is-active]="pagoComprobante==='NINGUNO'" (click)="pagoComprobante='NINGUNO'"><app-icon name="ban" [size]="13"></app-icon> Sin comprobante</button>
+        </div>
+        @if (pagoComprobante==='FACTURA') {
+          <p class="modal-simple__hint">La factura requiere que el cliente tenga RUC registrado.</p>
+        }
+      }
+
+      <div class="modal-simple__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarModales()">Cancelar</button>
+        <button type="button" class="btn btn--verde"
+          [disabled]="procesando() || pagoMonto <= 0 || pagoMonto > saldoPendiente()" (click)="confirmarPago()">
+          {{ textoBotonPago() }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal: Entrega (parcial o final) + cobro mixto -->
+@if (modalEntrega()) {
+  <div class="modal-backdrop" (click)="cerrarModalEntrega()"></div>
+  <div class="modal-simple modal-entrega" role="dialog" aria-modal="true" aria-labelledby="titulo-entrega-pedido">
+    <div class="modal-simple__head">
+      <h3 id="titulo-entrega-pedido"><app-icon name="package" [size]="15"></app-icon> Entregar / cobrar</h3>
+      <button type="button" aria-label="Cerrar entrega" (click)="cerrarModalEntrega()"><app-icon name="close" [size]="15"></app-icon></button>
+    </div>
+    <div class="modal-simple__body">
+
+      <!-- ── Prendas a entregar ── -->
+      <div class="ent-bloque">
+        <div class="ent-bloque__head">
+          <h4><app-icon name="package" [size]="14"></app-icon> Prendas a entregar ahora</h4>
+        </div>
+        @if (entregaItems().length > 0) {
+          <p class="hint">El cliente puede llevarse una parte ahora y el resto en otra visita. Ajusta la cantidad de cada prenda.</p>
+          <ul class="ent-items">
+            @for (it of entregaItems(); track it.pedidoItemId; let i = $index) {
+              <li class="ent-item">
+                <div class="ent-item__info">
+                  <span class="ent-item__nombre">{{ it.servicioNombre }}</span>
+                  <span class="ent-item__pend">Pendiente: <strong>{{ it.pendiente }}</strong> {{ it.unidad }}</span>
+                </div>
+                <div class="ent-item__control">
+                  <input type="number" step="0.01" min="0" [max]="it.pendiente" inputmode="decimal"
+                    [ngModel]="it.cantidad" (ngModelChange)="setCantidadItem(i, $event)" aria-label="Cantidad a entregar" />
+                  <button type="button" class="btn-mini" (click)="entregarTodoItem(i)">Todo</button>
+                </div>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="modal-simple__info">
+            <app-icon name="check" [size]="14"></app-icon> Ya se entregaron todas las prendas de este pedido. Puedes registrar solo el cobro del saldo.
+          </p>
+        }
+      </div>
+
+      <!-- ── Cobro (pago mixto) ── -->
+      <div class="ent-bloque">
+        <div class="ent-bloque__head">
+          <h4><app-icon name="cash" [size]="14"></app-icon> Cobro</h4>
+          @if (saldoPendiente() > 0) {
+            <span class="ent-saldo">Saldo: <strong>S/ {{ saldoPendiente() | number:'1.2-2' }}</strong></span>
+          } @else {
+            <span class="ent-saldo ent-saldo--ok"><app-icon name="check" [size]="12"></app-icon> Pagado completo</span>
+          }
+        </div>
+
+        @if (saldoPendiente() > 0) {
+          <p class="hint">Puedes cobrar con varios métodos a la vez (ej. parte efectivo, parte Yape) o cobrar solo una parte.</p>
+          @for (linea of entregaPagos(); track $index; let i = $index) {
+            <div class="ent-pago">
+              <select class="ent-pago__metodo" [ngModel]="linea.metodo" (ngModelChange)="setMetodoPago(i, $event)" aria-label="Método de pago">
+                @for (m of metodosPago; track m.v) {
+                  <option [value]="m.v">{{ m.nombre }}</option>
+                }
+              </select>
+              <div class="ent-pago__monto">
+                <span>S/</span>
+                <input type="number" step="0.01" min="0" inputmode="decimal"
+                  [ngModel]="linea.monto" (ngModelChange)="setMontoPago(i, $event)" aria-label="Monto" />
+              </div>
+              <button type="button" class="btn-mini btn-mini--x" aria-label="Quitar" (click)="quitarLineaPago(i)"><app-icon name="close" [size]="13"></app-icon></button>
+            </div>
+          }
+          <button type="button" class="btn-agregar-pago" (click)="agregarLineaPago()">
+            <app-icon name="plus" [size]="13"></app-icon> Agregar otra forma de pago
+          </button>
+
+          <div class="ent-resumen">
+            <div class="ent-resumen__fila"><span>Total a cobrar ahora</span><strong>S/ {{ totalCobroEntrega() | number:'1.2-2' }}</strong></div>
+            @if (saldoRestanteEntrega() > 0.01) {
+              <div class="ent-resumen__fila ent-resumen__fila--debe">
+                <span><app-icon name="warning" [size]="13"></app-icon> Quedará por cobrar</span>
+                <strong>S/ {{ saldoRestanteEntrega() | number:'1.2-2' }}</strong>
+              </div>
+              <p class="hint">Se entregan las prendas y el saldo queda registrado como “por cobrar”. Podrás cobrarlo después.</p>
+            } @else if (totalCobroEntrega() > 0) {
+              <div class="ent-resumen__fila ent-resumen__fila--ok"><span><app-icon name="check" [size]="13"></app-icon> Queda pagado completo</span></div>
+            }
+          </div>
+        } @else {
+          <p class="modal-simple__info">Este pedido ya está pagado por completo.</p>
+        }
+      </div>
+
+      <!-- ── Quién recibe + nota ── -->
+      <div class="ent-bloque">
+        <label>¿Quién recoge? <small class="hint">(por defecto el titular)</small></label>
+        <input type="text" maxlength="120" [(ngModel)]="recibidoPor" [placeholder]="pedido()?.clienteNombre || 'Nombre de la persona que recibe'" />
+        <label>Nota de la entrega <small class="hint">(opcional)</small></label>
+        <input type="text" maxlength="300" [(ngModel)]="entregaNota" placeholder="Ej. Se lleva 2 sábanas; falta 1 frazada" />
+      </div>
+
+      <div class="modal-simple__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarModalEntrega()">Cancelar</button>
+        <button type="button" class="btn btn--verde" [disabled]="procesando()" (click)="confirmarEntregaNueva()">
+          @if (procesando()) { Procesando… }
+          @else if (esEntregaFinal()) {
+            {{ saldoRestanteEntrega() > 0.01 ? 'Entregar todo (queda saldo)' : 'Entregar y cerrar' }}
+          } @else {
+            Registrar entrega parcial
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal: editar datos del cliente -->
+@if (modalCliente()) {
+  <div class="modal-backdrop" (click)="cerrarModalCliente()"></div>
+  <div class="modal-simple" role="dialog" aria-modal="true" aria-labelledby="titulo-editar-cliente">
+    <div class="modal-simple__head">
+      <h3 id="titulo-editar-cliente"><app-icon name="edit" [size]="15"></app-icon> Editar cliente</h3>
+      <button type="button" aria-label="Cerrar" (click)="cerrarModalCliente()"><app-icon name="close" [size]="15"></app-icon></button>
+    </div>
+    <div class="modal-simple__body">
+      <p class="hint">Los cambios actualizan la ficha del cliente en todo el sistema, no solo en este pedido.</p>
+
+      <label>Nombre *</label>
+      <input type="text" maxlength="120" [(ngModel)]="clienteForm.nombre" placeholder="Nombre completo" [disabled]="cargandoCliente()" />
+
+      <label>Celular</label>
+      <app-telefono-pais [(ngModel)]="clienteForm.celular" name="clienteCelular" inputId="cliente-celular"></app-telefono-pais>
+
+      <label>DNI</label>
+      <input type="text" inputmode="numeric" maxlength="15" [(ngModel)]="clienteForm.dni" placeholder="DNI (opcional)" [disabled]="cargandoCliente()" />
+
+      <label>Documento fiscal (RUC)</label>
+      <input type="text" inputmode="numeric" maxlength="11" [(ngModel)]="clienteForm.documentoFiscal" placeholder="RUC de 11 dígitos (opcional)" [disabled]="cargandoCliente()" />
+
+      <label>Dirección</label>
+      <input type="text" maxlength="250" [(ngModel)]="clienteForm.direccion" placeholder="Dirección (opcional)" [disabled]="cargandoCliente()" />
+
+      <div class="modal-simple__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarModalCliente()">Cancelar</button>
+        <button type="button" class="btn btn--primario" [disabled]="guardandoCliente() || cargandoCliente()" (click)="guardarCliente()">
+          {{ guardandoCliente() ? 'Guardando…' : 'Guardar cambios' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal: destino de Delivery -->
+@if (modalDestinoDelivery()) {
+  <div class="modal-backdrop" (click)="cerrarDestinoDelivery()"></div>
+  <div class="modal-simple modal-simple--destino" role="dialog" aria-modal="true" aria-labelledby="titulo-convertir-delivery">
+    <div class="modal-simple__head">
+      <h3 id="titulo-convertir-delivery"><app-icon name="pin" [size]="15"></app-icon> Destino de entrega</h3>
+      <button type="button" (click)="cerrarDestinoDelivery()" aria-label="Cerrar"><app-icon name="close" [size]="15"></app-icon></button>
+    </div>
+    <div class="modal-simple__body">
+      <p class="modal-simple__info">
+        Este destino pertenece al pedido #{{ pedido()?.numero }}. No modifica la dirección habitual del cliente.
+      </p>
+
+      <label for="direccion-conversion">Dirección exacta *</label>
+      <input id="direccion-conversion" type="text" maxlength="250"
+             placeholder="Av., calle, número, Mz., lote, urbanización"
+             [ngModel]="direccionEntregaConversion"
+             (ngModelChange)="actualizarDireccionConversion($event)" />
+
+      <label for="distrito-conversion">Distrito *</label>
+      <input id="distrito-conversion" type="text" maxlength="100" list="distritos-conversion-sugeridos"
+             placeholder="Escribe o selecciona un distrito"
+             [ngModel]="distritoEntregaConversion"
+             (ngModelChange)="actualizarDistritoConversion($event)" />
+      <datalist id="distritos-conversion-sugeridos">
+        @for (distrito of distritos; track distrito) {
+          <option [value]="distrito"></option>
+        }
+      </datalist>
+
+      <label for="referencia-conversion">Referencia <small class="hint">(recomendado)</small></label>
+      <input id="referencia-conversion" type="text" maxlength="250"
+             placeholder="Fachada, piso, puerta o lugar cercano"
+             [(ngModel)]="referenciaEntregaConversion" />
+
+      <app-mapa-ubicacion
+        [latitud]="latitudEntregaConversion"
+        [longitud]="longitudEntregaConversion"
+        [direccion]="direccionEntregaConversion"
+        [distrito]="distritoEntregaConversion"
+        [confirmada]="ubicacionConversionConfirmada"
+        (ubicacionChange)="actualizarUbicacionConversion($event)">
+      </app-mapa-ubicacion>
+
+      <div class="modal-simple__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarDestinoDelivery()">Cancelar</button>
+        <button type="button" class="btn btn--primario"
+                [disabled]="convirtiendoDelivery() || !direccionEntregaConversion.trim() || !distritoEntregaConversion || !ubicacionConversionConfirmada"
+                (click)="confirmarConversionDelivery()">
+          {{ convirtiendoDelivery() ? 'Guardando...' : (pedido()?.modalidad === 'Delivery' ? 'Guardar destino' : 'Guardar y convertir') }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal: Agregar ítem -->
+@if (modalItem()) {
+  <div class="modal-backdrop" (click)="cerrarModales()"></div>
+  <div class="modal-simple" role="dialog" aria-modal="true" aria-labelledby="titulo-item-pedido">
+    <div class="modal-simple__head">
+      <h3 id="titulo-item-pedido"><app-icon name="plus" [size]="14"></app-icon> Agregar ítem al pedido</h3>
+      <button type="button" aria-label="Cerrar nuevo ítem" (click)="cerrarModales()"><app-icon name="close" [size]="15"></app-icon></button>
+    </div>
+    <div class="modal-simple__body">
+      <label>Servicio</label>
+      <select [(ngModel)]="itemServicioId">
+        <option [ngValue]="''" disabled>Escoge…</option>
+        @for (s of servicios(); track s.id) {
+          <option [ngValue]="s.id">{{ s.nombre }} — S/ {{ s.precio }} / {{ s.unidad }}</option>
+        }
+      </select>
+
+      <label>Cantidad</label>
+      <input type="number" step="0.01" min="0.01" max="10000" inputmode="decimal" [(ngModel)]="itemCantidad" />
+
+      <label>Observación <small class="hint">(opcional)</small></label>
+      <input type="text" maxlength="200" placeholder="Ej. mancha de aceite manga izquierda" [(ngModel)]="itemDescripcion" />
+
+      <div class="modal-simple__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarModales()">Cancelar</button>
+        <button type="button" class="btn btn--primario"
+          [disabled]="procesando() || !itemServicioId || itemCantidad <= 0 || itemCantidad > 10000" (click)="confirmarAgregarItem()">
+          {{ procesando() ? 'Agregando…' : 'Agregar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal: Cambiar fecha de entrega -->
+@if (modalFecha()) {
+  <div class="modal-backdrop" (click)="cerrarModales()"></div>
+  <div class="modal-simple" role="dialog" aria-modal="true" aria-labelledby="titulo-fecha-pedido">
+    <div class="modal-simple__head">
+      <h3 id="titulo-fecha-pedido"><app-icon name="calendar" [size]="15"></app-icon> Cambiar {{ pedido()?.modalidad === 'Delivery' ? 'fecha de entrega' : 'fecha de recojo' }}</h3>
+      <button type="button" aria-label="Cerrar cambio de fecha" (click)="cerrarModales()"><app-icon name="close" [size]="15"></app-icon></button>
+    </div>
+    <div class="modal-simple__body">
+      @if (pedido()?.fechaEntregaEst) {
+        <p class="modal-simple__info">
+          Fecha actual: <strong>{{ pedido()!.fechaEntregaEst | date:'EEE d MMM, h:mm a' }}</strong>
+        </p>
+      }
+
+      <label>Nueva fecha y hora</label>
+      <input type="datetime-local" [min]="fechaEntregaMinima" [(ngModel)]="fechaEntregaNueva" />
+
+      <div class="presets-modal">
+        <button type="button" (click)="presetFechaEntrega(2)">En 2h</button>
+        <button type="button" (click)="presetFechaEntrega(4)">En 4h</button>
+        <button type="button" (click)="presetFechaEntrega(24)">En 24h</button>
+        <button type="button" (click)="presetFechaMananaHora(10)">Mañana 10am</button>
+        <button type="button" (click)="presetFechaMananaHora(18)">Mañana 6pm</button>
+      </div>
+
+      <label>Motivo (opcional)</label>
+      <textarea rows="2" maxlength="200" [(ngModel)]="motivoCambioFecha"
+                placeholder="Ej: falta de agua, corte de luz, cliente pidió postergar, etc."></textarea>
+      <p class="modal-simple__hint">Se registra en el historial del pedido.</p>
+
+      <div class="modal-simple__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarModales()">Cancelar</button>
+        <button type="button" class="btn btn--primario" [disabled]="procesando() || !fechaEntregaNueva" (click)="confirmarCambioFecha()">
+          {{ procesando() ? 'Guardando…' : 'Guardar cambio' }}
+        </button>
+      </div>
+
+      @if (pedido()?.clienteCelular) {
+        <button class="btn btn--wsp-full" (click)="avisarCambioFechaWhatsapp(pedido()!)">
+          <app-icon name="phone-alert" [size]="14"></app-icon> Avisar al cliente por WhatsApp
+        </button>
+      }
+    </div>
+  </div>
+}
+
+<!-- Modal: Anular pedido -->
+@if (modalAnular()) {
+  <div class="modal-backdrop" (click)="cerrarModales()"></div>
+  <div class="modal-simple" role="alertdialog" aria-modal="true" aria-labelledby="titulo-anular-pedido">
+    <div class="modal-simple__head">
+      <h3 id="titulo-anular-pedido"><app-icon name="ban" [size]="15"></app-icon> Anular pedido</h3>
+      <button type="button" aria-label="Cerrar anulación" (click)="cerrarModales()"><app-icon name="close" [size]="15"></app-icon></button>
+    </div>
+    <div class="modal-simple__body">
+      <p class="modal-simple__info modal-simple__info--alerta">
+        Esta acción no se puede deshacer. El pedido quedará como <strong>ANULADO</strong>
+        pero se conservará en el historial.
+      </p>
+
+      @if ((pedido()?.montoPagado ?? 0) > 0) {
+        <p class="modal-simple__info modal-simple__info--alerta">
+          <app-icon name="warning" [size]="14"></app-icon> <strong>Este pedido tiene pagos registrados por S/ {{ (pedido()?.montoPagado ?? 0) | number:'1.2-2' }}.</strong><br>
+          Al anular deberás gestionar el reembolso manualmente con el cliente. El sistema NO revierte el pago automáticamente.
+        </p>
+      }
+
+      <label>Motivo de anulación *</label>
+      <textarea rows="3" minlength="3" maxlength="200" [(ngModel)]="motivoAnulacion"
+                placeholder="Ej: Cliente canceló, error en registro, etc."></textarea>
+
+      <div class="modal-simple__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarModales()">Cancelar</button>
+        <button type="button" class="btn btn--danger" [disabled]="procesando() || motivoAnulacion.trim().length < 3" (click)="confirmarAnular()">
+          {{ procesando() ? 'Anulando…' : 'Sí, anular' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Visor de foto ampliada -->
+@if (fotoAmpliada(); as urlFoto) {
+  <div class="foto-lightbox" (click)="fotoAmpliada.set(null)">
+    <button type="button" class="foto-lightbox__cerrar" (click)="fotoAmpliada.set(null)" aria-label="Cerrar foto">
+      <app-icon name="close" [size]="20"></app-icon>
+    </button>
+    <img [src]="urlFoto" alt="Foto de evidencia ampliada" (click)="$event.stopPropagation()" />
+  </div>
+}

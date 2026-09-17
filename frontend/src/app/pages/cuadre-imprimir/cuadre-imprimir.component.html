@@ -1,0 +1,168 @@
+<div class="acciones-print">
+  <div class="acciones-print__inner">
+    <button class="btn btn--primario" (click)="imprimir()"><app-icon name="printer" [size]="16"></app-icon> Imprimir</button>
+    <button class="btn btn--wsp" (click)="enviarWhatsapp()" [disabled]="!cuadre()"><app-icon name="whatsapp" [size]="16"></app-icon> WhatsApp</button>
+    <button class="btn btn--mail" (click)="enviarCorreo()" [disabled]="!cuadre() || generandoPdf()">
+      <app-icon name="mail" [size]="16"></app-icon> {{ generandoPdf() ? 'Preparando…' : 'Correo' }}
+    </button>
+    <button class="btn btn--ghost" (click)="cerrar()">Cerrar</button>
+  </div>
+</div>
+
+<div class="doc-wrap">
+  @if (cargando()) {
+    <p class="msg">Cargando cuadre…</p>
+  } @else if (error()) {
+    <p class="msg error">{{ error() }}</p>
+  } @else if (cuadre()) {
+    @if (cuadre(); as c) {
+    <div class="doc">
+      <header class="doc__header">
+        <div class="doc__brand">
+          @if (logoImpresion()) {
+            <img [src]="logoImpresion()" [alt]="negocio().nombreNegocio" />
+          }
+          <div>
+            <h1>{{ negocio().nombreNegocio }}</h1>
+            @if (negocio().direccion) { <p>{{ negocio().direccion }}</p> }
+            @if (negocio().telefono) { <p>Tel: {{ negocio().telefono }}</p> }
+            @if (negocio().ruc) { <p>RUC: {{ negocio().ruc }}</p> }
+          </div>
+        </div>
+        <div class="doc__meta">
+          <h2>CUADRE DE CAJA</h2>
+          <p><strong>Fecha:</strong> {{ c.fecha | date:'EEEE d MMMM y' }}</p>
+          <p><strong>Responsable:</strong> {{ c.usuarioNombre || '—' }}</p>
+          <p><strong>Generado:</strong> {{ c.fechaCreacion | date:'d/M/y HH:mm' }}</p>
+          <p><strong>Cuadre N°:</strong> #{{ c.id }}</p>
+        </div>
+      </header>
+
+      <!-- Estado grande -->
+      <div class="estado-box" [class]="'estado-box--' + estado().toLowerCase()">
+        <div>
+          <span class="estado-box__label">RESULTADO</span>
+          <strong>{{ estado() }}</strong>
+        </div>
+        <div class="estado-box__monto">
+          @if (estado() === 'CUADRA') {
+            <span>Cuadre exacto</span>
+          } @else if (estado() === 'SOBRA') {
+            <span>Sobra <strong>S/ {{ c.diferencia | number:'1.2-2' }}</strong></span>
+          } @else {
+            <span>Falta <strong>S/ {{ (c.diferencia * -1) | number:'1.2-2' }}</strong></span>
+          }
+        </div>
+      </div>
+
+      <!-- Tablas de datos -->
+      <div class="grid-2">
+        <section class="bloque">
+          <h3>Movimientos del día</h3>
+          <table>
+            <tr>
+              <td>Caja inicial</td>
+              <td class="right">S/ {{ c.cajaInicial | number:'1.2-2' }}</td>
+            </tr>
+            <tr>
+              <td>+ Pedidos pagados (efectivo)</td>
+              <td class="right">S/ {{ c.pedidosPagadosEfect | number:'1.2-2' }}</td>
+            </tr>
+            <tr>
+              <td>− Gastos en efectivo</td>
+              <td class="right">S/ {{ c.gastos | number:'1.2-2' }}</td>
+            </tr>
+            <tr class="total">
+              <td>= En caja debería haber</td>
+              <td class="right">S/ {{ (c.cajaInicial + c.pedidosPagadosEfect - c.gastos) | number:'1.2-2' }}</td>
+            </tr>
+          </table>
+        </section>
+
+        <section class="bloque">
+          <h3>Conteo físico</h3>
+          <table>
+            <tr>
+              <td>Total contado</td>
+              <td class="right">S/ {{ c.totalContado | number:'1.2-2' }}</td>
+            </tr>
+            <tr>
+              <td>Debería haber</td>
+              <td class="right">S/ {{ (c.cajaInicial + c.pedidosPagadosEfect - c.gastos) | number:'1.2-2' }}</td>
+            </tr>
+            <tr class="total" [class.total--rojo]="c.diferencia < 0" [class.total--naranja]="c.diferencia > 0.01">
+              <td>Diferencia</td>
+              <td class="right">
+                @if (c.diferencia > 0) { + }
+                S/ {{ c.diferencia | number:'1.2-2' }}
+              </td>
+            </tr>
+          </table>
+        </section>
+      </div>
+
+      <!-- Cierre: corte y caja final -->
+      <section class="bloque">
+        <h3>Cierre de caja</h3>
+        <table>
+          <tr>
+            <td>Corte (efectivo entregado)</td>
+            <td class="right">S/ {{ c.corte | number:'1.2-2' }}</td>
+          </tr>
+          <tr class="total">
+            <td>Caja final (queda para el día siguiente)</td>
+            <td class="right">S/ {{ c.cajaFinal | number:'1.2-2' }}</td>
+          </tr>
+        </table>
+      </section>
+
+      @if (c.ingresosDigital > 0 || c.ingresosTarjeta > 0) {
+        <section class="bloque">
+          <h3>Ingresos digitales <small>(no pasan por la caja física)</small></h3>
+          <table>
+            <tr>
+              <td>Transferencia móvil (Yape / Plin / Transferencia)</td>
+              <td class="right">S/ {{ c.ingresosDigital | number:'1.2-2' }}</td>
+            </tr>
+            <tr>
+              <td>Tarjeta / POS</td>
+              <td class="right">S/ {{ c.ingresosTarjeta | number:'1.2-2' }}</td>
+            </tr>
+          </table>
+        </section>
+      }
+
+      @if (c.nota) {
+        <section class="obs">
+          <h3>Nota</h3>
+          <p>{{ c.nota }}</p>
+        </section>
+      }
+
+      @if (c.observaciones) {
+        <section class="obs">
+          <h3>Observaciones</h3>
+          <p>{{ c.observaciones }}</p>
+        </section>
+      }
+
+      <!-- Firma -->
+      <div class="firmas">
+        <div class="firma">
+          <div class="firma__linea"></div>
+          <p>Responsable de caja</p>
+          <p class="firma__nombre">{{ c.usuarioNombre || '' }}</p>
+        </div>
+        <div class="firma">
+          <div class="firma__linea"></div>
+          <p>Administrador</p>
+        </div>
+      </div>
+
+      <footer class="doc__footer">
+        <span>Documento generado por {{ negocio().nombreNegocio }} · {{ c.fechaCreacion | date:'d/M/y HH:mm' }}</span>
+      </footer>
+    </div>
+    }
+  }
+</div>

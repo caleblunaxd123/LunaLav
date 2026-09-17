@@ -1,0 +1,8 @@
+<span class="info-tooltip" (mouseleave)="cerrar()">
+  <button type="button" class="info-tooltip__btn" (click)="toggle()" [attr.aria-label]="texto" (mouseenter)="abierto.set(true)">
+    <app-icon name="info" [size]="14"></app-icon>
+  </button>
+  @if (abierto()) {
+    <span class="info-tooltip__burbuja">{{ texto }}</span>
+  }
+</span>

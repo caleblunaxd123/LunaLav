@@ -1,0 +1,30 @@
+
+/* Banner "hay nueva versión, recargar" (arriba de todo). */
+.update-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 16px;
+  background: linear-gradient(120deg, #053465, #0a4a7a);
+  color: #fff; font-size: 13.5px;
+  box-shadow: 0 2px 12px rgba(5, 52, 101, .35);
+
+  &__dot {
+    width: 9px; height: 9px; border-radius: 50%; background: #FCD76F; flex-shrink: 0;
+    box-shadow: 0 0 0 0 rgba(252, 215, 111, .7); animation: upd-pulse 1.8s infinite;
+  }
+  &__text { flex: 1; }
+  &__btn {
+    flex-shrink: 0; border: none; cursor: pointer;
+    background: #FCD76F; color: #053465; font-weight: 800; font-size: 13px;
+    padding: 7px 16px; border-radius: 8px;
+    transition: transform .12s, filter .12s;
+    &:hover { transform: translateY(-1px); filter: brightness(1.05); }
+  }
+}
+@keyframes upd-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(252, 215, 111, .7); }
+  70% { box-shadow: 0 0 0 8px rgba(252, 215, 111, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(252, 215, 111, 0); }
+}
+/* Cuando el banner está visible, empuja el contenido para no taparlo. */
+body:has(.update-banner) .mtop { top: 40px; }

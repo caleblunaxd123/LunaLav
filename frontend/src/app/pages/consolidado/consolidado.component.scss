@@ -1,0 +1,92 @@
+.page { padding: 20px 24px; max-width: 1000px; margin: 0 auto; }
+
+.page__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+
+  h2 { margin: 0; font-size: 20px; }
+  p  { margin: 4px 0 0; color: #64748b; font-size: 13px; }
+}
+
+.volver {
+  background: transparent;
+  border: 1px solid var(--gris-borde);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gris-texto);
+  cursor: pointer;
+
+  &:hover { background: #eef4ff; color: var(--azul-oscuro); border-color: var(--azul-oscuro); }
+}
+
+.estado { padding: 24px; text-align: center; color: #64748b; }
+.estado--error { color: #c0392b; }
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.kpi {
+  background: #fff;
+  border: 1px solid var(--gris-borde);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &__valor { font-size: 22px; font-weight: 800; color: var(--azul-oscuro); }
+  &__label { font-size: 11.5px; color: #64748b; }
+
+  &--alerta {
+    background: #fff5f5;
+    border-color: #fecaca;
+    .kpi__valor { color: #dc2626; }
+  }
+}
+
+.tabla-wrap { padding: 8px; overflow-x: auto; }
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    color: #718096;
+    font-size: 11px;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--gris-borde);
+  }
+
+  td { padding: 10px 12px; border-bottom: 1px solid var(--gris-borde); }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .sede { font-weight: 600; }
+  .txt-deuda { color: #dc2626; font-weight: 700; }
+
+  tfoot td {
+    font-weight: 700;
+    border-top: 2px solid var(--gris-borde);
+    border-bottom: none;
+    color: var(--azul-oscuro);
+  }
+}
+
+@media (max-width: 720px) {
+  .page { padding: 14px; }
+  .kpis { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 720px) {
+  .card.tabla-wrap { display: none; }
+  .cards-rep { display: flex; }
+}

@@ -1,0 +1,270 @@
+<div class="page">
+  <app-page-header icono="settings" color="azul" titulo="Configuración del negocio" subtitulo="Nombre, logo, colores e información fiscal." volverTexto="Ajustes" (volver)="volver()"></app-page-header>
+
+  <!-- Preview de marca en vivo -->
+  <div class="preview" [style]="previewStyle()">
+    <div class="preview__brand">
+      @if (form().logoUrl) {
+        <img [src]="form().logoUrl" [alt]="form().nombreNegocio" />
+      } @else {
+        <div class="preview__logo-fallback">💧</div>
+      }
+      <div>
+        <strong>{{ form().nombreNegocio || 'Nombre del negocio' }}</strong>
+        <span>Vista previa · así lo verán tus clientes</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cómo se verá el sistema con estos colores, antes de guardar -->
+  <div class="card simulacion">
+    <h3>Así se verá tu sistema</h3>
+    <div class="simulacion__pantallas">
+
+      <!-- Menú lateral -->
+      <div class="sim">
+        <span class="sim__rotulo">Menú lateral</span>
+        <div class="sim__marco">
+          <div class="sim__sidebar" [style.background]="form().colorPrimario">
+            <div class="sim__logo">
+              @if (form().logoUrl) {
+                <img [src]="form().logoUrl" alt="" />
+              } @else {
+                <span class="sim__logo-fallback">💧</span>
+              }
+            </div>
+            <span class="sim__item sim__item--activo" [style.background]="form().colorSecundario">Inicio</span>
+            <span class="sim__item">Pedidos</span>
+            <span class="sim__item">Registrar</span>
+            <span class="sim__item">Clientes</span>
+          </div>
+          <div class="sim__cuerpo">
+            <span class="sim__titulo" [style.color]="form().colorPrimario">Pedidos de hoy</span>
+            <span class="sim__linea"></span>
+            <span class="sim__linea sim__linea--corta"></span>
+            <span class="sim__btn" [style.background]="form().colorPrimario">+ Nuevo pedido</span>
+            <span class="sim__btn sim__btn--acento" [style.background]="form().colorAcento">Cobrar</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pantalla de ingreso -->
+      <div class="sim">
+        <span class="sim__rotulo">Pantalla de ingreso</span>
+        <div class="sim__marco sim__marco--login">
+          <div class="sim__login-panel" [style.background]="form().colorPrimario">
+            @if (form().logoUrl) {
+              <img [src]="form().logoUrl" alt="" />
+            } @else {
+              <strong>{{ form().nombreNegocio || 'Tu lavandería' }}</strong>
+            }
+          </div>
+          <div class="sim__login-form">
+            <span class="sim__campo"></span>
+            <span class="sim__campo"></span>
+            <span class="sim__btn" [style.background]="form().colorPrimario">Ingresar</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="contraste" [class.contraste--mal]="!contrasteOk()">
+      <app-icon [name]="contrasteOk() ? 'check' : 'warning'" [size]="15"></app-icon>
+      {{ contrasteTexto() }}
+    </p>
+  </div>
+
+  <div class="secciones">
+    <div class="card seccion">
+      <h3>Identidad</h3>
+
+      <label>Nombre del negocio *</label>
+      <input type="text" [ngModel]="form().nombreNegocio"
+             (ngModelChange)="actualizarCampo('nombreNegocio', $event)"
+             placeholder="Mi Lavandería" />
+
+      <label>Logo del negocio</label>
+      <div class="logo-zona" [class.logo-zona--arrastrando]="arrastrando()"
+           (dragover)="onDragOver($event)" (dragleave)="arrastrando.set(false)" (drop)="onDrop($event)">
+        @if (form().logoUrl) {
+          <img class="logo-zona__preview" [src]="form().logoUrl" [alt]="form().nombreNegocio" />
+        } @else {
+          <div class="logo-zona__vacio"><app-icon name="camera" [size]="26"></app-icon></div>
+        }
+
+        <div class="logo-zona__acciones">
+          <button type="button" class="btn btn--secundario btn--sm" [disabled]="subiendoLogo()" (click)="archivoLogo.click()">
+            <app-icon name="clipboard" [size]="14"></app-icon>
+            {{ subiendoLogo() ? 'Subiendo…' : (form().logoUrl ? 'Cambiar logo' : 'Elegir imagen') }}
+          </button>
+          @if (form().logoUrl) {
+            <button type="button" class="btn btn--sm btn--eliminar" [disabled]="subiendoLogo()" (click)="quitarLogo()">
+              <app-icon name="trash" [size]="14"></app-icon> Quitar
+            </button>
+          }
+          <p class="hint">Elige una imagen de tu computadora o arrástrala aquí. JPG, PNG o WEBP, hasta 2 MB.</p>
+        </div>
+
+        <input #archivoLogo type="file" accept="image/png,image/jpeg,image/webp" hidden
+               (change)="onArchivoLogo($event)" />
+      </div>
+      @if (errorLogo()) {
+        <p class="hint hint--error">{{ errorLogo() }}</p>
+      }
+
+      <div class="colores">
+        <div class="color-picker">
+          <label>Color primario</label>
+          <div class="color-picker__row">
+            <input type="color" [ngModel]="form().colorPrimario"
+                   (ngModelChange)="actualizarCampo('colorPrimario', $event)" />
+            <input type="text" [ngModel]="form().colorPrimario"
+                   (ngModelChange)="actualizarCampo('colorPrimario', $event)"
+                   maxlength="9" />
+          </div>
+        </div>
+        <div class="color-picker">
+          <label>Color secundario</label>
+          <div class="color-picker__row">
+            <input type="color" [ngModel]="form().colorSecundario"
+                   (ngModelChange)="actualizarCampo('colorSecundario', $event)" />
+            <input type="text" [ngModel]="form().colorSecundario"
+                   (ngModelChange)="actualizarCampo('colorSecundario', $event)"
+                   maxlength="9" />
+          </div>
+        </div>
+        <div class="color-picker">
+          <label>Color acento</label>
+          <div class="color-picker__row">
+            <input type="color" [ngModel]="form().colorAcento"
+                   (ngModelChange)="actualizarCampo('colorAcento', $event)" />
+            <input type="text" [ngModel]="form().colorAcento"
+                   (ngModelChange)="actualizarCampo('colorAcento', $event)"
+                   maxlength="9" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card seccion">
+      <h3>Datos fiscales</h3>
+
+      <label>RUC</label>
+      <input type="text" [ngModel]="form().ruc" maxlength="20"
+             (ngModelChange)="actualizarCampo('ruc', $event)"
+             placeholder="20XXXXXXXXX" />
+
+      <label>Dirección</label>
+      <input type="text" [ngModel]="form().direccion" maxlength="200"
+             (ngModelChange)="actualizarCampo('direccion', $event)"
+             placeholder="Av. Ejemplo 123, Lima" />
+
+      <label>Teléfono</label>
+      <input type="tel" inputmode="tel" [ngModel]="form().telefono" maxlength="30"
+             (ngModelChange)="actualizarCampo('telefono', $event)"
+             placeholder="+51 9XX XXX XXX" />
+
+      <label>Horario de atención</label>
+      <input type="text" [ngModel]="form().horarioAtencion" maxlength="120"
+             (ngModelChange)="actualizarCampo('horarioAtencion', $event)"
+             placeholder="Lun-Sab 8am - 8pm" />
+    </div>
+
+    <div class="card seccion">
+      <h3>Delivery</h3>
+
+      <label>Costo de Delivery (S/)</label>
+      <input type="number" min="0" step="0.50" [ngModel]="form().costoDelivery"
+             (ngModelChange)="actualizarCampo('costoDelivery', $event)"
+             placeholder="5.00" />
+      <p class="hint">Se agrega automáticamente como "Servicio a Domicilio" en Registrar cuando el pedido es modalidad Delivery. Déjalo en 0 para no cobrar nada extra.</p>
+    </div>
+
+    <div class="card seccion">
+      <h3>Cobro por Yape / Plin</h3>
+      <p class="hint">Se usa en el mensaje de WhatsApp de delivery ("en camino") y el QR se le muestra al repartidor para que el cliente pague en la puerta.</p>
+
+      <label>Número Yape / Plin</label>
+      <input type="tel" inputmode="tel" [ngModel]="form().yapeNumero" maxlength="30"
+             (ngModelChange)="actualizarCampo('yapeNumero', $event)"
+             placeholder="9XX XXX XXX" />
+
+      <label>Titular de la cuenta</label>
+      <input type="text" [ngModel]="form().yapeTitular" maxlength="120"
+             (ngModelChange)="actualizarCampo('yapeTitular', $event)"
+             placeholder="Nombre del titular Yape/Plin" />
+
+      <label>Imagen del QR</label>
+      <div class="logo-zona">
+        @if (form().yapeQrUrl) {
+          <img class="logo-zona__preview" [src]="form().yapeQrUrl" alt="QR Yape" />
+        } @else {
+          <div class="logo-zona__vacio"><app-icon name="camera" [size]="26"></app-icon></div>
+        }
+
+        <div class="logo-zona__acciones">
+          <button type="button" class="btn btn--secundario btn--sm" [disabled]="subiendoQr()" (click)="archivoQr.click()">
+            <app-icon name="clipboard" [size]="14"></app-icon>
+            {{ subiendoQr() ? 'Subiendo…' : (form().yapeQrUrl ? 'Cambiar QR' : 'Subir QR') }}
+          </button>
+          @if (form().yapeQrUrl) {
+            <button type="button" class="btn btn--sm btn--eliminar" [disabled]="subiendoQr()" (click)="quitarQr()">
+              <app-icon name="trash" [size]="14"></app-icon> Quitar
+            </button>
+          }
+          <p class="hint">Captura del QR desde tu app de Yape/Plin. JPG, PNG o WEBP, hasta 2 MB.</p>
+        </div>
+
+        <input #archivoQr type="file" accept="image/png,image/jpeg,image/webp" hidden
+               (change)="onArchivoQr($event)" />
+      </div>
+      @if (errorQr()) { <p class="hint" style="color:var(--rojo)">{{ errorQr() }}</p> }
+    </div>
+
+    <div class="card seccion">
+      <h3>Ticket de impresión</h3>
+
+      <label>Ancho de tu ticketera</label>
+      <div class="switch-ancho">
+        <button type="button"
+                [class.is-active]="form().anchoTicketMm === 58"
+                (click)="actualizarCampo('anchoTicketMm', 58)">
+          58 mm
+          <small>Compacta</small>
+        </button>
+        <button type="button"
+                [class.is-active]="form().anchoTicketMm === 80"
+                (click)="actualizarCampo('anchoTicketMm', 80)">
+          80 mm
+          <small>Recomendado</small>
+        </button>
+      </div>
+      <p class="hint">Se aplica automáticamente al imprimir tickets nuevos.</p>
+
+      <label>Mensaje al pie del ticket</label>
+      <textarea rows="3" [ngModel]="form().mensajePieTicket"
+                (ngModelChange)="actualizarCampo('mensajePieTicket', $event)"
+                placeholder="Gracias por su preferencia. Presente este ticket al recoger."></textarea>
+      <p class="hint">Aparece en todos los tickets. Ideal para agradecimiento u horario.</p>
+
+      <label>Condiciones del servicio <small class="hint">(una por línea)</small></label>
+      <textarea rows="8" [ngModel]="form().condicionesServicio"
+                (ngModelChange)="actualizarCampo('condicionesServicio', $event)"
+                placeholder="Entrega solo con boleta...&#10;Después de 45 días se cobra 20% por almacenamiento..."></textarea>
+      <p class="hint">Se muestran numeradas al pie del ticket "Cliente" (no aparecen en el ticket "Producción").</p>
+
+      <label>Notas de producción <small class="hint">(instrucciones para el operario)</small></label>
+      <textarea rows="3" [ngModel]="form().notasProduccion"
+                (ngModelChange)="actualizarCampo('notasProduccion', $event)"
+                placeholder="Ej: Etiqueta amarilla si es urgente. Revisar mancha antes de lavar."></textarea>
+      <p class="hint">Aparecen al pie del ticket "Producción" (no en el ticket "Cliente"). Útil para instrucciones fijas al operario.</p>
+    </div>
+  </div>
+
+  <div class="acciones">
+    <button class="btn btn--ghost" (click)="volver()">Cancelar</button>
+    <button class="btn btn--primario" (click)="guardar()" [disabled]="guardando()">
+      {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
+    </button>
+  </div>
+</div>

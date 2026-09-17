@@ -1,0 +1,141 @@
+<div class="page">
+  <app-page-header icono="clipboard" color="naranja" titulo="Registro de pedidos antiguos"
+    subtitulo="Carga pedidos de un talonario o sistema anterior conservando su fecha real de ingreso."
+    volverTexto="Pedidos" (volver)="volver()">
+    <button type="button" class="btn btn--primario header-action" [disabled]="!puedeRegistrar" (click)="registrarOrden()">
+      {{ registrando() ? 'Registrando…' : 'Registrar' }}
+    </button>
+  </app-page-header>
+
+  <div class="pasos">
+    <!-- Cliente -->
+    <div class="card paso">
+      <h4>Información del cliente</h4>
+
+      <label>Fecha de ingreso *</label>
+      <input type="datetime-local" [ngModel]="fechaIngresoValor()" (ngModelChange)="fechaIngresoValor.set($event)" />
+
+      <label>Código <small class="hint">(N° de talonario antiguo, opcional)</small></label>
+      <input type="text" placeholder="Ej: 1042" [(ngModel)]="codigoAntiguo" />
+
+      @if (clienteExistente) {
+        <div class="cliente-seleccionado">
+          <div>
+            <strong><app-icon name="check" [size]="13"></app-icon> {{ clienteExistente.nombre }}</strong>
+            <span>{{ clienteExistente.celular || 'Sin celular' }}</span>
+          </div>
+          <button type="button" class="btn-quitar-cliente" (click)="quitarClienteSeleccionado()" title="Quitar selección"><app-icon name="close" [size]="12"></app-icon></button>
+        </div>
+      } @else {
+        <label>Buscar cliente frecuente</label>
+        <div class="buscador-cliente">
+          <select [(ngModel)]="campoBusquedaCliente">
+            <option>Nombre</option>
+            <option>Celular</option>
+            <option>DNI</option>
+          </select>
+          <input type="text" [placeholder]="'Buscar por ' + campoBusquedaCliente + '…'"
+            [ngModel]="textoBusquedaCliente" (ngModelChange)="onBuscarClienteInput($event)" />
+        </div>
+        @if (buscandoCliente()) { <p class="hint">Buscando…</p> }
+        @if (resultadosBusquedaCliente().length > 0) {
+          <ul class="resultados-cliente">
+            @for (c of resultadosBusquedaCliente(); track c.id) {
+              <li (click)="seleccionarClienteFrecuente(c)" (keydown.enter)="seleccionarClienteFrecuente(c)"
+                  role="button" tabindex="0" [attr.aria-label]="'Seleccionar cliente ' + c.nombre">
+                <strong>{{ c.nombre }}</strong>
+                <span>{{ c.celular || 'Sin celular' }}{{ c.dni ? ' · DNI ' + c.dni : '' }}</span>
+              </li>
+            }
+          </ul>
+        } @else if (textoBusquedaCliente.trim().length >= 2 && !buscandoCliente()) {
+          <p class="hint">Sin resultados. Se registrará como cliente nuevo.</p>
+        }
+      }
+
+      <label>Nombre *</label>
+      <input type="text" placeholder="Nombre completo" [(ngModel)]="nombre" />
+
+      <label>Celular</label>
+      <app-telefono-pais [(ngModel)]="celular" inputId="celular"></app-telefono-pais>
+
+      <label>Dirección</label>
+      <input type="text" placeholder="Dirección" [(ngModel)]="direccion" />
+
+      <label>Documento de Identidad</label>
+      <input type="text" placeholder="DNI" [(ngModel)]="documentoIdentidad" />
+
+      <label>Modalidad</label>
+      <div class="modalidad">
+        <button class="modalidad__btn" [class.is-active]="modalidad==='Tienda'" (click)="modalidad='Tienda'">Tienda</button>
+        <button class="modalidad__btn" [class.is-active]="modalidad==='Delivery'" (click)="modalidad='Delivery'">Delivery</button>
+      </div>
+    </div>
+
+    <!-- Items -->
+    <div class="card paso paso--items">
+      <h4>¿Qué trajo el cliente?</h4>
+
+      <label>Productos y servicios</label>
+      <div class="row-agregar">
+        <select [(ngModel)]="servicioSeleccionadoId">
+          <option [ngValue]="''" disabled>Escoge un servicio…</option>
+          @for (s of catalogo(); track s.id) {
+            <option [ngValue]="s.id">{{ s.nombre }} — S/ {{ s.precio }} / {{ s.unidad }}</option>
+          }
+        </select>
+        <button class="btn btn--secundario" (click)="agregarItem()" [disabled]="!servicioSeleccionadoId">Agregar</button>
+      </div>
+
+      <table class="tabla-items">
+        <thead>
+          <tr><th>Cant.</th><th>Item</th><th>Precio</th><th>Total</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (it of items(); track it.servicioId) {
+            <tr>
+              <td>
+                <input type="number" step="0.01" min="0.01" [ngModel]="it.cantidad"
+                  (ngModelChange)="cambiarCantidad(it.servicioId, $event)" class="input-cantidad" />
+              </td>
+              <td>{{ it.nombre }} <small>({{ it.unidad }})</small></td>
+              <td>S/ {{ it.precio.toFixed(2) }}</td>
+              <td>S/ {{ (it.precio * it.cantidad).toFixed(2) }}</td>
+              <td><button class="btn-quitar" (click)="quitarItem(it.servicioId)"><app-icon name="close" [size]="12"></app-icon></button></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="vacio">Debe haber al menos un item</td></tr>
+          }
+        </tbody>
+      </table>
+
+      <div class="totales">
+        <div><span>Subtotal:</span> S/ {{ subtotal().toFixed(2) }}</div>
+        <div class="total-neto"><span>Total:</span> S/ {{ subtotal().toFixed(2) }}</div>
+      </div>
+    </div>
+
+    <!-- Pago -->
+    <div class="card paso">
+      <h4>Pago</h4>
+      <label>Monto pagado</label>
+      <input type="number" step="0.01" min="0" [(ngModel)]="montoPagado" />
+      <p class="hint">
+        @if (montoPagado <= 0) { Pendiente }
+        @else if (montoPagado >= subtotal()) { Pagado completo }
+        @else { Pago parcial · falta S/ {{ (subtotal() - montoPagado).toFixed(2) }} }
+      </p>
+
+      @if (montoPagado > 0) {
+        <label>Método de pago</label>
+        <select [(ngModel)]="metodoPagoInicial">
+          <option value="EFECTIVO">Efectivo</option>
+          <option value="YAPE">Yape</option>
+          <option value="PLIN">Plin</option>
+          <option value="TRANSFERENCIA">Transferencia</option>
+          <option value="POS">POS/Tarjeta</option>
+        </select>
+      }
+    </div>
+  </div>
+</div>

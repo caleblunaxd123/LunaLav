@@ -1,0 +1,557 @@
+<div class="page">
+  <app-page-header icono="package" color="morado" titulo="Inventario" tourId="inventario"
+    subtitulo="Stock de consumibles: detergente, bolsas, suavizante, etc.">
+    @if (tab() === 'insumos' && esAdmin()) {
+      <button type="button" class="btn btn--ghost" (click)="abrirImportar()">
+        <app-icon name="clipboard" [size]="15"></app-icon> Importar
+      </button>
+      <button type="button" class="btn btn--primario" data-tour="inventario-nuevo" (click)="abrirCrearInsumo()">
+        <app-icon name="plus" [size]="16"></app-icon> Nuevo insumo
+      </button>
+    }
+  </app-page-header>
+
+  <div class="tabs" role="tablist" aria-label="Vistas del inventario">
+    <button type="button" role="tab" class="tabs__item" [attr.aria-selected]="tab()==='insumos'"
+      [class.is-active]="tab()==='insumos'" (click)="cambiarTab('insumos')">Insumos</button>
+    <button type="button" role="tab" class="tabs__item" [attr.aria-selected]="tab()==='historial'"
+      [class.is-active]="tab()==='historial'" (click)="cambiarTab('historial')">Historial</button>
+  </div>
+
+  @if (tab() === 'insumos' && tendencia(); as t) {
+    <div class="tendencias-grid">
+      <app-mini-barras titulo="Consumo de insumos por día" subtitulo="Últimos 14 días" color="ambar" [datos]="t"></app-mini-barras>
+    </div>
+  }
+
+  @if (tab() === 'insumos') {
+    @if (cargando()) {
+      <div class="estado">Cargando…</div>
+    } @else if (error()) {
+      <app-empty-state icono="error" titulo="No se pudo cargar" [mensaje]="error()!">
+        <button class="btn btn--primario" (click)="cargar()">Reintentar</button>
+      </app-empty-state>
+    } @else if (insumos().length === 0) {
+      <app-empty-state icono="lista" titulo="Sin insumos aún" [mensaje]="esAdmin() ? 'Registra el primer consumible para empezar a controlar tu stock.' : 'Aún no hay insumos. Pídele al administrador que los registre.'">
+        @if (esAdmin()) {
+          <button class="btn btn--primario" (click)="abrirCrearInsumo()">+ Nuevo insumo</button>
+        }
+      </app-empty-state>
+    } @else {
+      <div class="inventory-summary" [class.inventory-summary--warning]="insumosBajoStock() > 0" role="status">
+        <div class="inventory-summary__icon">
+          <app-icon [name]="insumosBajoStock() > 0 ? 'warning' : 'check'" [size]="18"></app-icon>
+        </div>
+        <div class="inventory-summary__copy">
+          @if (insumosBajoStock() > 0) {
+            <strong>{{ insumosBajoStock() }} {{ insumosBajoStock() === 1 ? 'insumo requiere' : 'insumos requieren' }} reposición</strong>
+            <span>Los productos con stock bajo aparecen primero.</span>
+          } @else {
+            <strong>Inventario abastecido</strong>
+            <span>No hay insumos activos por debajo del mínimo.</span>
+          }
+        </div>
+        <div class="inventory-summary__count"><strong>{{ insumosActivos() }}</strong><span>activos</span></div>
+      </div>
+
+      <div class="inventory-tools" aria-label="Filtros de inventario">
+        <label class="inventory-search">
+          <app-icon name="search" [size]="16"></app-icon>
+          <span class="sr-only">Buscar insumo</span>
+          <input type="search" maxlength="80" placeholder="Buscar por nombre del insumo"
+            [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event); cambiarFiltros()" />
+        </label>
+        <select aria-label="Filtrar inventario por clase" [ngModel]="filtroClase()"
+          (ngModelChange)="filtroClase.set($event); cambiarFiltros()">
+          <option value="TODAS">Todas las clases</option>
+          @for (c of clases; track c.valor) { <option [value]="c.valor">{{ c.etiqueta }}</option> }
+        </select>
+        <select aria-label="Filtrar inventario por estado" [ngModel]="filtroEstado()"
+          (ngModelChange)="filtroEstado.set($event); cambiarFiltros()">
+          <option value="TODOS">Todos los insumos</option>
+          <option value="ACTIVOS">Solo activos</option>
+          <option value="BAJO_STOCK">Requieren reposición</option>
+          <option value="INACTIVOS">Inactivos</option>
+        </select>
+        <span class="inventory-tools__result">{{ insumosFiltrados().length }} resultado{{ insumosFiltrados().length === 1 ? '' : 's' }}</span>
+      </div>
+
+      @if (insumosFiltrados().length === 0) {
+        <app-empty-state icono="busqueda" titulo="Sin coincidencias"
+          mensaje="No hay insumos que coincidan con la búsqueda y el estado seleccionados.">
+          <button type="button" class="btn btn--ghost" (click)="limpiarFiltros()">Limpiar filtros</button>
+        </app-empty-state>
+      } @else {
+        <div class="insumos-grid">
+          @for (i of insumosPaginados(); track i.id) {
+          <article class="card insumo-card" [class.inactivo]="!i.activo" [class.insumo-card--low]="i.activo && bajoStock(i)"
+            [class.is-updated]="insumoAnimadoId() === i.id">
+            <div class="insumo-card__head">
+              <div class="insumo-card__identity">
+                <div class="insumo-card__icon"><app-icon name="package" [size]="18"></app-icon></div>
+                <div>
+                  <strong>{{ i.nombre }}</strong>
+                  <span>
+                    {{ i.unidadMedida }}@if (i.contenidoValor) { <span class="insumo-card__contenido">× {{ i.contenidoValor | number:'1.0-2' }} {{ i.contenidoUnidad }}</span> }
+                    · <span class="insumo-card__clase" [attr.data-clase]="i.clase">{{ claseEtiqueta(i.clase) }}</span>
+                  </span>
+                </div>
+              </div>
+              @if (!i.activo) {
+                <span class="badge badge--gris">Inactivo</span>
+              } @else if (bajoStock(i)) {
+                <span class="badge badge--rojo"><app-icon name="warning" [size]="12"></app-icon> Stock bajo</span>
+              } @else {
+                <span class="badge badge--verde">OK</span>
+              }
+            </div>
+
+            <div class="insumo-card__stock">
+              <div class="insumo-card__actual"><strong>{{ i.stockActual | number:'1.0-2' }}</strong><span>{{ i.unidadMedida }}</span></div>
+              <div class="insumo-card__minimum"><span>Mínimo</span><strong>{{ i.stockMinimo | number:'1.0-2' }}</strong></div>
+            </div>
+
+            @if (contenidoTotalTexto(i); as total) {
+              <div class="insumo-card__total">{{ total }}</div>
+            }
+
+            <div class="stock-meter" aria-hidden="true"><span [style.width.%]="nivelStock(i)"></span></div>
+
+            @if (i.fechaIngreso) {
+              <div class="insumo-card__meta">
+                <span>Ingresó</span>
+                <strong>{{ i.fechaIngreso | date:'dd MMM yyyy' }}</strong>
+              </div>
+            }
+
+            <div class="insumo-card__meta">
+              <span>Última compra</span>
+              <strong>{{ i.ultimaCompra ? (i.ultimaCompra | date:'dd MMM yyyy') : 'Sin compras registradas' }}</strong>
+            </div>
+
+            @if (i.fechaVencimiento) {
+              <div class="insumo-card__meta insumo-card__venc" [attr.data-venc]="estadoVencimiento(i)">
+                <span>Vence</span>
+                <strong>
+                  {{ i.fechaVencimiento | date:'dd MMM yyyy' }}
+                  @if (estadoVencimiento(i) === 'vencido') { · ¡Vencido! }
+                  @else if (estadoVencimiento(i) === 'por-vencer') { · faltan {{ diasParaVencer(i) }} día(s) }
+                </strong>
+              </div>
+            }
+
+            <div class="insumo-card__acciones">
+              <button type="button" class="btn btn--outline-primary btn--sm" (click)="abrirModalMovimiento(i)" [disabled]="!i.activo">
+                <app-icon name="refresh" [size]="14"></app-icon> Movimiento
+              </button>
+              @if (esAdmin()) {
+                <button type="button" class="btn btn--sm btn--editar" (click)="abrirEditarInsumo(i)" [attr.aria-label]="'Editar ' + i.nombre">
+                  <app-icon name="edit" [size]="14"></app-icon> Editar
+                </button>
+                <button type="button" class="btn btn--sm btn--desactivar" (click)="toggleActivo(i)" [attr.aria-label]="(i.activo ? 'Desactivar ' : 'Reactivar ') + i.nombre">
+                  @if (i.activo) { <app-icon name="disable" [size]="14"></app-icon> Desactivar }
+                  @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+                </button>
+                <button type="button" class="btn btn--sm btn--eliminar" (click)="pedirEliminar(i)" [disabled]="i.enUso"
+                  [title]="i.enUso ? 'Tiene movimientos registrados — solo puedes desactivarlo' : 'Eliminar'" [attr.aria-label]="'Eliminar ' + i.nombre">
+                  <app-icon name="trash" [size]="14"></app-icon> Eliminar
+                </button>
+              }
+            </div>
+          </article>
+          }
+        </div>
+
+        <div class="card paginacion-wrap">
+          <app-paginacion
+            [pagina]="paginaInsumos()"
+            [tamanoPagina]="tamanoPaginaInsumos()"
+            [total]="insumosFiltrados().length"
+            (paginaChange)="cambiarPaginaInsumos($event)"
+            (tamanoPaginaChange)="cambiarTamanoPaginaInsumos($event)">
+          </app-paginacion>
+        </div>
+      }
+    }
+  } @else {
+    <div class="card filtros">
+      <div>
+        <label>Desde</label>
+        <input type="date" [(ngModel)]="desdeHistorial" />
+      </div>
+      <div>
+        <label>Hasta</label>
+        <input type="date" [(ngModel)]="hastaHistorial" />
+      </div>
+      <button type="button" class="btn btn--secundario" (click)="cargarHistorial()">Filtrar</button>
+    </div>
+
+    @if (cargandoHistorial()) {
+      <div class="estado">Cargando…</div>
+    } @else if (movimientos().length === 0) {
+      <app-empty-state icono="lista" titulo="Sin movimientos" mensaje="No hay movimientos de inventario en el rango seleccionado."></app-empty-state>
+    } @else {
+      <!-- Desktop: tabla -->
+      <div class="card tabla-wrap">
+        <table class="tabla">
+          <thead>
+            <tr><th>Fecha</th><th>Insumo</th><th>Tipo</th><th>Cantidad</th><th>Costo</th><th>Usuario</th><th>Descripción</th>@if (esAdmin()) { <th>Acciones</th> }</tr>
+          </thead>
+          <tbody>
+            @for (m of movimientosPaginados(); track m.id) {
+              <tr>
+                <td class="mono">{{ m.fecha | date:'dd/MM/yy HH:mm' }}</td>
+                <td>{{ m.insumoNombre }}</td>
+                <td><span [class]="claseTipo(m.tipo)">{{ etiquetaTipo(m.tipo) }}</span></td>
+                <td class="mono">{{ m.cantidad }}</td>
+                <td class="mono">{{ m.costoTotal ? ('S/ ' + (m.costoTotal | number:'1.2-2')) : '—' }}</td>
+                <td>{{ m.usuarioNombre }}</td>
+                <td>{{ m.descripcion || '—' }}</td>
+                @if (esAdmin()) {
+                  <td class="mov-acciones">
+                    <button type="button" class="btn-mini" title="Corregir fecha o nota" (click)="abrirEditarMovimiento(m)">
+                      <app-icon name="edit" [size]="14"></app-icon>
+                    </button>
+                    <button type="button" class="btn-mini btn-mini--peligro" title="Eliminar (corrige el stock)" (click)="pedirEliminarMovimiento(m)">
+                      <app-icon name="trash" [size]="14"></app-icon>
+                    </button>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile: cards -->
+      <div class="cards">
+        @for (m of movimientosPaginados(); track m.id) {
+          <div class="card movimiento-card">
+            <div class="movimiento-card__head">
+              <strong>{{ m.insumoNombre }}</strong>
+              <span [class]="claseTipo(m.tipo)">{{ etiquetaTipo(m.tipo) }}</span>
+            </div>
+            <div class="movimiento-card__body">
+              <div><span>Fecha:</span> {{ m.fecha | date:'dd/MM/yy HH:mm' }}</div>
+              <div><span>Cantidad:</span> <strong>{{ m.cantidad }}</strong></div>
+              <div><span>Costo:</span> {{ m.costoTotal ? ('S/ ' + (m.costoTotal | number:'1.2-2')) : '—' }}</div>
+              <div><span>Usuario:</span> {{ m.usuarioNombre }}</div>
+              @if (m.descripcion) {
+                <div class="movimiento-card__desc"><span>Nota:</span> {{ m.descripcion }}</div>
+              }
+            </div>
+            @if (esAdmin()) {
+              <div class="movimiento-card__acciones">
+                <button type="button" class="btn btn--outline-primary btn--sm" (click)="abrirEditarMovimiento(m)">
+                  <app-icon name="edit" [size]="14"></app-icon> Corregir
+                </button>
+                <button type="button" class="btn btn--danger btn--sm" (click)="pedirEliminarMovimiento(m)">
+                  <app-icon name="trash" [size]="14"></app-icon> Eliminar
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="card paginacion-wrap">
+        <app-paginacion
+          [pagina]="paginaHistorial()"
+          [tamanoPagina]="tamanoPaginaHistorial()"
+          [total]="movimientos().length"
+          (paginaChange)="cambiarPaginaHistorial($event)"
+          (tamanoPaginaChange)="cambiarTamanoPaginaHistorial($event)">
+        </app-paginacion>
+      </div>
+    }
+  }
+</div>
+
+@if (modalInsumo()) {
+  <div class="modal-backdrop" (click)="cerrarModalInsumo()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-insumo">
+    <div class="modal__header">
+      <h3 id="titulo-insumo">{{ editandoInsumo() ? 'Editar insumo' : 'Nuevo insumo' }}</h3>
+      <button type="button" class="modal__close" aria-label="Cerrar formulario de insumo" (click)="cerrarModalInsumo()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <form (submit)="guardarInsumo(); $event.preventDefault()">
+      <div class="modal__body">
+        <label for="insumo-nombre">Nombre *</label>
+        <input id="insumo-nombre" type="text" required minlength="2" maxlength="80"
+          [(ngModel)]="formInsumo.nombre" name="nombre" placeholder="Ej: Detergente en polvo"
+          [class.invalid]="err.get('nombre')" (ngModelChange)="err.limpiar('nombre')" />
+        @if (err.get('nombre')) { <small class="campo-error">{{ err.get('nombre') }}</small> }
+
+        <label for="insumo-clase">Clase *</label>
+        <select id="insumo-clase" name="clase" [(ngModel)]="formInsumo.clase" required>
+          @for (c of clases; track c.valor) { <option [value]="c.valor">{{ c.etiqueta }}</option> }
+        </select>
+
+        <div class="row-2">
+          <div>
+            <label for="insumo-unidad">¿Cómo lo cuentas? (unidad) *</label>
+            <input id="insumo-unidad" type="text" required maxlength="20"
+              [(ngModel)]="formInsumo.unidadMedida" name="unidad" placeholder="Ej: bidón, bolsa, unidad, kg"
+              [class.invalid]="err.get('unidad')" (ngModelChange)="err.limpiar('unidad')" />
+            @if (err.get('unidad')) { <small class="campo-error">{{ err.get('unidad') }}</small> }
+          </div>
+          <div>
+            <label for="insumo-minimo">Stock mínimo</label>
+            <input id="insumo-minimo" type="number" min="0" max="1000000" step="0.01" inputmode="decimal"
+              [(ngModel)]="formInsumo.stockMinimo" name="stockMinimo"
+              [class.invalid]="err.get('stockMinimo')" (ngModelChange)="err.limpiar('stockMinimo')" />
+            @if (err.get('stockMinimo')) { <small class="campo-error">{{ err.get('stockMinimo') }}</small> }
+          </div>
+        </div>
+
+        <label>Contenido por unidad <small class="hint">(opcional — ej. un bidón trae 20 litros)</small></label>
+        <div class="row-2">
+          <div class="money-input contenido-input">
+            <span>×</span>
+            <input type="number" min="0" max="1000000" step="0.01" inputmode="decimal"
+              [(ngModel)]="formInsumo.contenidoValor" name="contenidoValor" placeholder="20" aria-label="Cantidad de contenido" />
+          </div>
+          <div>
+            <input type="text" maxlength="20"
+              [(ngModel)]="formInsumo.contenidoUnidad" name="contenidoUnidad" placeholder="Ej: litros, kg, ml" aria-label="Unidad del contenido" />
+          </div>
+        </div>
+
+        <label for="insumo-ingreso">Fecha de ingreso <small class="hint">(cuándo ingresó al inventario; puedes poner un día anterior)</small></label>
+        <input id="insumo-ingreso" type="date" [(ngModel)]="formInsumo.fechaIngreso" name="fechaIngreso" [max]="hastaHistorial" />
+
+        <label for="insumo-vencimiento">Fecha de vencimiento <small class="hint">(opcional — para avisar antes de que caduque)</small></label>
+        <input id="insumo-vencimiento" type="date" [(ngModel)]="formInsumo.fechaVencimiento" name="fechaVencimiento" />
+
+        @if (!editandoInsumo()) {
+          <label for="insumo-inicial">Stock inicial</label>
+          <input id="insumo-inicial" type="number" min="0" max="1000000" step="0.01" inputmode="decimal"
+            [(ngModel)]="formInsumo.stockActual" name="stockActual"
+            [class.invalid]="err.get('stockActual')" (ngModelChange)="err.limpiar('stockActual')" />
+          @if (err.get('stockActual')) { <small class="campo-error">{{ err.get('stockActual') }}</small> }
+        }
+
+        <label class="checkbox-row">
+          <input type="checkbox" [(ngModel)]="formInsumo.activo" name="activo" />
+          Insumo activo
+        </label>
+
+        @if (errorFormInsumo()) {
+          <div class="modal__error" role="alert">{{ errorFormInsumo() }}</div>
+        }
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarModalInsumo()">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="guardandoInsumo()">
+          {{ guardandoInsumo() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (confirmarEliminar(); as i) {
+  <div class="modal-backdrop" (click)="confirmarEliminar.set(null)"></div>
+  <div class="modal modal--sm" role="alertdialog" aria-modal="true" aria-labelledby="titulo-eliminar-insumo">
+    <div class="modal__header">
+      <h3 id="titulo-eliminar-insumo">¿Eliminar insumo?</h3>
+      <button type="button" class="modal__close" aria-label="Cerrar confirmación" (click)="confirmarEliminar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p>Vas a eliminar <strong>{{ i.nombre }}</strong> de forma permanente. Esta acción no se puede deshacer.</p>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="confirmarEliminar.set(null)">Cancelar</button>
+        <button type="button" class="btn btn--danger" [disabled]="guardandoInsumo()" (click)="eliminar()">
+          {{ guardandoInsumo() ? 'Eliminando…' : 'Sí, eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (confirmarDesactivar(); as i) {
+  <div class="modal-backdrop" (click)="confirmarDesactivar.set(null)"></div>
+  <div class="modal modal--sm" role="alertdialog" aria-modal="true" aria-labelledby="titulo-desactivar-insumo">
+    <div class="modal__header">
+      <h3 id="titulo-desactivar-insumo">¿Desactivar insumo?</h3>
+      <button type="button" class="modal__close" aria-label="Cerrar confirmación" (click)="confirmarDesactivar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p><strong>{{ i.nombre }}</strong> ya no podrá recibir movimientos de stock hasta que lo reactives.</p>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="confirmarDesactivar.set(null)">Cancelar</button>
+        <button type="button" class="btn btn--danger" (click)="confirmarDesactivarOk()">Sí, desactivar</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (modalMovimiento()) {
+  <div class="modal-backdrop" (click)="cerrarModalMovimiento()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-movimiento-insumo">
+    <div class="modal__header">
+      <h3 id="titulo-movimiento-insumo">Registrar movimiento · {{ insumoMovimiento?.nombre }}</h3>
+      <button type="button" class="modal__close" aria-label="Cerrar registro de movimiento" (click)="cerrarModalMovimiento()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <form (submit)="confirmarMovimiento(); $event.preventDefault()">
+      <div class="modal__body">
+        <label>Tipo de movimiento</label>
+        <div class="tipo-row">
+          <button type="button" class="tipo-btn" [class.is-active]="movTipo==='COMPRA'" (click)="movTipo='COMPRA'">Compra</button>
+          <button type="button" class="tipo-btn" [class.is-active]="movTipo==='MEDICION'" (click)="movTipo='MEDICION'">Medición</button>
+          <button type="button" class="tipo-btn" [class.is-active]="movTipo==='CONSUMO'" (click)="movTipo='CONSUMO'">Consumo</button>
+          <button type="button" class="tipo-btn" [class.is-active]="movTipo==='AJUSTE'" (click)="movTipo='AJUSTE'">Ajuste</button>
+        </div>
+
+        @if (movTipo !== 'MEDICION') {
+          <p class="hint hint--tipo">{{ ayudaMovimiento }}</p>
+        }
+
+        @if (movTipo === 'MEDICION') {
+          <p class="hint medicion-ayuda">Recálculo por peso, ideal al final del día: pesa el insumo y escribe cuánto queda hoy. El sistema calcula solo el consumo del día (peso anterior − peso de hoy) y deja el stock cuadrado con lo que pesaste.</p>
+
+          <label>Peso actual medido ({{ unidadPeso }})</label>
+          <input type="number" step="0.001" min="0" max="1000000" inputmode="decimal" required
+            [(ngModel)]="movPesoActual" name="pesoActual" placeholder="Ej: 10.900" />
+
+          <div class="medicion-preview">
+            <div class="medicion-preview__fila"><span>Había registrado</span><strong>{{ stockActualPeso | number:'1.0-3' }} {{ unidadPeso }}</strong></div>
+            <div class="medicion-preview__fila"><span>Pesaste hoy</span><strong>{{ (movPesoActual || 0) | number:'1.0-3' }} {{ unidadPeso }}</strong></div>
+            @if (consumoDelDiaPeso > 0.0001) {
+              <div class="medicion-preview__fila medicion-preview__fila--consumo">
+                <span>Consumo del día</span><strong>{{ consumoDelDiaPeso | number:'1.0-3' }} {{ unidadPeso }}</strong>
+              </div>
+            } @else if (consumoDelDiaPeso < -0.0001) {
+              <div class="medicion-preview__fila medicion-preview__fila--sube">
+                <span>Aumentó</span><strong>+{{ (-consumoDelDiaPeso) | number:'1.0-3' }} {{ unidadPeso }}</strong>
+              </div>
+            } @else {
+              <div class="medicion-preview__fila"><span>Sin cambio</span><strong>—</strong></div>
+            }
+          </div>
+
+          <label class="check-correccion">
+            <input type="checkbox" [(ngModel)]="movEsCorreccion" name="esCorreccion" />
+            Es una corrección del stock (no contar como consumo del día)
+          </label>
+          @if (movEsCorreccion) {
+            <p class="hint">Úsalo la primera vez, para dejar el stock igual al peso real sin que aparezca un consumo enorme en el gráfico.</p>
+          }
+        } @else {
+          <label>Cantidad ({{ insumoMovimiento?.unidadMedida }}) {{ movTipo === 'AJUSTE' ? '· usa negativo para restar' : '' }}</label>
+          <input type="number" step="0.01" [min]="movTipo === 'AJUSTE' ? -1000000 : 0.01" max="1000000"
+            inputmode="decimal" required [(ngModel)]="movCantidad" name="cantidad" />
+        }
+
+        <label>Fecha del movimiento <small class="hint">(puedes registrar uno de días anteriores)</small></label>
+        <input type="date" [(ngModel)]="movFecha" name="fechaMovimiento" [max]="hastaHistorial" />
+
+        @if (movTipo === 'COMPRA') {
+          <div class="row-2">
+            <div>
+              <label>Costo total (opcional)</label>
+              <input type="number" min="0" max="1000000" step="0.01" inputmode="decimal"
+                [(ngModel)]="movCosto" name="costo" />
+            </div>
+            @if (movCosto > 0) {
+              <div>
+                <label>Método de pago</label>
+                <select [(ngModel)]="movMetodoPago" name="metodoPago">
+                  <option value="EFECTIVO">Efectivo</option>
+                  <option value="YAPE">Yape</option>
+                  <option value="PLIN">Plin</option>
+                  <option value="TRANSFERENCIA">Transferencia</option>
+                  <option value="POS">POS</option>
+                </select>
+              </div>
+            }
+          </div>
+          @if (movCosto > 0) {
+            <label>Tipo de gasto <small class="hint">(para que quede en Cuadre de Caja)</small></label>
+            <select [(ngModel)]="movTipoGastoId" name="tipoGastoId">
+              <option [ngValue]="''">Sin categoría</option>
+              @for (t of tiposGasto(); track t.id) {
+                <option [ngValue]="t.id">{{ t.nombre }}</option>
+              }
+            </select>
+          }
+        }
+
+        <label>Descripción <small class="hint">(opcional)</small></label>
+        <input type="text" maxlength="300" [(ngModel)]="movDescripcion" name="descripcion" placeholder="Ej: compra en Makro" />
+
+        @if (movCosto > 0 && movTipo === 'COMPRA') {
+          <p class="hint">Esto también se registrará como gasto en el Cuadre de Caja de la fecha de compra.</p>
+        }
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarModalMovimiento()">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="!puedeRegistrarMovimiento">
+          {{ guardandoMovimiento() ? 'Guardando…' : (movTipo === 'MEDICION' ? 'Registrar medición' : 'Registrar') }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (importarAbierto()) {
+  <app-importador-masivo
+    titulo="Importar insumos"
+    [columnas]="columnasImport"
+    plantillaTipo="insumos"
+    [procesando]="importando()"
+    (cerrar)="cerrarImportar()"
+    (confirmar)="importarInsumos($event)">
+  </app-importador-masivo>
+}
+
+<!-- Modal: corregir movimiento (fecha / nota) — solo admin -->
+@if (modalEditarMov()) {
+  <div class="modal-backdrop" (click)="cerrarEditarMov()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-editar-mov">
+    <div class="modal__header">
+      <h3 id="titulo-editar-mov">Corregir movimiento</h3>
+      <button type="button" class="modal__close" aria-label="Cerrar" (click)="cerrarEditarMov()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p class="hint">{{ editMovInfo }}</p>
+      <p class="hint">Solo cambia la <strong>fecha</strong> y la <strong>nota</strong>; no altera el stock. Para cambiar el monto, elimina el movimiento y regístralo de nuevo.</p>
+
+      <label for="editmov-fecha">Fecha</label>
+      <input id="editmov-fecha" type="date" [(ngModel)]="editMovFecha" name="editMovFecha" [max]="hastaHistorial" />
+
+      <label for="editmov-desc">Descripción / nota</label>
+      <input id="editmov-desc" type="text" maxlength="300" [(ngModel)]="editMovDescripcion" name="editMovDesc" placeholder="Ej: compra de bolsas en Makro" />
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarEditarMov()">Cancelar</button>
+        <button type="button" class="btn btn--primario" [disabled]="guardandoEditMov()" (click)="guardarEditarMovimiento()">
+          {{ guardandoEditMov() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal: confirmar eliminación de movimiento — solo admin -->
+@if (confirmarEliminarMov(); as m) {
+  <div class="modal-backdrop" (click)="confirmarEliminarMov.set(null)"></div>
+  <div class="modal modal--sm" role="dialog" aria-modal="true" aria-labelledby="titulo-elim-mov">
+    <div class="modal__header">
+      <h3 id="titulo-elim-mov">¿Eliminar movimiento?</h3>
+      <button type="button" class="modal__close" aria-label="Cerrar" (click)="confirmarEliminarMov.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p>Vas a eliminar: <strong>{{ etiquetaTipo(m.tipo) }} · {{ m.insumoNombre }} · {{ m.cantidad }}</strong>.</p>
+      <p class="hint">El stock se corrige automáticamente (se revierte este movimiento). Si era una compra con costo, también se quita su gasto de la caja. Esta acción no se puede deshacer.</p>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="confirmarEliminarMov.set(null)">Cancelar</button>
+        <button type="button" class="btn btn--danger" [disabled]="eliminandoMov()" (click)="ejecutarEliminarMovimiento()">
+          {{ eliminandoMov() ? 'Eliminando…' : 'Sí, eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

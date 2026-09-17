@@ -1,0 +1,441 @@
+.page { padding: 20px 24px; max-width: 900px; margin: 0 auto; }
+
+.page__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+
+  h2 { margin: 0; font-size: 20px; }
+  p  { margin: 4px 0 0; color: #64748b; font-size: 13px; }
+}
+
+.volver {
+  background: transparent;
+  border: 1px solid var(--gris-borde);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gris-texto);
+  cursor: pointer;
+
+  &:hover { background: #eef4ff; color: var(--azul-oscuro); border-color: var(--azul-oscuro); }
+}
+
+// ---------- Preview ----------
+.preview {
+  border-radius: 12px;
+  padding: 20px 24px;
+  color: #fff;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.1);
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      background: #fff;
+      border-radius: 10px;
+      padding: 4px;
+    }
+
+    strong {
+      display: block;
+      font-size: 18px;
+    }
+
+    span {
+      display: block;
+      font-size: 12px;
+      opacity: .85;
+    }
+  }
+
+  &__logo-fallback {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+  }
+}
+
+// ---------- Secciones ----------
+.secciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.seccion {
+  padding: 20px;
+
+  h3 {
+    margin: 0 0 14px;
+    font-size: 13px;
+    color: var(--azul-oscuro);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  label {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 600;
+    margin: 10px 0 4px;
+  }
+
+  input, textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--gris-borde);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+
+    &:focus {
+      outline: none;
+      border-color: var(--azul-oscuro);
+    }
+  }
+
+  .hint {
+    font-size: 11.5px;
+    color: #94a3b8;
+    margin: 6px 0 0;
+    font-style: italic;
+  }
+}
+
+// ---------- Switch ancho de ticket ----------
+.switch-ancho {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+
+  button {
+    border: 2px solid var(--gris-borde);
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    color: #64748b;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all .15s;
+
+    small {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      opacity: .7;
+    }
+
+    &:hover { border-color: var(--azul-claro); }
+
+    &.is-active {
+      border-color: var(--azul-oscuro);
+      background: #eaf1ff;
+      color: var(--azul-oscuro);
+    }
+  }
+}
+
+// ---------- Color pickers ----------
+.colores {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.color-picker {
+  &__row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+
+    input[type="color"] {
+      width: 42px;
+      height: 34px;
+      padding: 2px;
+      border: 1px solid var(--gris-borde);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 7px 10px;
+    }
+  }
+}
+
+// ---------- Acciones ----------
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 -2px 10px rgba(0,0,0,.05);
+}
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 11px 20px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &--primario {
+    background: var(--azul-oscuro);
+    color: #fff;
+    &:disabled { opacity: .5; cursor: not-allowed; }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: #64748b;
+    border: 1px solid var(--gris-borde);
+  }
+}
+
+// ---------- Responsive ----------
+@media (max-width: 720px) {
+  .page { padding: 14px; }
+
+  .page__header {
+    flex-wrap: wrap;
+
+    h2 { font-size: 17px; }
+  }
+
+  .secciones { grid-template-columns: 1fr; gap: 12px; }
+  .colores { grid-template-columns: 1fr; }
+
+  .acciones {
+    flex-direction: column-reverse;
+
+    .btn { width: 100%; }
+  }
+}
+
+// ---------- Logo: subida desde el equipo ----------
+.logo-zona {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  border: 2px dashed var(--gris-borde, #e2e8f0);
+  border-radius: 10px;
+  background: #f8fafc;
+  transition: border-color .15s, background .15s;
+
+  &--arrastrando {
+    border-color: var(--azul-oscuro, #0b57d0);
+    background: #eff6ff;
+  }
+
+  &__preview {
+    width: 84px;
+    height: 84px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid var(--gris-borde, #e2e8f0);
+    flex-shrink: 0;
+  }
+
+  &__vacio {
+    width: 84px;
+    height: 84px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid var(--gris-borde, #e2e8f0);
+    color: #94a3b8;
+    flex-shrink: 0;
+  }
+
+  &__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+
+    .hint { flex-basis: 100%; margin: 0; }
+  }
+}
+
+.hint--error { color: #b91c1c; font-weight: 600; }
+
+@media (max-width: 560px) {
+  .logo-zona { flex-direction: column; align-items: flex-start; }
+}
+
+// ---------- Simulación: cómo queda el sistema con los colores elegidos ----------
+.simulacion {
+  padding: 16px;
+
+  h3 { margin: 0 0 12px; font-size: 15px; }
+
+  &__pantallas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+}
+
+.sim {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__rotulo { font-size: 12px; color: #64748b; font-weight: 600; }
+
+  &__marco {
+    display: flex;
+    height: 178px;
+    border: 1px solid var(--gris-borde, #e2e8f0);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f8fafc;
+  }
+
+  &__sidebar {
+    width: 92px;
+    flex-shrink: 0;
+    padding: 8px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__logo {
+    height: 30px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  }
+
+  &__logo-fallback { font-size: 18px; }
+
+  // Texto blanco: es justamente lo que el aviso de contraste evalúa.
+  &__item {
+    color: #fff;
+    font-size: 9.5px;
+    font-weight: 600;
+    padding: 4px 6px;
+    border-radius: 4px;
+    opacity: .85;
+
+    &--activo { opacity: 1; }
+  }
+
+  &__cuerpo {
+    flex: 1;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: #fff;
+  }
+
+  &__titulo { font-size: 11px; font-weight: 700; }
+
+  &__linea {
+    height: 7px;
+    border-radius: 3px;
+    background: #e2e8f0;
+    &--corta { width: 60%; }
+  }
+
+  &__btn {
+    align-self: flex-start;
+    color: #fff;
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 5px;
+    margin-top: 2px;
+  }
+
+  &__marco--login { flex-direction: row; }
+
+  &__login-panel {
+    width: 45%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+
+    img { max-width: 100%; max-height: 70px; object-fit: contain; }
+    strong { color: #fff; font-size: 11px; text-align: center; }
+  }
+
+  &__login-form {
+    flex: 1;
+    background: #fff;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  &__campo {
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+  }
+}
+
+.contraste {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 12px 0 0;
+  padding: 9px 11px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+
+  &--mal {
+    background: #fffbeb;
+    color: #92400e;
+    border-color: #fcd34d;
+  }
+}

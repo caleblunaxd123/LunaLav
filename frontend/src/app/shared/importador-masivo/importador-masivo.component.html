@@ -1,0 +1,83 @@
+<div class="modal-backdrop" (click)="cerrar.emit()"></div>
+<div class="modal modal--lg imp" role="dialog" aria-modal="true" aria-labelledby="imp-title">
+  <div class="modal__header">
+    <h3 id="imp-title">{{ titulo }}</h3>
+    <button type="button" class="modal__close" (click)="cerrar.emit()" title="Cerrar" aria-label="Cerrar"><app-icon name="close" [size]="16"></app-icon></button>
+  </div>
+
+  <div class="modal__body">
+    <p class="imp__intro">
+      Carga todo de una vez en lugar de crearlo uno por uno.
+      <strong>Sube tu archivo de Excel</strong> (.xlsx) o CSV, o copia las celdas desde Excel y <strong>pégalas</strong> abajo.
+    </p>
+
+    <div class="imp__ayuda">
+      <span class="imp__cols">
+        Columnas:
+        @for (c of columnas; track c.clave) {
+          <strong>{{ c.etiqueta }}</strong>@if (!c.requerido) {<em> (opcional)</em>}<span class="imp__sep">·</span>
+        }
+      </span>
+      <div class="imp__acciones">
+        @if (plantillaTipo) {
+          <button type="button" class="btn btn--ghost btn--sm" [disabled]="descargando()" (click)="descargarPlantilla()">
+            <app-icon name="download" [size]="14"></app-icon>{{ descargando() ? 'Generando…' : 'Descargar plantilla Excel' }}
+          </button>
+        }
+        <label class="btn btn--ghost btn--sm imp__file" [class.imp__file--disabled]="leyendoArchivo()">
+          <app-icon name="clipboard" [size]="14"></app-icon>{{ leyendoArchivo() ? 'Leyendo archivo...' : 'Subir Excel o CSV' }}
+          <input type="file" [disabled]="leyendoArchivo()" accept=".xlsx,.csv,.txt,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="onArchivo($event)" hidden />
+        </label>
+      </div>
+    </div>
+
+    <textarea class="imp__textarea" rows="6" [ngModel]="texto()" (ngModelChange)="texto.set($event)"
+      placeholder="Pega aquí las filas copiadas de Excel…"></textarea>
+    @if (nombreArchivo()) {
+      <p class="imp__archivo">Archivo cargado: <strong>{{ nombreArchivo() }}</strong></p>
+    }
+
+    @if (filas().length > 0) {
+      <div class="imp__resumen">
+        <span class="chip chip--ok">{{ validas().length }} para importar</span>
+        @if (conError().length) { <span class="chip chip--err">{{ conError().length }} con problema</span> }
+      </div>
+
+      <div class="imp__preview">
+        <table class="tabla tabla--compacta">
+          <thead>
+            <tr>
+              <th>#</th>
+              @for (c of columnas; track c.clave) { <th>{{ c.etiqueta }}</th> }
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of filas(); track f.fila) {
+              <tr [class.fila-error]="f.estado === 'error'">
+                <td class="mono">{{ f.fila }}</td>
+                @for (c of columnas; track c.clave) {
+                  <td [class.mono]="c.tipo !== 'texto'">{{ f.valores[c.clave] ?? '—' }}</td>
+                }
+                <td>
+                  @if (f.estado === 'ok') { <span class="badge badge--verde">OK</span> }
+                  @else { <span class="badge badge--rojo" [title]="f.motivo">{{ f.motivo }}</span> }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Opciones extra del catálogo (ej. crear categorías) -->
+      <ng-content></ng-content>
+    }
+  </div>
+
+  <div class="modal__actions">
+    <button type="button" class="btn btn--ghost" (click)="cerrar.emit()">Cancelar</button>
+    <button type="button" class="btn btn--primario" [disabled]="procesando || validas().length === 0" (click)="emitirConfirmar()">
+      {{ procesando ? 'Importando…' : 'Importar ' + validas().length + ' registro(s)' }}
+    </button>
+  </div>
+</div>

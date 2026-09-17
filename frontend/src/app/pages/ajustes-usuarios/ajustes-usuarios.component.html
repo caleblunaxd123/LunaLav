@@ -1,0 +1,253 @@
+<div class="page">
+  <app-page-header icono="users" color="morado" titulo="Usuarios" subtitulo="Agrega, actualiza o desactiva usuarios del sistema." volverTexto="Ajustes" (volver)="volver()">
+    <button class="btn btn--primario" (click)="abrirCrear()">+ Nuevo usuario</button>
+  </app-page-header>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (error()) {
+    <app-empty-state icono="error" titulo="No se pudo cargar" [mensaje]="error()!">
+      <button class="btn btn--primario" (click)="cargar()">Reintentar</button>
+    </app-empty-state>
+  } @else if (usuarios().length === 0) {
+    <app-empty-state icono="lista" titulo="Sin usuarios aún" mensaje="Crea el primer usuario del equipo.">
+      <button class="btn btn--primario" (click)="abrirCrear()">+ Nuevo usuario</button>
+    </app-empty-state>
+  } @else {
+    <div class="buscador-lista">
+      <app-icon name="search" [size]="16"></app-icon>
+      <input type="search" placeholder="Buscar por usuario, nombre o email…"
+        [ngModel]="busqueda()" (ngModelChange)="actualizarBusqueda($event)" aria-label="Buscar usuario" />
+      @if (busqueda()) { <button type="button" (click)="actualizarBusqueda('')" title="Limpiar" aria-label="Limpiar búsqueda">×</button> }
+    </div>
+    @if (usuariosFiltrados().length === 0) {
+      <p class="hint">Sin coincidencias para “{{ busqueda() }}”.</p>
+    }
+    <!-- Desktop: tabla -->
+    <div class="card tabla-wrap">
+      <table class="tabla">
+        <thead>
+          <tr><th>Usuario</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Sede</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (u of usuariosPaginados(); track u.id) {
+            <tr [class.inactivo]="!u.activo">
+              <td class="mono">{{ u.usuario }}</td>
+              <td class="nombre">{{ u.nombreCompleto }}</td>
+              <td>{{ u.email || '—' }}</td>
+              <td>{{ u.rolNombre || u.rolCodigo }}</td>
+              <td>{{ u.sedeNombre || 'Todas' }}</td>
+              <td>
+                <span [class]="'badge ' + (u.activo ? 'badge--verde' : 'badge--gris')">
+                  {{ u.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="acciones-row acciones-texto">
+                <button class="btn btn--sm btn--editar" (click)="abrirEditar(u)" title="Editar"><app-icon name="edit" [size]="14"></app-icon> Editar</button>
+                <button class="btn btn--sm btn--desactivar" (click)="abrirReset(u)" title="Restablecer contraseña"><app-icon name="key" [size]="14"></app-icon> Contraseña</button>
+                <button class="btn btn--sm btn--desactivar" (click)="toggleActivo(u)" [disabled]="u.id === miPropioUsuarioId"
+                  [title]="u.id === miPropioUsuarioId ? 'No puedes desactivar tu propio usuario' : (u.activo ? 'Desactivar' : 'Reactivar')">
+                  @if (u.activo) { <app-icon name="disable" [size]="14"></app-icon> Desactivar } @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile: cards -->
+    <div class="cards">
+      @for (u of usuariosPaginados(); track u.id) {
+        <div class="card usuario-card" [class.inactivo]="!u.activo">
+          <div class="usuario-card__head">
+            <strong>{{ u.nombreCompleto }}</strong>
+            <span [class]="'badge ' + (u.activo ? 'badge--verde' : 'badge--gris')">
+              {{ u.activo ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+          <div class="usuario-card__body">
+            <div><span>Usuario:</span> {{ u.usuario }}</div>
+            <div><span>Email:</span> {{ u.email || '—' }}</div>
+            <div><span>Rol:</span> {{ u.rolNombre || u.rolCodigo }}</div>
+            <div><span>Sede:</span> {{ u.sedeNombre || 'Todas' }}</div>
+          </div>
+          <div class="usuario-card__acciones">
+            <button class="btn btn--ghost btn--sm" (click)="abrirEditar(u)">Editar</button>
+            <button class="btn btn--ghost btn--sm" (click)="abrirReset(u)">Contraseña</button>
+            <button class="btn btn--ghost btn--sm" [disabled]="u.id === miPropioUsuarioId" (click)="toggleActivo(u)">
+              {{ u.activo ? 'Desactivar' : 'Reactivar' }}
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="card paginacion-wrap">
+      <app-paginacion
+        [pagina]="pagina()"
+        [tamanoPagina]="tamanoPagina()"
+        [total]="usuariosFiltrados().length"
+        (paginaChange)="cambiarPagina($event)"
+        (tamanoPaginaChange)="cambiarTamanoPagina($event)">
+      </app-paginacion>
+    </div>
+  }
+</div>
+
+<!-- Modal Crear/Editar -->
+@if (modalAbierto()) {
+  <div class="modal-backdrop" (click)="cerrar()"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>{{ editando() ? 'Editar usuario' : 'Nuevo usuario' }}</h3>
+      <button class="modal__close" (click)="cerrar()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <form (submit)="guardar(); $event.preventDefault()">
+      <div class="modal__body">
+        <label>Usuario (acceso) *</label>
+        <input type="text" [(ngModel)]="form.usuario" name="usuario" placeholder="Ej: jperez"
+          [class.invalid]="campoError('usuario')" (ngModelChange)="limpiarCampo('usuario')" />
+        @if (campoError('usuario')) { <small class="campo-error">{{ campoError('usuario') }}</small> }
+
+        <label>Nombre completo *</label>
+        <input type="text" [(ngModel)]="form.nombreCompleto" name="nombreCompleto" placeholder="Ej: Juan Pérez"
+          [class.invalid]="campoError('nombreCompleto')" (ngModelChange)="limpiarCampo('nombreCompleto')" />
+        @if (campoError('nombreCompleto')) { <small class="campo-error">{{ campoError('nombreCompleto') }}</small> }
+
+        <label>Email <small class="hint">(opcional)</small></label>
+        <input type="email" [(ngModel)]="form.email" name="email" placeholder="correo@ejemplo.com"
+          [class.invalid]="campoError('email')" (ngModelChange)="limpiarCampo('email')" />
+        @if (campoError('email')) { <small class="campo-error">{{ campoError('email') }}</small> }
+
+        <div class="row-2">
+          <div>
+            <label>Rol *</label>
+            <select [(ngModel)]="form.rolId" name="rolId"
+              [class.invalid]="campoError('rolId')" (ngModelChange)="limpiarCampo('rolId')">
+              @for (r of roles(); track r.id) {
+                <option [ngValue]="r.id">{{ r.nombre }}</option>
+              }
+            </select>
+            @if (campoError('rolId')) { <small class="campo-error">{{ campoError('rolId') }}</small> }
+          </div>
+          <div>
+            <label>{{ editando() ? 'Nueva contraseña' : 'Contraseña *' }}</label>
+            <div class="input-clave" [class.invalid]="campoError('password')">
+              <input [type]="mostrarPassword() ? 'text' : 'password'" [(ngModel)]="form.password" name="password"
+                [placeholder]="editando() ? 'Dejar vacío para no cambiar' : 'Mín. 8, letras y números'"
+                (ngModelChange)="limpiarCampo('password')" />
+              <button type="button" class="input-clave__ojo" (click)="mostrarPassword.set(!mostrarPassword())"
+                [attr.aria-label]="mostrarPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                [attr.title]="mostrarPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+                <app-icon [name]="mostrarPassword() ? 'eye-off' : 'eye'" [size]="17"></app-icon>
+              </button>
+            </div>
+            @if (campoError('password')) { <small class="campo-error">{{ campoError('password') }}</small> }
+          </div>
+        </div>
+
+        <label>Sede asignada @if (!rolSeleccionadoEsAdmin()) { <small class="hint">(obligatoria)</small> }</label>
+        <select [(ngModel)]="form.sedeId" name="sedeId"
+          [class.invalid]="campoError('sedeId')" (ngModelChange)="limpiarCampo('sedeId')">
+          @if (rolSeleccionadoEsAdmin()) {
+            <option [ngValue]="null">Todas las sedes</option>
+          } @else {
+            <option [ngValue]="null" disabled>Elige una sede…</option>
+          }
+          @for (s of sedes(); track s.id) {
+            <option [ngValue]="s.id">{{ s.nombre }}</option>
+          }
+        </select>
+        @if (campoError('sedeId')) { <small class="campo-error">{{ campoError('sedeId') }}</small> }
+
+        <label class="checkbox-row">
+          <input type="checkbox" [(ngModel)]="form.activo" name="activo" />
+          Usuario activo
+        </label>
+
+        @if (errorForm()) {
+          <div class="modal__error" role="alert">{{ errorForm() }}</div>
+        }
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrar()">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+<!-- Modal Restablecer contraseña -->
+@if (reseteando(); as u) {
+  <div class="modal-backdrop" (click)="cerrarReset()"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>Restablecer contraseña</h3>
+      <button class="modal__close" (click)="cerrarReset()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+
+    @if (passwordAplicada(); as clave) {
+      <div class="modal__body">
+        <p>Listo. Esta es la nueva contraseña de <strong>{{ u.nombreCompleto }}</strong> ({{ u.usuario }}):</p>
+        <div class="clave-nueva">
+          <code>{{ clave }}</code>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="copiarPassword()">
+            <app-icon name="copy" [size]="14"></app-icon> {{ copiada() ? 'Copiada' : 'Copiar' }}
+          </button>
+        </div>
+        <p class="aviso-clave">
+          Anótala o cópiala ahora: por seguridad no se vuelve a mostrar. Entrégasela y pídele que la cambie cuando ingrese.
+        </p>
+        <div class="modal__actions">
+          <button class="btn btn--primario" (click)="cerrarReset()">Entendido</button>
+        </div>
+      </div>
+    } @else {
+      <div class="modal__body">
+        <p>Vas a definir una contraseña nueva para <strong>{{ u.nombreCompleto }}</strong> ({{ u.usuario }}).</p>
+        <p class="aviso-clave">
+          Las contraseñas se guardan cifradas, por eso nadie puede consultar la anterior; lo que se hace es reemplazarla.
+        </p>
+
+        <label>Contraseña nueva</label>
+        <div class="reset-row">
+          <input type="text" [ngModel]="passwordNueva()" (ngModelChange)="passwordNueva.set($event)"
+                 name="passwordNueva" placeholder="Mínimo 8 caracteres, con letras y números" autocomplete="off" />
+          <button type="button" class="btn btn--ghost btn--sm" (click)="generarClaveTemporal()">Generar</button>
+        </div>
+
+        @if (errorReset()) {
+          <div class="modal__error" role="alert">{{ errorReset() }}</div>
+        }
+
+        <div class="modal__actions">
+          <button class="btn btn--ghost" (click)="cerrarReset()">Cancelar</button>
+          <button class="btn btn--primario" [disabled]="guardando()" (click)="restablecerPassword()">
+            {{ guardando() ? 'Guardando…' : 'Restablecer' }}
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+@if (confirmarDesactivar(); as u) {
+  <div class="modal-backdrop" (click)="confirmarDesactivar.set(null)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Desactivar usuario?</h3>
+      <button class="modal__close" (click)="confirmarDesactivar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p><strong>{{ u.nombreCompleto }}</strong> ({{ u.usuario }}) no podrá iniciar sesión hasta que lo reactives.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarDesactivar.set(null)">Cancelar</button>
+        <button class="btn btn--danger" (click)="confirmarDesactivarOk()">Sí, desactivar</button>
+      </div>
+    </div>
+  </div>
+}

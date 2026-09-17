@@ -1,0 +1,21 @@
+<div class="toaster">
+  @for (t of toasts(); track t.id) {
+    <div class="toast" [class]="'toast--' + t.tipo"
+         [attr.role]="t.tipo === 'error' ? 'alert' : 'status'"
+         [attr.aria-live]="t.tipo === 'error' ? 'assertive' : 'polite'">
+      <div class="toast__icon">
+        @switch (t.tipo) {
+          @case ('exito') { <span>✓</span> }
+          @case ('error') { <span>✕</span> }
+          @case ('advertencia') { <span>!</span> }
+          @default { <span>i</span> }
+        }
+      </div>
+      <div class="toast__body">
+        @if (t.titulo) { <strong>{{ t.titulo }}</strong> }
+        <span>{{ t.mensaje }}</span>
+      </div>
+      <button type="button" class="toast__close" (click)="cerrar(t.id)" aria-label="Cerrar notificación">×</button>
+    </div>
+  }
+</div>

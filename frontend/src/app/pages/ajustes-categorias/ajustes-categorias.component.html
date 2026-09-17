@@ -1,0 +1,152 @@
+<div class="page">
+  <app-page-header icono="clipboard" color="cian" titulo="Categorías" subtitulo="Registra categorías para agrupar tus servicios." volverTexto="Ajustes" (volver)="volver()">
+    <button class="btn btn--primario" (click)="abrirCrear()">+ Nueva categoría</button>
+  </app-page-header>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (error()) {
+    <app-empty-state icono="error" titulo="No se pudo cargar" [mensaje]="error()!">
+      <button class="btn btn--primario" (click)="cargar()">Reintentar</button>
+    </app-empty-state>
+  } @else if (categorias().length === 0) {
+    <app-empty-state icono="lista" titulo="Sin categorías aún" mensaje="Crea la primera para organizar tu catálogo de servicios.">
+      <button class="btn btn--primario" (click)="abrirCrear()">+ Nueva categoría</button>
+    </app-empty-state>
+  } @else {
+    <div class="buscador-lista">
+      <app-icon name="search" [size]="16"></app-icon>
+      <input type="search" placeholder="Buscar categoría por nombre…"
+        [ngModel]="busqueda()" (ngModelChange)="actualizarBusqueda($event)" aria-label="Buscar categoría" />
+      @if (busqueda()) { <button type="button" (click)="actualizarBusqueda('')" title="Limpiar" aria-label="Limpiar búsqueda">×</button> }
+    </div>
+    @if (categoriasFiltradas().length === 0) {
+      <p class="hint">Sin coincidencias para “{{ busqueda() }}”.</p>
+    }
+    <div class="card tabla-wrap">
+      <table class="tabla">
+        <thead><tr><th>Nombre</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          @for (c of categoriasPaginadas(); track c.id) {
+            <tr [class.inactivo]="!c.activa">
+              <td class="nombre">{{ c.nombre }}</td>
+              <td>
+                <span [class]="'badge ' + (c.activa ? 'badge--verde' : 'badge--gris')">
+                  {{ c.activa ? 'Activa' : 'Inactiva' }}
+                </span>
+              </td>
+              <td class="acciones-row acciones-texto">
+                <button class="btn btn--sm btn--editar" (click)="abrirEditar(c)" title="Editar"><app-icon name="edit" [size]="14"></app-icon> Editar</button>
+                <button class="btn btn--sm btn--desactivar" (click)="toggleActiva(c)" [title]="c.activa ? 'Desactivar' : 'Reactivar'">
+                  @if (c.activa) { <app-icon name="disable" [size]="14"></app-icon> Desactivar } @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+                </button>
+                <button class="btn btn--sm btn--eliminar" (click)="pedirEliminar(c)" [disabled]="c.enUso" [title]="c.enUso ? 'Tiene servicios asociados — solo puedes desactivarla' : 'Eliminar'"><app-icon name="trash" [size]="14"></app-icon> Eliminar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile: cards -->
+    <div class="cards">
+      @for (c of categoriasPaginadas(); track c.id) {
+        <div class="card categoria-card" [class.inactivo]="!c.activa">
+          <div class="categoria-card__head">
+            <strong>{{ c.nombre }}</strong>
+            <span [class]="'badge ' + (c.activa ? 'badge--verde' : 'badge--gris')">
+              {{ c.activa ? 'Activa' : 'Inactiva' }}
+            </span>
+          </div>
+          <div class="categoria-card__acciones">
+            <button class="btn btn--sm btn--editar" (click)="abrirEditar(c)" title="Editar"><app-icon name="edit" [size]="14"></app-icon> Editar</button>
+            <button class="btn btn--sm btn--desactivar" (click)="toggleActiva(c)" [title]="c.activa ? 'Desactivar' : 'Reactivar'">
+              @if (c.activa) { <app-icon name="disable" [size]="14"></app-icon> Desactivar } @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+            </button>
+            <button class="btn btn--sm btn--eliminar" (click)="pedirEliminar(c)" title="Eliminar"><app-icon name="trash" [size]="14"></app-icon> Eliminar</button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="card paginacion-wrap">
+      <app-paginacion
+        [pagina]="pagina()"
+        [tamanoPagina]="tamanoPagina()"
+        [total]="categoriasFiltradas().length"
+        (paginaChange)="cambiarPagina($event)"
+        (tamanoPaginaChange)="cambiarTamanoPagina($event)">
+      </app-paginacion>
+    </div>
+  }
+</div>
+
+@if (modalAbierto()) {
+  <div class="modal-backdrop" (click)="cerrar()"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>{{ editando() ? 'Editar categoría' : 'Nueva categoría' }}</h3>
+      <button class="modal__close" (click)="cerrar()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <form (submit)="guardar(); $event.preventDefault()">
+      <div class="modal__body">
+        <label>Nombre *</label>
+        <input type="text" [(ngModel)]="form.nombre" name="nombre" placeholder="Ej: Ropa de cama"
+          [class.invalid]="err.get('nombre')" (ngModelChange)="err.limpiar('nombre')" />
+        @if (err.get('nombre')) { <small class="campo-error">{{ err.get('nombre') }}</small> }
+
+        <label class="checkbox-row">
+          <input type="checkbox" [(ngModel)]="form.activa" name="activa" />
+          Categoría activa
+        </label>
+
+        @if (errorForm()) {
+          <div class="modal__error" role="alert">{{ errorForm() }}</div>
+        }
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrar()">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (confirmarEliminar(); as c) {
+  <div class="modal-backdrop" (click)="confirmarEliminar.set(null)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Eliminar categoría?</h3>
+      <button class="modal__close" (click)="confirmarEliminar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p>Vas a eliminar <strong>{{ c.nombre }}</strong> de forma permanente. Esta acción no se puede deshacer.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarEliminar.set(null)">Cancelar</button>
+        <button class="btn btn--danger" [disabled]="guardando()" (click)="eliminar()">
+          {{ guardando() ? 'Eliminando…' : 'Sí, eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (confirmarDesactivar(); as c) {
+  <div class="modal-backdrop" (click)="confirmarDesactivar.set(null)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Desactivar categoría?</h3>
+      <button class="modal__close" (click)="confirmarDesactivar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p><strong>{{ c.nombre }}</strong> dejará de estar disponible para asignar a nuevos servicios.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarDesactivar.set(null)">Cancelar</button>
+        <button class="btn btn--danger" (click)="confirmarDesactivarOk()">Sí, desactivar</button>
+      </div>
+    </div>
+  </div>
+}

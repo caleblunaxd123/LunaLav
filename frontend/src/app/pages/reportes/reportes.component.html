@@ -1,0 +1,14 @@
+<div class="page">
+  <app-page-header icono="chart" color="naranja" titulo="Reportes"
+    subtitulo="Elige un reporte para ver el detalle, filtrar por fecha y exportarlo."></app-page-header>
+
+  <div class="grid">
+    @for (r of reportes; track r.clave) {
+      <a class="tarjeta card" [routerLink]="['/reportes', r.clave]">
+        <div class="tarjeta__icono" [innerHTML]="r.icono"></div>
+        <span>Reporte</span>
+        <strong>{{ r.nombre }}</strong>
+      </a>
+    }
+  </div>
+</div>

@@ -1,0 +1,31 @@
+@switch (variant) {
+  @case ('table') {
+    <div class="skeleton skeleton--table">
+      @for (r of filas; track r) {
+        <div class="skeleton__row">
+          @for (c of cols; track c) {
+            <div class="skeleton__bar" [style.width.%]="c === 0 ? 60 : 100"></div>
+          }
+        </div>
+      }
+    </div>
+  }
+  @case ('cards') {
+    <div class="skeleton skeleton--cards">
+      @for (r of filas; track r) {
+        <div class="skeleton__card">
+          <div class="skeleton__bar" style="width: 40%; height: 14px;"></div>
+          <div class="skeleton__bar" style="width: 70%;"></div>
+          <div class="skeleton__bar" style="width: 50%;"></div>
+        </div>
+      }
+    </div>
+  }
+  @case ('lines') {
+    <div class="skeleton skeleton--lines">
+      @for (r of filas; track r) {
+        <div class="skeleton__bar" [style.width.%]="90 - (r % 3) * 15"></div>
+      }
+    </div>
+  }
+}

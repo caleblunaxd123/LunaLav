@@ -1,0 +1,112 @@
+@if (cargando()) {
+  <div class="estado-carga">Cargando el pedido…</div>
+} @else if (error()) {
+  <div class="estado-carga estado-carga--error" role="alert">{{ error() }}</div>
+} @else if (data(); as d) {
+  <div class="rep">
+    <header class="rep__header">
+      <div class="rep__marca">{{ d.nombreNegocio }}</div>
+      <div class="rep__pedido">Reparto · Pedido #{{ d.numeroPedido }}</div>
+    </header>
+
+    <!-- Estado del reparto -->
+    <div class="hero" [class]="'hero--' + estadoRuta().toLowerCase()">
+      @switch (estadoRuta()) {
+        @case ('SIN_RUTA') {
+          <span class="hero__emoji">📦</span>
+          <div class="hero__t">Pedido listo para salir</div>
+          <div class="hero__s">Cuando arranques, toca “Salí a ruta” para que el cliente vea tu recorrido.</div>
+        }
+        @case ('EN_RUTA') {
+          <span class="hero__emoji">🛵</span>
+          <div class="hero__t">En camino</div>
+          <div class="hero__s">
+            @if (textoDistancia()) { A {{ textoDistancia() }} del destino@if (etaMinutos()) { · ~{{ etaMinutos() }} min }.
+            } @else { El cliente ya puede verte moverte en el mapa. }
+          </div>
+        }
+        @case ('CERCA') {
+          <span class="hero__emoji">📍</span>
+          <div class="hero__t">Estás cerca</div>
+          <div class="hero__s">{{ textoDistancia() }} del destino. Avísale al cliente que ya casi llegas.</div>
+        }
+        @case ('LLEGO') {
+          <span class="hero__emoji">🎯</span>
+          <div class="hero__t">Llegaste al destino</div>
+          <div class="hero__s">Entrega el pedido y márcalo abajo.</div>
+        }
+        @case ('ENTREGADO') {
+          <span class="hero__emoji">✅</span>
+          <div class="hero__t">Pedido entregado</div>
+          <div class="hero__s">¡Gracias! Ya puedes cerrar esta pantalla.</div>
+        }
+      }
+    </div>
+
+    <!-- Mapa -->
+    @if (d.latitudEntrega != null && d.longitudEntrega != null) {
+      <div class="mapa">
+        <app-mapa-seguimiento
+          [destinoLat]="d.latitudEntrega" [destinoLng]="d.longitudEntrega"
+          [motoLat]="miLat()" [motoLng]="miLng()" [colorMoto]="d.colorPrimario">
+        </app-mapa-seguimiento>
+        @if (compartiendo()) { <div class="mapa__vivo"><span class="punto"></span> Compartiendo tu ubicación</div> }
+      </div>
+    }
+
+    @if (gpsError()) { <div class="aviso aviso--gps">{{ gpsError() }}</div> }
+    @if (mensaje()) { <div class="aviso aviso--error" role="alert">{{ mensaje() }}</div> }
+
+    <!-- Destino -->
+    <section class="tarjeta">
+      <h3>Entregar en</h3>
+      <p class="dir">{{ d.direccionEntrega || 'Dirección no registrada' }}</p>
+      @if (d.distritoEntrega) { <p class="sub">{{ d.distritoEntrega }}</p> }
+      @if (d.referenciaEntrega) { <p class="ref">Referencia: {{ d.referenciaEntrega }}</p> }
+      <div class="tarjeta__acciones">
+        @if (d.latitudEntrega != null) {
+          <button class="btn-sec" (click)="abrirEnMapsExterno()">🧭 Cómo llegar</button>
+        }
+        @if (d.clienteCelular) {
+          <button class="btn-sec" (click)="llamarCliente()">📞 Llamar</button>
+        }
+      </div>
+    </section>
+
+    <section class="tarjeta tarjeta--cliente">
+      <h3>Cliente</h3>
+      <p class="dir">{{ d.clienteNombre }}</p>
+      @if (d.saldo > 0.01) {
+        <div class="cobro">💵 Cobrar contra entrega: <strong>S/ {{ d.saldo | number:'1.2-2' }}</strong></div>
+      }
+    </section>
+
+    <!-- Cobro por Yape: muestra el QR al cliente en la puerta si paga por Yape/Plin -->
+    @if (d.saldo > 0.01 && (d.yapeQrUrl || d.yapeNumero)) {
+      <section class="tarjeta tarjeta--yape">
+        <h3>Cobro por Yape / Plin</h3>
+        @if (d.yapeQrUrl) {
+          <img class="yape-qr" [src]="d.yapeQrUrl" alt="QR de Yape" />
+        }
+        @if (d.yapeNumero) { <p class="yape-num"><strong>{{ d.yapeNumero }}</strong></p> }
+        @if (d.yapeTitular) { <p class="sub">{{ d.yapeTitular }}</p> }
+        <p class="yape-hint">Muéstrale este QR al cliente si va a pagar por Yape/Plin.</p>
+      </section>
+    }
+
+    <!-- Acción principal -->
+    <div class="barra">
+      @if (estadoRuta() === 'SIN_RUTA') {
+        <button class="btn-cta" (click)="salirARuta()" [disabled]="procesando()">
+          {{ procesando() ? 'Un momento…' : '🛵 Salí a ruta' }}
+        </button>
+      } @else if (estadoRuta() !== 'ENTREGADO') {
+        <button class="btn-cta btn-cta--ok" (click)="entregar()" [disabled]="procesando()">
+          {{ procesando() ? 'Un momento…' : '✅ Marcar como entregado' }}
+        </button>
+      } @else {
+        <div class="entregado-final">Pedido entregado ✔</div>
+      }
+    </div>
+  </div>
+}

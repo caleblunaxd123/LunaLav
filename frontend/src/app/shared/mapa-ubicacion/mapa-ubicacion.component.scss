@@ -1,0 +1,123 @@
+:host {
+  display: block;
+  margin-top: 12px;
+}
+
+.mapa-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+
+  > div:first-child {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  strong { color: #1e293b; font-size: 12.5px; }
+  span { color: #64748b; font-size: 11px; line-height: 1.4; }
+}
+
+.mapa-acciones {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-mapa {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid #93c5fd;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled { opacity: .65; cursor: wait; }
+  &--limpiar { border-color: #cbd5e1; background: #fff; color: #475569; }
+}
+
+.resultados {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 8px;
+  padding: 8px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.resultados__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 3px 5px;
+
+  strong { color: #1e3a5f; font-size: 11.5px; }
+  span { color: #64748b; font-size: 9.5px; text-align: right; }
+}
+
+.resultado {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+
+  app-icon { flex: 0 0 auto; color: #2563eb; margin-top: 1px; }
+  &:hover, &:focus-visible { border-color: #60a5fa; background: #eff6ff; outline: none; }
+}
+
+.mapa {
+  width: 100%;
+  height: 250px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #e2e8f0;
+  z-index: 0;
+}
+
+.coordenadas,
+.ayuda,
+.error {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.coordenadas { color: #147a45; font-weight: 600; }
+.coordenadas--pendiente { color: #a45208; }
+.error { color: #b91c1c; font-weight: 600; }
+
+@media (max-width: 560px) {
+  .mapa-toolbar { align-items: stretch; flex-direction: column; }
+  .mapa-acciones { width: 100%; flex-wrap: wrap; }
+  .btn-mapa { flex: 1 1 calc(50% - 6px); }
+  .resultados__head { align-items: flex-start; flex-direction: column; }
+  .mapa { height: 220px; }
+}

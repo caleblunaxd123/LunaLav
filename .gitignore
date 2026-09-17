@@ -1,0 +1,42 @@
+# Backend
+backend/**/bin/
+backend/**/obj/
+backend/**/appsettings.Development.json
+backend/**/appsettings.Local.json
+backend/db/backups/
+# Llaves de Data Protection (cifran secretos reales: Culqi, SUNAT) — nunca al repo.
+backend/**/keys/
+*.user
+
+# Documents / backups not needed to run the app
+*.pdf
+*.bak
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
+.qa-build/
+.demo-build/
+
+# Editor
+.vscode/
+.idea/
+.vs/
+**/.vs/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Office temp / lock files
+~$*
+*.tmp
+backend/src/Lavanderia.Api/wwwroot/
+
+# Fotos de evidencia locales (se respaldan a Drive, no al repo)
+backend/**/App_Data/
+
+# Config local de herramientas (Claude Code)
+.claude/

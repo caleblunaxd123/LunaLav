@@ -1,0 +1,46 @@
+<div class="page">
+  <app-page-header icono="whatsapp" color="verde" titulo="Plantillas de WhatsApp" subtitulo="Personaliza los mensajes automáticos que se envían por cada etapa del proceso." volverTexto="Ajustes" (volver)="volver()"></app-page-header>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (error()) {
+    <div class="card error-card">
+      <p>{{ error() }}</p>
+      <button class="btn btn--primario" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="lista">
+      @for (p of plantillas(); track p.id) {
+        <div class="card plantilla" [class.inactiva]="!p.activa">
+          <div class="plantilla__cabecera">
+            <div>
+              <h3>{{ info(p.evento).titulo }}</h3>
+              <p>{{ info(p.evento).descripcion }}</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" [(ngModel)]="p.activa" />
+              <span>{{ p.activa ? 'Activa' : 'Inactiva' }}</span>
+            </label>
+          </div>
+
+          <textarea [rows]="p.evento === 'INGRESO' ? 14 : 3" [(ngModel)]="p.mensaje" placeholder="Escribe el mensaje…"></textarea>
+
+          @if (info(p.evento).placeholders.length) {
+            <div class="placeholders">
+              <span>Variables disponibles:</span>
+              @for (ph of info(p.evento).placeholders; track ph) {
+                <code>{{ '{' + ph + '}' }}</code>
+              }
+            </div>
+          }
+
+          <div class="plantilla__acciones">
+            <button class="btn btn--primario" [disabled]="guardandoId() === p.id" (click)="guardar(p)">
+              {{ guardandoId() === p.id ? 'Guardando…' : 'Guardar' }}
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

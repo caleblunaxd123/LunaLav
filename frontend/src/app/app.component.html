@@ -1,0 +1,21 @@
+@if (versionCheck.hayNuevaVersion()) {
+  <div class="update-banner" role="alert">
+    <span class="update-banner__dot"></span>
+    <span class="update-banner__text">Hay una nueva versión del sistema disponible.</span>
+    <button type="button" class="update-banner__btn" (click)="versionCheck.recargar()">Actualizar ahora</button>
+  </div>
+}
+@if (mostrarHeader()) {
+  <app-header />
+}
+@if (esPlataforma()) {
+  <app-plataforma-sidebar />
+}
+<main class="app-content" [class.app-content--sidebar]="mostrarHeader() || esPlataforma()">
+  @if (mostrarAlertas()) {
+    <app-alertas-globales />
+  }
+  <router-outlet />
+</main>
+<app-toaster />
+<app-tour-overlay />

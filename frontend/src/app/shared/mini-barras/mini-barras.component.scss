@@ -1,0 +1,126 @@
+.mini-barras {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+
+  &__head {
+    margin-bottom: 12px;
+  }
+
+  &__titulo {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--texto, #1f2937);
+  }
+
+  &__sub {
+    font-size: 12px;
+    color: var(--texto-suave, #6b7280);
+    margin-top: 2px;
+  }
+
+  &__estado {
+    font-size: 13px;
+    color: var(--texto-suave, #6b7280);
+    padding: 24px 0;
+    text-align: center;
+  }
+
+  &__grafico {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    gap: 14px;
+    height: 132px;
+    padding: 4px 4px 0;
+    // Eje base para que las barras no floten y se lea como gráfico
+    border-bottom: 1.5px solid var(--gris-borde, #e2e8f0);
+  }
+
+  // Cada columna toma un ancho natural (no estira a toda la tarjeta): con 1 dato
+  // se ve una barra prolija a la izquierda, no un bloque gigante; con muchos, se
+  // reparten. El max-width es el tope real que evita el "bloque" cuando hay pocos.
+  &__col {
+    flex: 1 1 0;
+    min-width: 22px;
+    max-width: 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 5px;
+    height: 100%;
+  }
+
+  &__valor {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--texto-suave, #94a3b8);
+    line-height: 1;
+
+    &--hoy {
+      font-weight: 700;
+    }
+  }
+
+  &__barra {
+    width: 100%;
+    border-radius: 5px 5px 0 0;
+    background: var(--barra-base);
+    transition: height .35s ease;
+    min-height: 3px;
+
+    &--hoy {
+      background: var(--barra-fuerte);
+    }
+  }
+
+  &__ejex {
+    display: flex;
+    justify-content: flex-start;
+    gap: 14px;
+    margin-top: 7px;
+    padding: 0 4px;
+  }
+
+  &__lbl {
+    flex: 1 1 0;
+    min-width: 22px;
+    max-width: 48px;
+    text-align: center;
+    font-size: 10px;
+    color: var(--texto-suave, #94a3b8);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &--azul  { --barra-base: #85B7EB; --barra-fuerte: #185FA5; }
+  &--verde { --barra-base: #5DCAA5; --barra-fuerte: #0F6E56; }
+  &--ambar { --barra-base: #FAC775; --barra-fuerte: #BA7517; }
+}
+
+.mini-barras__valor--hoy {
+  color: var(--barra-fuerte);
+}
+
+@media (max-width: 600px) {
+  .mini-barras {
+    padding-inline: 12px;
+
+    &__grafico,
+    &__ejex {
+      gap: clamp(2px, 1.2vw, 5px);
+      padding-inline: 0;
+    }
+
+    &__col,
+    &__lbl {
+      min-width: 0;
+      max-width: none;
+    }
+
+    &__valor,
+    &__lbl { font-size: 9px; }
+  }
+}

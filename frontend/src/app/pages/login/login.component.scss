@@ -1,0 +1,326 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+// ============================================================
+// Login partido a la mitad (INVERTIDO):
+//   Izquierda -> marca (logo a color)          [fondo BLANCO]
+//   Derecha   -> formulario de ingreso         [fondo AZUL de la empresa]
+// Los colores del panel derecho y el botón usan las variables de marca
+// (--azul-oscuro / --azul-claro), así cada empresa (tenant) hereda su
+// identidad automáticamente. En móvil se apila: marca arriba, form abajo.
+// ============================================================
+.login {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  // ---------------- Panel de marca (izquierda, BLANCO) ----------------
+  &__brand-pane {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    color: var(--azul-oscuro);
+    background: #ffffff;
+    border-right: 1px solid #eef2f7;
+
+  }
+
+  // Marca de agua LunaLav: SOLO en el login del producto (sin logo de tenant).
+  // Es la marca (nube + swoosh) del arte del diseñador, en azul muy pálido, grande y
+  // sangrando fuera del panel — tal cual el ejemplo. Va detrás del logo, sin restarle nitidez.
+  // Las lavanderías con su propio logo NO llevan esta marca de agua.
+  &__brand-pane--marca::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url('/lunalav-watermark.svg') no-repeat;
+    background-position: 44% 50%;
+    background-size: 132% auto;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  // El contenido del panel va por encima de la marca de agua.
+  &__brand-inner,
+  &__brand-foot { position: relative; z-index: 1; }
+
+  &__brand-inner {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    animation: loginBrandIn .5s cubic-bezier(.2,.8,.2,1) both;
+  }
+
+  // Logo del tenant (lavandería con logo propio) sobre el panel blanco
+  &__brand-logo {
+    max-width: 260px;
+    max-height: 150px;
+    margin: 0 auto 20px;
+    display: block;
+    object-fit: contain;
+    border-radius: 16px;   // si el logo trae fondo propio, se ve como tarjeta sobre el blanco
+  }
+
+  // Logo principal LunaLav a color sobre el blanco
+  &__brand-official {
+    display: block;
+    width: 480px;
+    max-width: 90%;
+    height: auto;
+    margin: 0 auto;
+  }
+
+  &__brand-name {
+    margin: 0 0 6px;
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -.5px;
+    line-height: 1.05;
+    color: var(--azul-oscuro);
+    text-wrap: balance;
+  }
+
+  &__brand-tagline {
+    margin: 0;
+    font-size: 14px;
+    color: #64748b;
+  }
+
+  &__brand-foot {
+    position: absolute;
+    bottom: 22px;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    text-align: center;
+    margin: 0;
+    font-size: 11.5px;
+    letter-spacing: .04em;
+    color: #94a3b8;
+    text-transform: uppercase;
+
+    strong { color: var(--azul-oscuro); font-weight: 700; }
+  }
+
+  // ---------------- Panel de formulario (derecha, AZUL) ----------------
+  &__form-pane {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    background: var(--azul-oscuro);
+    color: #fff;
+  }
+
+  &__card {
+    width: 100%;
+    max-width: 380px;
+    animation: loginCardIn .45s cubic-bezier(.2,.8,.2,1) both;
+  }
+
+  &__head {
+    margin-bottom: 22px;
+
+    h2 {
+      margin: 0 0 4px;
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+    }
+    p {
+      margin: 0;
+      font-size: 13px;
+      color: rgba(255,255,255,.72);
+    }
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  label {
+    font-size: 12px;
+    color: rgba(255,255,255,.82);
+    margin: 10px 0 4px;
+    font-weight: 600;
+  }
+
+  input {
+    min-height: 44px;
+    padding: 11px 12px;
+    border: 1px solid rgba(255,255,255,.28);
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+    color: #0f172a;
+
+    &::placeholder { color: #94a3b8; }
+
+    &:focus {
+      outline: none;
+      border-color: var(--azul-claro);
+      box-shadow: 0 0 0 3px rgba(6,176,189,.35);
+    }
+  }
+
+  &__password {
+    position: relative;
+    width: 100%;
+    border: 1px solid rgba(255,255,255,.28);
+    border-radius: 10px;
+    background: #fff;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+
+    &:focus-within {
+      border-color: var(--azul-claro);
+      box-shadow: 0 0 0 3px rgba(6,176,189,.35);
+    }
+
+    input {
+      display: block;
+      width: 100%;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      padding-right: 56px;
+      box-shadow: none;
+
+      &:focus {
+        border-color: transparent;
+        box-shadow: none;
+      }
+    }
+  }
+
+  &__password-toggle {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    bottom: 1px;
+    width: 44px;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-left: 1px solid #e2e8f0;
+    border-radius: 0 9px 9px 0;
+    color: #64748b;
+    background: transparent;
+
+    &:hover, &:focus-visible {
+      color: var(--azul-oscuro);
+      background: #eaf1ff;
+      border-left-color: #bfdbfe;
+    }
+  }
+
+  &__error {
+    background: rgba(254,226,226,.16);
+    color: #fecaca;
+    border: 1px solid rgba(248,113,113,.5);
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-top: 14px;
+    font-size: 12.5px;
+    text-align: center;
+  }
+
+  &__btn {
+    margin-top: 20px;
+    background: var(--azul-claro);
+    color: var(--texto-sobre-secundario, #fff);
+    border: none;
+    min-height: 46px;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .16s ease, transform .12s ease, filter .16s ease;
+
+    &:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+
+    &:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    &.is-loading::after {
+      content: '';
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      margin-left: 8px;
+      vertical-align: -2px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: loginSpin .7s linear infinite;
+    }
+  }
+
+  &__foot {
+    text-align: center;
+    color: rgba(255,255,255,.6);
+    font-size: 11.5px;
+    line-height: 1.4;
+    margin: 20px 0 0;
+  }
+
+  &__dev {
+    text-align: center;
+    color: rgba(255,255,255,.5);
+    font-size: 11px;
+    letter-spacing: .02em;
+    margin: 14px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,.14);
+  }
+}
+
+@keyframes loginBrandIn {
+  from { opacity: 0; transform: translateY(16px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes loginCardIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes loginSpin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .login__brand-inner, .login__card, .login__btn::after { animation: none; }
+  .login__btn:hover:not(:disabled) { transform: none; }
+}
+
+// ---------------- Móvil: se apila (marca blanca arriba, form azul abajo) ----------------
+@media (max-width: 820px) {
+  .login {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+
+    &__brand-pane {
+      padding: 28px 24px 22px;
+      border-right: 0;
+      border-bottom: 1px solid #eef2f7;
+    }
+    &__brand-logo { max-width: 130px; max-height: 96px; margin-bottom: 10px; }
+    &__brand-official { width: 220px; max-width: 66%; }
+    &__brand-name { font-size: 24px; }
+    &__brand-tagline { font-size: 13px; }
+    &__brand-foot { display: none; }
+
+    &__form-pane {
+      padding: 28px 20px 36px;
+      align-items: flex-start;
+    }
+  }
+}

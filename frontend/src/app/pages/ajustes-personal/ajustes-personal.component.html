@@ -1,0 +1,193 @@
+<div class="page">
+  <app-page-header icono="users" color="azul" titulo="Personal" subtitulo="Visualiza, registra o elimina a los empleados de tu negocio." volverTexto="Ajustes" (volver)="volver()">
+    <button class="btn btn--primario" (click)="abrirCrear()">+ Nuevo empleado</button>
+  </app-page-header>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (error()) {
+    <app-empty-state icono="error" titulo="No se pudo cargar" [mensaje]="error()!">
+      <button class="btn btn--primario" (click)="cargar()">Reintentar</button>
+    </app-empty-state>
+  } @else if (empleados().length === 0) {
+    <app-empty-state icono="lista" titulo="Sin personal aún" mensaje="Registra el primer empleado para empezar.">
+      <button class="btn btn--primario" (click)="abrirCrear()">+ Nuevo empleado</button>
+    </app-empty-state>
+  } @else {
+    <div class="buscador-lista">
+      <app-icon name="search" [size]="16"></app-icon>
+      <input type="search" placeholder="Buscar por nombre, DNI, celular o cargo…"
+        [ngModel]="busqueda()" (ngModelChange)="actualizarBusqueda($event)" aria-label="Buscar empleado" />
+      @if (busqueda()) { <button type="button" (click)="actualizarBusqueda('')" title="Limpiar" aria-label="Limpiar búsqueda">×</button> }
+    </div>
+    @if (empleadosFiltrados().length === 0) {
+      <p class="hint">Sin coincidencias para “{{ busqueda() }}”.</p>
+    }
+    <div class="card tabla-wrap">
+      <table class="tabla">
+        <thead><tr><th>Nombre</th><th>DNI</th><th>Celular</th><th>Cargo</th><th>Ingreso</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          @for (e of empleadosPaginados(); track e.id) {
+            <tr [class.inactivo]="!e.activo">
+              <td class="nombre">{{ e.nombre }}</td>
+              <td>{{ e.dni || '—' }}</td>
+              <td>{{ e.celular || '—' }}</td>
+              <td>{{ e.cargo || '—' }}</td>
+              <td>{{ e.fechaIngreso ? (e.fechaIngreso | date:'dd/MM/yyyy') : '—' }}</td>
+              <td>
+                <span [class]="'badge ' + (e.activo ? 'badge--verde' : 'badge--gris')">
+                  {{ e.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="acciones-row acciones-texto">
+                <button class="btn btn--sm btn--editar" (click)="abrirEditar(e)" title="Editar"><app-icon name="edit" [size]="14"></app-icon> Editar</button>
+                <button class="btn btn--sm btn--desactivar" (click)="toggleActivo(e)" [title]="e.activo ? 'Desactivar' : 'Reactivar'">
+                  @if (e.activo) { <app-icon name="disable" [size]="14"></app-icon> Desactivar } @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+                </button>
+                <button class="btn btn--sm btn--eliminar" (click)="pedirEliminar(e)" title="Eliminar"><app-icon name="trash" [size]="14"></app-icon> Eliminar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile: cards -->
+    <div class="cards">
+      @for (e of empleadosPaginados(); track e.id) {
+        <div class="card empleado-card" [class.inactivo]="!e.activo">
+          <div class="empleado-card__head">
+            <strong>{{ e.nombre }}</strong>
+            <span [class]="'badge ' + (e.activo ? 'badge--verde' : 'badge--gris')">
+              {{ e.activo ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+          <div class="empleado-card__body">
+            <div><span>DNI:</span> {{ e.dni || '—' }}</div>
+            <div><span>Celular:</span> {{ e.celular || '—' }}</div>
+            <div><span>Cargo:</span> {{ e.cargo || '—' }}</div>
+            <div><span>Ingreso:</span> {{ e.fechaIngreso ? (e.fechaIngreso | date:'dd/MM/yyyy') : '—' }}</div>
+          </div>
+          <div class="empleado-card__acciones">
+            <button class="btn btn--sm btn--editar" (click)="abrirEditar(e)" title="Editar"><app-icon name="edit" [size]="14"></app-icon> Editar</button>
+            <button class="btn btn--sm btn--desactivar" (click)="toggleActivo(e)" [title]="e.activo ? 'Desactivar' : 'Reactivar'">
+              @if (e.activo) { <app-icon name="disable" [size]="14"></app-icon> Desactivar } @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+            </button>
+            <button class="btn btn--sm btn--eliminar" (click)="pedirEliminar(e)" title="Eliminar"><app-icon name="trash" [size]="14"></app-icon> Eliminar</button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="card paginacion-wrap">
+      <app-paginacion
+        [pagina]="pagina()"
+        [tamanoPagina]="tamanoPagina()"
+        [total]="empleadosFiltrados().length"
+        (paginaChange)="cambiarPagina($event)"
+        (tamanoPaginaChange)="cambiarTamanoPagina($event)">
+      </app-paginacion>
+    </div>
+  }
+</div>
+
+@if (modalAbierto()) {
+  <div class="modal-backdrop" (click)="cerrar()"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>{{ editando() ? 'Editar empleado' : 'Nuevo empleado' }}</h3>
+      <button class="modal__close" (click)="cerrar()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <form (submit)="guardar(); $event.preventDefault()">
+      <div class="modal__body">
+        <label>Nombre completo *</label>
+        <input type="text" [(ngModel)]="form.nombre" name="nombre" placeholder="Ej: Juana Pérez"
+          [class.invalid]="err.get('nombre')" (ngModelChange)="err.limpiar('nombre')" />
+        @if (err.get('nombre')) { <small class="campo-error">{{ err.get('nombre') }}</small> }
+
+        <div class="row-2">
+          <div>
+            <label>DNI</label>
+            <input type="text" [(ngModel)]="form.dni" name="dni" placeholder="Ej: 45678912"
+              [class.invalid]="err.get('dni')" (ngModelChange)="err.limpiar('dni')" />
+            @if (err.get('dni')) { <small class="campo-error">{{ err.get('dni') }}</small> }
+          </div>
+          <div>
+            <label>Celular</label>
+            <app-telefono-pais [(ngModel)]="form.celular" name="celular" inputId="celular"
+                   [class.invalid]="!!err.get('celular')" (ngModelChange)="err.limpiar('celular')"></app-telefono-pais>
+            @if (err.get('celular')) { <small class="campo-error">{{ err.get('celular') }}</small> }
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div>
+            <label>Cargo</label>
+            <input type="text" [(ngModel)]="form.cargo" name="cargo" placeholder="Ej: Lavandero" list="lista-roles-personal" />
+            <datalist id="lista-roles-personal">
+              @for (r of rolesDisponibles(); track r.id) {
+                <option [value]="r.nombre"></option>
+              }
+            </datalist>
+          </div>
+          <div>
+            <label>Fecha de ingreso</label>
+            <input type="date" [(ngModel)]="form.fechaIngreso" name="fechaIngreso" />
+          </div>
+        </div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" [(ngModel)]="form.activo" name="activo" />
+          Empleado activo
+        </label>
+
+        @if (errorForm()) {
+          <div class="modal__error" role="alert">{{ errorForm() }}</div>
+        }
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrar()">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (confirmarEliminar(); as e) {
+  <div class="modal-backdrop" (click)="confirmarEliminar.set(null)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Eliminar empleado?</h3>
+      <button class="modal__close" (click)="confirmarEliminar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p>Vas a eliminar a <strong>{{ e.nombre }}</strong>. Si tiene registros asociados, quedará desactivado; si no, se elimina definitivamente.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarEliminar.set(null)">Cancelar</button>
+        <button class="btn btn--danger" [disabled]="guardando()" (click)="eliminar()">
+          {{ guardando() ? 'Eliminando…' : 'Sí, eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (confirmarDesactivar(); as e) {
+  <div class="modal-backdrop" (click)="confirmarDesactivar.set(null)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Desactivar empleado?</h3>
+      <button class="modal__close" (click)="confirmarDesactivar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p><strong>{{ e.nombre }}</strong> ya no aparecerá disponible para asignar turnos ni tareas.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarDesactivar.set(null)">Cancelar</button>
+        <button class="btn btn--danger" (click)="confirmarDesactivarOk()">Sí, desactivar</button>
+      </div>
+    </div>
+  </div>
+}

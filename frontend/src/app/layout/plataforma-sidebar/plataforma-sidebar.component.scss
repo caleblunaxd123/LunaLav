@@ -1,0 +1,231 @@
+// ==========================================================
+// Sidebar del panel de propietario — mismo patrón que el del cliente,
+// con el tema oscuro (slate) propio de la plataforma.
+//  - Escritorio: sidebar fijo a la izquierda (250px)
+//  - Móvil:      barra superior compacta + cajón deslizable
+// ==========================================================
+
+$sidebar-w: 250px;
+$mtop-h: 56px;
+
+:host {
+  --pf-dark: #10233f;   /* LunaLav azul noche */
+  --pf-light: #7c3aed;  /* LunaLav violeta */
+  --sb-text: rgba(255, 255, 255, .86);
+  --sb-strong: #ffffff;
+  --sb-muted: rgba(255, 255, 255, .58);
+  --sb-border: rgba(255, 255, 255, .16);
+  --sb-hover: rgba(255, 255, 255, .12);
+  --sb-active-bg: rgba(255, 255, 255, .2);
+  --sb-accent: #ffffff;
+  --sb-ease: cubic-bezier(.4, 0, .2, 1);
+}
+
+// ---------- Barra superior compacta (solo móvil) ----------
+.mtop {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: $mtop-h;
+  z-index: 40;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  background: var(--pf-dark);
+  color: #fff;
+  box-shadow: 0 2px 14px rgba(15, 23, 42, .3);
+
+  &__burger {
+    background: transparent; border: none; padding: 8px;
+    width: 38px; height: 38px; flex-shrink: 0;
+    display: flex; flex-direction: column; justify-content: space-between; align-items: stretch;
+    cursor: pointer;
+    span { display: block; height: 3px; background: #fff; border-radius: 3px; }
+  }
+
+  &__brand {
+    display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1;
+    strong { font-size: 15px; letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  }
+
+  &__logout {
+    border: none; background: rgba(255,255,255,.16); color: #fff;
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: background .16s var(--sb-ease), transform .16s var(--sb-ease);
+    &:hover { background: rgba(255,255,255,.3); transform: scale(1.06); }
+  }
+}
+
+// ---------- Sidebar ----------
+.sidebar {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: $sidebar-w;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  color: var(--sb-text);
+  background: var(--pf-dark);
+  box-shadow: 3px 0 24px -8px rgba(15, 23, 42, .35);
+
+  &::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: none;
+  }
+
+  &__brand {
+    position: relative;
+    display: flex; align-items: center; gap: 11px;
+    padding: 18px 18px 16px;
+    border-bottom: 1px solid var(--sb-border);
+
+    // Variante con el logo LunaLav completo, centrado.
+    &--logo {
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 22px 18px 18px;
+    }
+  }
+
+  &__logo-full {
+    box-sizing: border-box;
+    width: 190px;
+    max-width: 92%;
+    height: auto;
+    display: block;
+    // Logo claro (para fondo oscuro), directamente sobre la barra: sin caja blanca.
+  }
+
+  &__brand-caption {
+    font-size: 10.5px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--sb-muted);
+  }
+
+  &__logo {
+    width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
+    &--icon {
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255, 255, 255, .16); color: #fff;
+      border: 1px solid rgba(255,255,255,.25);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+    }
+  }
+
+  &__brand-text {
+    display: flex; flex-direction: column; line-height: 1.2; min-width: 0;
+    strong { font-size: 15px; color: var(--sb-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    span { font-size: 10px; letter-spacing: .09em; text-transform: uppercase; color: var(--sb-muted); }
+  }
+
+  // Navegación
+  &__nav {
+    position: relative;
+    flex: 1; overflow-y: auto; padding: 8px 12px 14px;
+    display: flex; flex-direction: column; gap: 2px;
+
+    &::-webkit-scrollbar { width: 8px; }
+    &::-webkit-scrollbar-thumb { background: rgba(255,255,255,.16); border-radius: 8px; }
+  }
+
+  &__group {
+    margin: 14px 10px 5px; font-size: 10.5px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--sb-muted);
+    &:first-child { margin-top: 6px; }
+  }
+
+  &__link {
+    position: relative;
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 10px;
+    color: var(--sb-text); text-decoration: none; font-size: 14px; font-weight: 600;
+    transition: background .16s var(--sb-ease), color .16s var(--sb-ease), transform .16s var(--sb-ease);
+
+    app-icon { display: flex; flex-shrink: 0; transition: transform .18s var(--sb-ease); }
+    .sidebar__label { flex: 1; line-height: 1; }
+
+    &:hover {
+      background: var(--sb-hover); color: var(--sb-strong); transform: translateX(3px);
+      app-icon { transform: scale(1.14); }
+    }
+    &:active { transform: translateX(3px) scale(.99); }
+
+    &::before {
+      content: ''; position: absolute; left: 2px; top: 50%; width: 3px; height: 0; border-radius: 3px;
+      background: var(--sb-accent); transform: translateY(-50%); transition: height .2s var(--sb-ease);
+    }
+    &.is-active {
+      background: var(--sb-active-bg); color: var(--sb-strong); font-weight: 700;
+      box-shadow: 0 6px 16px -8px rgba(0,0,0,.35);
+      &::before { height: 20px; }
+      app-icon { transform: scale(1.06); }
+    }
+  }
+
+  // Usuario + salir
+  &__user {
+    position: relative;
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border-top: 1px solid var(--sb-border);
+  }
+  &__user-info {
+    display: flex; flex-direction: column; line-height: 1.15; min-width: 0; flex: 1;
+    strong { font-size: 13px; color: var(--sb-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    span { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--sb-muted); }
+  }
+  &__logout {
+    border: none; background: rgba(255,255,255,.12); color: #fff; flex-shrink: 0;
+    width: 36px; height: 36px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: background .16s var(--sb-ease), transform .16s var(--sb-ease);
+    &:hover { background: rgba(255, 90, 90, .9); transform: rotate(-8deg) scale(1.05); }
+  }
+
+  &__dev {
+    margin: 0;
+    padding: 8px 14px 12px;
+    text-align: center;
+    font-size: 9.5px;
+    letter-spacing: .03em;
+    line-height: 1.3;
+    color: var(--sb-muted);
+    border-top: 1px solid var(--sb-border);
+  }
+}
+
+.sb-backdrop {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, .5); z-index: 40;
+  backdrop-filter: blur(2px);
+  animation: fade .18s var(--sb-ease);
+}
+
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+// ---------- Móvil: sidebar off-canvas + barra superior ----------
+@media (max-width: 900px) {
+  .mtop { display: flex; }
+
+  .sidebar {
+    width: 82%; max-width: 320px;
+    transform: translateX(-100%);
+    transition: transform .24s var(--sb-ease);
+    box-shadow: 6px 0 30px rgba(15, 23, 42, .45);
+    &.is-open { transform: translateX(0); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar *, .mtop * { transition: none !important; animation: none !important; }
+  .sidebar__link:hover { transform: none; }
+}
+
+// Ícono de marca LunaLav en la cabecera del sidebar de plataforma
+.sidebar__logo-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+}

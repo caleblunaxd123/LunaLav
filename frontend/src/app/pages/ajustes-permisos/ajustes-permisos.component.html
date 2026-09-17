@@ -1,0 +1,114 @@
+<div class="page">
+  <app-page-header icono="ban" color="gris" titulo="Roles y accesos" subtitulo="Crea los roles de tu negocio y elige qué módulos ve cada uno." volverTexto="Ajustes" (volver)="volver()">
+    <button class="btn btn--ghost" (click)="abrirCrearRol()"><app-icon name="plus" [size]="15"></app-icon> Nuevo rol</button>
+    <button class="btn btn--primario" [disabled]="cargando() || guardando()" (click)="guardar()">
+      {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
+    </button>
+  </app-page-header>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else {
+    <div class="card intro-roles">
+      <p class="intro-roles__titulo">¿Cómo funcionan los roles?</p>
+      <p class="intro-roles__texto">
+        <strong>Administrador</strong> es un rol fijo con acceso total (el dueño/encargado general). Los demás roles
+        los <strong>creas tú</strong>: ponles un nombre (ej: <em>Recepción</em>, <em>Cajero</em>, <em>Operario</em>) y
+        marca abajo qué <strong>módulos</strong> puede ver cada uno. Al crear un usuario en
+        <strong>Usuarios y permisos</strong> le asignas uno de estos roles.
+      </p>
+      <p class="intro-roles__nota">Los cambios se aplican la próxima vez que esa persona inicie sesión.</p>
+    </div>
+
+    <div class="card tabla-wrap">
+      <table class="tabla-permisos">
+        <thead>
+          <tr>
+            <th>Módulo</th>
+            <th class="centro rol-col rol-col--admin">
+              <span class="rol-col__nombre">Administrador</span>
+              <span class="rol-col__tag">acceso total</span>
+            </th>
+            @for (r of rolesEditables(); track r.id) {
+              <th class="centro rol-col">
+                <span class="rol-col__nombre">{{ r.nombre }}</span>
+                <span class="rol-col__acciones">
+                  <button type="button" title="Renombrar" aria-label="Renombrar rol" (click)="abrirEditarRol(r)">
+                    <app-icon name="edit" [size]="13"></app-icon>
+                  </button>
+                  <button type="button" title="Eliminar" aria-label="Eliminar rol" (click)="pedirEliminar(r)">
+                    <app-icon name="trash" [size]="13"></app-icon>
+                  </button>
+                </span>
+              </th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of modulos(); track m) {
+            <tr>
+              <td class="nombre">{{ etiquetas[m] || m }}</td>
+              <td class="centro"><span class="check-fijo" title="El Administrador siempre tiene acceso">✓</span></td>
+              @for (r of rolesEditables(); track r.id) {
+                <td class="centro">
+                  <input type="checkbox" [checked]="tienePermiso(r.id, m)" (change)="toggle(r.id, m)" />
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (rolesEditables().length === 0) {
+      <p class="hint">Aún no tienes roles propios. Crea uno con “+ Nuevo rol” para empezar a asignar accesos.</p>
+    } @else {
+      <p class="hint">Recuerda pulsar “Guardar cambios” después de marcar los módulos.</p>
+    }
+  }
+</div>
+
+<!-- Modal crear / renombrar rol -->
+@if (modalAbierto()) {
+  <div class="modal-backdrop" (click)="cerrarModal()"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>{{ editandoRol() ? 'Renombrar rol' : 'Nuevo rol' }}</h3>
+      <button class="modal__close" (click)="cerrarModal()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <form (submit)="guardarRol(); $event.preventDefault()">
+      <div class="modal__body">
+        <label>Nombre del rol *</label>
+        <input type="text" [(ngModel)]="nombreRol" name="nombreRol" placeholder="Ej: Recepción, Cajero, Operario"
+          [class.invalid]="errorRol()" (ngModelChange)="errorRol.set(null)" maxlength="60" autofocus />
+        @if (errorRol()) { <small class="campo-error">{{ errorRol() }}</small> }
+        @if (!editandoRol()) {
+          <p class="hint">Después de crearlo, marca en la tabla qué módulos podrá ver.</p>
+        }
+      </div>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="guardandoRol()">
+          {{ guardandoRol() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+<!-- Confirmar eliminar rol -->
+@if (confirmarEliminar(); as r) {
+  <div class="modal-backdrop" (click)="confirmarEliminar.set(null)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Eliminar rol?</h3>
+      <button class="modal__close" (click)="confirmarEliminar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p>Vas a eliminar el rol <strong>{{ r.nombre }}</strong> y sus permisos. Esta acción no se puede deshacer.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarEliminar.set(null)">Cancelar</button>
+        <button class="btn btn--danger" (click)="eliminarRol()">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+}

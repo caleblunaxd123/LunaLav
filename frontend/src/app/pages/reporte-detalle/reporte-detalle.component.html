@@ -1,0 +1,121 @@
+<div class="page">
+  <app-page-header icono="chart" color="naranja" [titulo]="meta?.titulo ?? 'Reporte'"
+    [subtitulo]="meta?.descripcion" volverTexto="Reportes" (volver)="volver()">
+    <button class="btn btn--secundario" (click)="exportarCsv()" [disabled]="cargando() || !resultado()?.filas?.length">
+      <app-icon name="download" [size]="15"></app-icon> CSV
+    </button>
+    <button class="btn btn--primario" (click)="exportarExcel()" [disabled]="exportando() || cargando() || !resultado()?.filas?.length">
+      <app-icon name="download" [size]="15"></app-icon> {{ exportando() ? 'Generando…' : 'Excel (.xlsx)' }}
+    </button>
+  </app-page-header>
+
+  @if (meta?.usaRango) {
+    <div class="card filtros">
+      <div>
+        <label>Desde</label>
+        <input type="date" [(ngModel)]="desde" />
+      </div>
+      <div>
+        <label>Hasta</label>
+        <input type="date" [(ngModel)]="hasta" />
+      </div>
+      <button class="btn btn--secundario" (click)="cargar()">Filtrar</button>
+    </div>
+  }
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (error()) {
+    <app-empty-state icono="error" titulo="No se pudo cargar" [mensaje]="error()!">
+      <button class="btn btn--primario" (click)="cargar()">Reintentar</button>
+    </app-empty-state>
+  } @else if (!resultado()?.filas?.length) {
+    <app-empty-state icono="lista" titulo="Sin datos" mensaje="No hay información para este reporte en el rango seleccionado."></app-empty-state>
+  } @else {
+    @if (graficaCfg(); as g) {
+      @if (datosGrafica().length) {
+        <app-mini-barras [titulo]="g.titulo" [subtitulo]="meta?.usaRango ? 'En el rango elegido' : 'Estado actual'"
+                         [color]="g.color" [datos]="datosGrafica()"></app-mini-barras>
+      }
+    }
+
+    <div class="card tabla-wrap">
+      <table class="tabla">
+        <thead>
+          <tr>
+            @for (c of resultado()!.columnas; track c) { <th>{{ c }}</th> }
+            @if (accion()) { <th class="col-accion">Acción</th> }
+          </tr>
+        </thead>
+        <tbody>
+          @for (fila of filasPaginadas(); track $index) {
+            <tr>
+              @for (c of resultado()!.columnas; track c) { <td>{{ fila[c] }}</td> }
+              @if (accion()) {
+                <td class="col-accion">
+                  <button class="btn btn--outline-primary btn--sm"
+                          [class.btn--donar]="accion() === 'donar'"
+                          [disabled]="ejecutandoAccion()"
+                          (click)="onAccion(fila)">
+                    {{ accionLabel() }}
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Vista de tarjetas (solo móvil) -->
+    <div class="cards-rep">
+      @for (fila of filasPaginadas(); track $index) {
+        <div class="rep-card">
+          <div class="rep-card__titulo">{{ fila[resultado()!.columnas[0]] }}</div>
+          @for (c of resultado()!.columnas; track c; let first = $first) {
+            @if (!first) {
+              <div class="rep-card__row"><span>{{ c }}</span><strong>{{ fila[c] }}</strong></div>
+            }
+          }
+          @if (accion()) {
+            <button class="btn btn--outline-primary btn--sm rep-card__accion"
+                    [class.btn--donar]="accion() === 'donar'"
+                    [disabled]="ejecutandoAccion()"
+                    (click)="onAccion(fila)">
+              {{ accionLabel() }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="card paginacion-wrap">
+      <app-paginacion
+        [pagina]="pagina()"
+        [tamanoPagina]="tamanoPagina()"
+        [total]="resultado()!.filas.length"
+        (paginaChange)="cambiarPagina($event)"
+        (tamanoPaginaChange)="cambiarTamanoPagina($event)">
+      </app-paginacion>
+    </div>
+  }
+
+  @if (confirmarDonar(); as c) {
+    <div class="modal-backdrop" (click)="confirmarDonar.set(null)"></div>
+    <div class="modal modal--sm">
+      <div class="modal__header">
+        <h3>¿Enviar a donación?</h3>
+        <button class="modal__close" (click)="confirmarDonar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+      </div>
+      <div class="modal__body">
+        <p>El pedido <strong>{{ c.texto }}</strong> lleva mucho tiempo en custodia. Se marcará como <strong>DONADO</strong> y saldrá del almacén. Esta acción no se puede deshacer.</p>
+        <div class="modal__actions">
+          <button class="btn btn--ghost" (click)="confirmarDonar.set(null)">Cancelar</button>
+          <button class="btn btn--danger" [disabled]="ejecutandoAccion()" (click)="confirmarDonarOk()">
+            {{ ejecutandoAccion() ? 'Enviando…' : 'Sí, enviar a donación' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

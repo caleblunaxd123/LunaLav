@@ -1,0 +1,107 @@
+<div class="page">
+  <app-page-header icono="bank" color="gris" titulo="Nueva empresa"
+    subtitulo="Crea el negocio, su primera sede y el usuario administrador que la va a manejar."
+    volverTexto="Empresas" (volver)="cancelar()"></app-page-header>
+
+  @if (creada(); as c) {
+    <div class="card exito">
+      <div class="exito__icono"><app-icon name="check" [size]="28"></app-icon></div>
+      <h3>¡Empresa "{{ c.nombre }}" creada!</h3>
+      <p>Estos son los datos de acceso del administrador. <strong>Anótalos ahora</strong> — la contraseña no se vuelve a mostrar.</p>
+      <div class="cred-box">
+        <div class="cred-row"><span>Acceso</span><b class="mono">{{ c.url }}</b><button class="link" (click)="copiar(c.url)">copiar</button></div>
+        <div class="cred-row"><span>Usuario</span><b>{{ c.usuario }}</b><button class="link" (click)="copiar(c.usuario)">copiar</button></div>
+        <div class="cred-row"><span>Contraseña</span><b>{{ c.password }}</b><button class="link" (click)="copiar(c.password)">copiar</button></div>
+      </div>
+      <div class="exito__acciones">
+        <button class="btn btn--ghost" (click)="copiarTodo()">Copiar todo</button>
+        <button class="btn btn--ghost" (click)="crearOtra()">Crear otra</button>
+        <button class="btn btn--primario" (click)="irAlPanel()">Ir al panel</button>
+      </div>
+    </div>
+  } @else {
+  <div class="card form-wrap">
+    <form (submit)="guardar(); $event.preventDefault()">
+      <h3>Datos de la empresa</h3>
+
+      <label>Nombre de la empresa *</label>
+      <input type="text" [(ngModel)]="form.nombre" name="nombre" placeholder="Ej: Lavanderia Don Pepe"
+        (ngModelChange)="onNombreChange(); err.limpiar('nombre')" [class.invalid]="err.get('nombre')" />
+      @if (err.get('nombre')) { <small class="campo-error">{{ err.get('nombre') }}</small> }
+
+      <label>Slug de acceso (URL) *</label>
+      <input type="text" [(ngModel)]="form.slug" name="slug" placeholder="Ej: donpepe"
+        (ngModelChange)="onSlugChange(); err.limpiar('slug')" [class.invalid]="err.get('slug')" />
+      @if (err.get('slug')) { <small class="campo-error">{{ err.get('slug') }}</small> }
+      <p class="hint">Sus usuarios entraran por <strong>{{ urlAcceso }}</strong></p>
+
+      <div class="row-2">
+        <div>
+          <label>RUC <small class="hint">(opcional)</small></label>
+          <input type="text" [(ngModel)]="form.rucEmpresa" name="rucEmpresa" placeholder="Ej: 20999888771" inputmode="numeric" maxlength="11"
+            [class.invalid]="err.get('rucEmpresa')" (ngModelChange)="err.limpiar('rucEmpresa')" />
+          @if (err.get('rucEmpresa')) { <small class="campo-error">{{ err.get('rucEmpresa') }}</small> }
+        </div>
+        <div>
+          <label>Nombre del titular <small class="hint">(opcional)</small></label>
+          <input type="text" [(ngModel)]="form.titularNombre" name="titularNombre" placeholder="Ej: Pepe Perez" />
+        </div>
+      </div>
+
+      <label>Email del titular <small class="hint">(opcional)</small></label>
+      <input type="email" [(ngModel)]="form.titularEmail" name="titularEmail" placeholder="correo@ejemplo.com" autocomplete="email"
+        [class.invalid]="err.get('titularEmail')" (ngModelChange)="err.limpiar('titularEmail')" />
+      @if (err.get('titularEmail')) { <small class="campo-error">{{ err.get('titularEmail') }}</small> }
+
+      <label>Celular del titular <small class="hint">(opcional)</small></label>
+      <input type="tel" [(ngModel)]="form.titularCelular" name="titularCelular" placeholder="Ej: 999888777" maxlength="20" />
+
+      <label>Nombre de la primera sede *</label>
+      <input type="text" [(ngModel)]="form.sedeNombre" name="sedeNombre" placeholder="Ej: Principal"
+        [class.invalid]="err.get('sedeNombre')" (ngModelChange)="err.limpiar('sedeNombre')" />
+      @if (err.get('sedeNombre')) { <small class="campo-error">{{ err.get('sedeNombre') }}</small> }
+
+      <h3>Usuario administrador</h3>
+
+      <div class="row-2">
+        <div>
+          <label>Usuario (acceso) *</label>
+          <input type="text" [(ngModel)]="form.adminUsuario" name="adminUsuario" placeholder="Ej: admindonpepe" autocomplete="username"
+            [class.invalid]="err.get('adminUsuario')" (ngModelChange)="err.limpiar('adminUsuario')" />
+          @if (err.get('adminUsuario')) { <small class="campo-error">{{ err.get('adminUsuario') }}</small> }
+        </div>
+        <div>
+          <label>Contraseña *</label>
+          <div class="pass-row">
+            <input type="text" [(ngModel)]="form.adminPassword" name="adminPassword" autocomplete="new-password" placeholder="Mín. 8, con números"
+              [class.invalid]="err.get('adminPassword')" (ngModelChange)="err.limpiar('adminPassword')" />
+            <button type="button" class="btn btn--ghost btn--sm" (click)="generarPassword()">Generar</button>
+          </div>
+          @if (err.get('adminPassword')) { <small class="campo-error">{{ err.get('adminPassword') }}</small> }
+        </div>
+      </div>
+
+      <label>Nombre completo *</label>
+      <input type="text" [(ngModel)]="form.adminNombreCompleto" name="adminNombreCompleto" placeholder="Ej: Pepe Perez"
+        [class.invalid]="err.get('adminNombreCompleto')" (ngModelChange)="err.limpiar('adminNombreCompleto')" />
+      @if (err.get('adminNombreCompleto')) { <small class="campo-error">{{ err.get('adminNombreCompleto') }}</small> }
+
+      <label>Email <small class="hint">(opcional)</small></label>
+      <input type="email" [(ngModel)]="form.adminEmail" name="adminEmail" placeholder="correo@ejemplo.com" autocomplete="email"
+        [class.invalid]="err.get('adminEmail')" (ngModelChange)="err.limpiar('adminEmail')" />
+      @if (err.get('adminEmail')) { <small class="campo-error">{{ err.get('adminEmail') }}</small> }
+
+      @if (errorForm()) {
+        <div class="form__error" role="alert">{{ errorForm() }}</div>
+      }
+
+      <div class="form__actions">
+        <button type="button" class="btn btn--ghost" (click)="cancelar()">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Creando...' : 'Crear empresa' }}
+        </button>
+      </div>
+    </form>
+  </div>
+  }
+</div>

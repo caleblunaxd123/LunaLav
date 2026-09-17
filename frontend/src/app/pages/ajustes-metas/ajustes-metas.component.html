@@ -1,0 +1,19 @@
+<div class="page">
+  <app-page-header icono="chart" color="verde" titulo="Ajuste de Metas" subtitulo="Actualiza el valor de la meta mensual de pedidos del negocio." volverTexto="Ajustes" (volver)="volver()"></app-page-header>
+
+  <div class="card seccion">
+    <label>Meta mensual (cantidad de pedidos)</label>
+    <div class="fila-input">
+      <input type="number" min="0" step="1" [(ngModel)]="metaMensual" />
+      <span>pedidos / mes</span>
+    </div>
+    <p class="hint">Se usa para mostrar el progreso del mes en el listado de Pedidos. Déjalo en 0 para ocultar el indicador.</p>
+  </div>
+
+  <div class="acciones">
+    <button class="btn btn--ghost" (click)="volver()">Cancelar</button>
+    <button class="btn btn--primario" (click)="guardar()" [disabled]="guardando() || metaMensual < 0">
+      {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
+    </button>
+  </div>
+</div>

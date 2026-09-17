@@ -1,0 +1,140 @@
+:host { display: block; margin-bottom: 18px; }
+
+// Botón "¿Cómo funciona?" — abre el tour guiado del módulo.
+.ph__ayuda {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border: 1px solid var(--gris-borde, #e2e8f0);
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, color .15s, border-color .15s;
+
+  &:hover {
+    background: #eff6ff;
+    color: var(--azul-oscuro, #053465);
+    border-color: #bfdbfe;
+  }
+
+  @media (max-width: 640px) {
+    span { display: none; }  // en móvil solo el icono
+    padding: 8px;
+  }
+}
+
+// Botón "Volver" — mismo lugar (arriba a la izquierda) y mismo aspecto en TODAS
+// las pantallas, para que el usuario siempre sepa dónde está el regreso.
+.ph__volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 8px 18px 8px 8px;
+  background: #eef4ff;
+  border: 1px solid #cfe0fb;
+  border-radius: 999px;
+  color: #053465;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+
+  .ph__volver-flecha {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #053465;
+    color: #fff;
+    transition: transform .15s ease;
+  }
+
+  &:hover {
+    background: #dfeafe;
+    border-color: #b6ccf5;
+    box-shadow: 0 3px 10px rgba(11, 87, 208, .16);
+    .ph__volver-flecha { transform: translateX(-2px); }
+  }
+  &:active { transform: translateY(1px); }
+  &:focus-visible {
+    outline: none;
+    border-color: #053465;
+    box-shadow: 0 0 0 3px rgba(11, 87, 208, .22);
+  }
+}
+
+.ph {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 78px;
+  background: var(--surface, #f8fbff);
+  border: 1px solid var(--surface-border, #dbe7f7);
+  border-left: 4px solid var(--acento, #053465);
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, .055);
+
+  &__chip {
+    width: 44px; height: 44px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--chip-bg, #e8f1ff);
+    color: var(--acento, #053465);
+    border: 1px solid var(--chip-border, #cfe0fb);
+  }
+
+  &__texto { flex: 1; min-width: 0; }
+
+  &__titulo {
+    margin: 0;
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--titulo, #0c447c);
+    line-height: 1.15;
+  }
+
+  &__sub {
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    color: #64748b;
+  }
+
+  &__acciones {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    &:empty { display: none; }
+  }
+}
+
+/* Cada módulo conserva su identidad sin perder la misma estructura visual. */
+.ph[data-color="azul"]    { --acento:#053465; --chip-bg:#e8f1ff; --chip-border:#cfe0fb; --titulo:#0c447c; --surface:#f8fbff; --surface-border:#dbe7f7; }
+.ph[data-color="verde"]   { --acento:#147a45; --chip-bg:#e6f9ee; --chip-border:#c9ead7; --titulo:#0f6e56; --surface:#f7fcf9; --surface-border:#d9eee2; }
+.ph[data-color="naranja"] { --acento:#b7791f; --chip-bg:#fff4e0; --chip-border:#f5dfb7; --titulo:#854f0b; --surface:#fffaf2; --surface-border:#f4e5ca; }
+.ph[data-color="cian"]    { --acento:#0891b2; --chip-bg:#e0f7fb; --chip-border:#c4eaf1; --titulo:#0e5b6e; --surface:#f5fcfd; --surface-border:#d6eef2; }
+.ph[data-color="morado"]  { --acento:#7c3aed; --chip-bg:#f1e8ff; --chip-border:#e0d0fa; --titulo:#5b21b6; --surface:#fbf9ff; --surface-border:#e9e1f7; }
+.ph[data-color="rojo"]    { --acento:#dc2626; --chip-bg:#fde8e8; --chip-border:#f5cccc; --titulo:#991b1b; --surface:#fff9f9; --surface-border:#f4dddd; }
+.ph[data-color="gris"]    { --acento:#475569; --chip-bg:#eef2f7; --chip-border:#dce3eb; --titulo:#334155; --surface:#fafbfc; --surface-border:#e1e7ee; }
+
+@media (max-width: 820px) {
+  .ph { flex-wrap: wrap; }
+  .ph__acciones { width: 100%; padding-left: 58px; }
+}
+
+@media (max-width: 640px) {
+  .ph { padding: 12px 14px; gap: 11px; flex-wrap: wrap; }
+  .ph__chip { width: 38px; height: 38px; }
+  .ph__titulo { font-size: 18px; }
+  .ph__acciones { width: 100%; padding-left: 0; }
+}

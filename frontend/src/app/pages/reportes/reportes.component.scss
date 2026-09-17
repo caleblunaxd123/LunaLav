@@ -1,0 +1,77 @@
+.page { padding: 20px 24px; }
+
+.page__titulo { margin: 0 0 4px; font-size: 20px; }
+.page__sub { margin: 0 0 18px; color: #64748b; font-size: 13px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .page { padding: 14px; }
+}
+
+.tarjeta {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: 18px 14px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0,0,0,.1);
+
+    .tarjeta__icono { transform: scale(1.05); }
+  }
+
+  &__icono {
+    width: 130px;
+    height: 130px;
+    margin: 0 auto 10px;
+    background: none;
+    transition: transform .25s;
+
+    svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  }
+
+  span {
+    display: block;
+    font-size: 10.5px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-weight: 600;
+  }
+
+  strong {
+    display: block;
+    font-size: 14.5px;
+    color: #1a202c;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+}
+
+// Media query AL FINAL para que gane la cascada sobre las reglas base de arriba
+@media (max-width: 480px) {
+  .grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .tarjeta {
+    padding: 12px 8px 14px;
+
+    &__icono { width: 84px; height: 84px; }
+
+    span { font-size: 9px; }
+    strong { font-size: 12.5px; }
+  }
+}

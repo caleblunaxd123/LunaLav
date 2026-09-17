@@ -1,0 +1,281 @@
+<div class="page">
+  <button class="volver" (click)="volver()">
+    <span class="volver__flecha"><app-icon name="arrow-left" [size]="18"></app-icon></span>
+    <span>Volver al panel de plataforma</span>
+  </button>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (negocio()) {
+    @if (negocio(); as n) {
+    <!-- Encabezado -->
+    <div class="ficha-head">
+      <div>
+        <h2>{{ n.nombre }} <span [class]="'badge ' + estadoBadge().clase">{{ estadoBadge().texto }}</span></h2>
+        <p class="mono">{{ urlAcceso() }} <button class="link" (click)="copiar(urlAcceso())">copiar</button></p>
+      </div>
+      <div class="ficha-head__acciones">
+        @if (n.titularCelular) {
+          <button class="btn btn--wsp" (click)="contactarTitular()" title="Escribir al titular por WhatsApp para darle soporte">
+            <app-icon name="whatsapp" [size]="15"></app-icon> Contactar al titular
+          </button>
+        }
+        <button class="btn" [class.btn--danger]="n.activo" [class.btn--verde]="!n.activo" (click)="toggleEstado()">
+          {{ n.activo ? 'Suspender empresa' : 'Reactivar empresa' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats rápidas -->
+    <div class="stats">
+      <div class="stat"><span class="stat__valor">{{ n.pedidosMes }}</span><span class="stat__label">Pedidos este mes</span></div>
+      <div class="stat"><span class="stat__valor">{{ n.usuarios.length }}</span><span class="stat__label">Usuarios</span></div>
+      <div class="stat"><span class="stat__valor">{{ n.sedes.length }}</span><span class="stat__label">Sedes</span></div>
+      <div class="stat">
+        <span class="stat__valor stat__valor--sm">{{ n.ultimoAcceso ? (n.ultimoAcceso | date:'dd/MM HH:mm') : 'Nunca' }}</span>
+        <span class="stat__label">Último acceso</span>
+      </div>
+      <div class="stat">
+        <span class="stat__valor stat__valor--sm">{{ n.fechaCreacion | date:'dd/MM/yyyy' }}</span>
+        <span class="stat__label">Cliente desde</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Datos de la empresa -->
+      <section class="card seccion">
+        <div class="seccion__head">
+          <h3>Datos de la empresa</h3>
+          @if (!editandoDatos()) { <button class="link" (click)="abrirEdicionDatos()"><app-icon name="edit" [size]="13"></app-icon> Editar</button> }
+        </div>
+
+        @if (!editandoDatos()) {
+          <dl class="datos">
+            <dt>RUC</dt><dd>{{ n.rucEmpresa || '—' }}</dd>
+            <dt>Titular</dt><dd>{{ n.titularNombre || '—' }}</dd>
+            <dt>Email titular</dt><dd>{{ n.titularEmail || '—' }}</dd>
+            <dt>Celular titular</dt><dd>{{ n.titularCelular || '—' }}</dd>
+            <dt>Notas internas</dt><dd>{{ n.notasInternas || '—' }}</dd>
+          </dl>
+        } @else {
+          <div class="form">
+            <label>Nombre de la empresa *</label>
+            <input type="text" [(ngModel)]="formDatos.nombre" />
+            <label>RUC</label>
+            <input type="text" [(ngModel)]="formDatos.rucEmpresa" placeholder="11 dígitos" maxlength="11" />
+            <label>Nombre del titular</label>
+            <input type="text" [(ngModel)]="formDatos.titularNombre" />
+            <label>Email del titular</label>
+            <input type="email" [(ngModel)]="formDatos.titularEmail" />
+            <label>Celular del titular</label>
+            <input type="tel" [(ngModel)]="formDatos.titularCelular" placeholder="Ej: 999888777" maxlength="20" />
+            <label>Notas internas <small>(solo tú las ves)</small></label>
+            <textarea rows="2" [(ngModel)]="formDatos.notasInternas" placeholder="Ej: cliente estrella, paga puntual…"></textarea>
+            <div class="form__acciones">
+              <button class="btn btn--ghost" (click)="editandoDatos.set(false)">Cancelar</button>
+              <button class="btn btn--primario" (click)="guardarDatos()" [disabled]="guardando()">Guardar</button>
+            </div>
+          </div>
+        }
+      </section>
+
+      <!-- Suscripción -->
+      <section class="card seccion">
+        <div class="seccion__head">
+          <h3>Suscripción y cobro</h3>
+          @if (!editandoSuscripcion()) { <button class="link" (click)="abrirEdicionSuscripcion()"><app-icon name="edit" [size]="13"></app-icon> Editar</button> }
+        </div>
+
+        @if (!editandoSuscripcion()) {
+          <dl class="datos">
+            <dt>Plan</dt><dd><span class="plan">{{ n.planSuscripcion }}</span></dd>
+            <dt>Estado</dt><dd><span [class]="'badge ' + estadoBadge().clase">{{ estadoBadge().texto }}</span></dd>
+            <dt>Monto mensual</dt><dd class="monto">S/ {{ n.montoMensual | number:'1.2-2' }}</dd>
+            <dt>Próximo pago</dt><dd>{{ n.proximoPago ? (n.proximoPago | date:'dd/MM/yyyy') : '—' }}</dd>
+          </dl>
+          <div class="cobro-acciones">
+            <button class="btn btn--verde" (click)="abrirPago()" [disabled]="guardando()">
+              <app-icon name="cash" [size]="15"></app-icon> Registrar pago
+            </button>
+            <button class="btn btn--ghost" (click)="recordarCobro()" [disabled]="!n.titularCelular"
+              [title]="n.titularCelular ? 'Enviar recordatorio por WhatsApp' : 'La empresa no tiene celular del titular'">
+              <app-icon name="whatsapp" [size]="15"></app-icon> Recordar cobro
+            </button>
+          </div>
+        } @else {
+          <div class="form">
+            <label>Plan</label>
+            <select [(ngModel)]="formSusc.planSuscripcion">
+              @for (p of planes; track p) { <option [value]="p">{{ p }}</option> }
+            </select>
+            <label>Estado de la suscripción</label>
+            <select [(ngModel)]="formSusc.estadoSuscripcion">
+              @for (e of estados; track e) { <option [value]="e">{{ e }}</option> }
+            </select>
+            <label>Monto mensual (S/)</label>
+            <input type="number" min="0" step="10" [(ngModel)]="formSusc.montoMensual" />
+            <label>Próximo pago</label>
+            <input type="date" [(ngModel)]="formSusc.proximoPago" />
+            <div class="form__acciones">
+              <button class="btn btn--ghost" (click)="editandoSuscripcion.set(false)">Cancelar</button>
+              <button class="btn btn--primario" (click)="guardarSuscripcion()" [disabled]="guardando()">Guardar</button>
+            </div>
+          </div>
+        }
+      </section>
+
+      <!-- Sedes -->
+      <section class="card seccion">
+        <div class="seccion__head"><h3>Sedes ({{ n.sedes.length }})</h3></div>
+        <ul class="lista">
+          @for (s of n.sedes; track s.id) {
+            <li>
+              <span>{{ s.nombre }} @if (s.direccion) { <small>· {{ s.direccion }}</small> }</span>
+              <span [class]="'badge ' + (s.activo ? 'badge--verde' : 'badge--gris')">{{ s.activo ? 'Activa' : 'Inactiva' }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <!-- Usuarios -->
+      <section class="card seccion">
+        <div class="seccion__head">
+          <h3>Usuarios ({{ n.usuarios.length }})</h3>
+          <button class="link" (click)="abrirResetAdmin()"><app-icon name="refresh" [size]="13"></app-icon> Resetear clave admin</button>
+        </div>
+        <p class="hint hint--soporte">¿Un trabajador o coordinador perdió su acceso? Restablece su clave aquí y pásasela.</p>
+        <ul class="lista lista--usuarios">
+          @for (u of n.usuarios; track u.id) {
+            <li [class.inactivo]="!u.activo">
+              <span class="usuario-info">
+                <strong>{{ u.nombreCompleto }}</strong>
+                <small>{{ u.usuario }} · {{ u.rolCodigo }}</small>
+                <small class="acceso">{{ u.ultimoAcceso ? ('Último acceso: ' + (u.ultimoAcceso | date:'dd/MM HH:mm')) : 'sin acceso' }}</small>
+              </span>
+              @if (u.activo) {
+                <button class="btn btn--reset" (click)="abrirResetUsuario(u)"
+                        title="Restablecer la clave de este usuario">
+                  <app-icon name="refresh" [size]="14"></app-icon> Resetear clave
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+
+      <!-- Historial de pagos -->
+      <section class="card seccion seccion--ancha">
+        <div class="seccion__head"><h3>Historial de pagos ({{ pagos().length }})</h3></div>
+        @if (pagos().length === 0) {
+          <p class="hint">Aún no hay pagos registrados. Usa “Registrar pago” cuando cobres la mensualidad y el próximo pago se ajusta solo.</p>
+        } @else {
+          <ul class="pagos">
+            @for (p of pagos(); track p.id) {
+              <li>
+                <div class="pagos__info">
+                  <strong>S/ {{ p.monto | number:'1.2-2' }}</strong>
+                  <span class="badge badge--gris">{{ metodoEtiqueta(p.metodo) }}</span>
+                  <small>{{ p.fecha | date:'dd/MM/yyyy' }}</small>
+                  @if (p.periodoHasta) { <small class="periodo">cubre hasta {{ p.periodoHasta | date:'dd/MM/yyyy' }}</small> }
+                  @if (p.nota) { <small class="nota">· {{ p.nota }}</small> }
+                </div>
+                <button class="link" (click)="abrirRecibo(p.id)">Recibo</button>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+
+    <!-- Credenciales tras resetear (banner) -->
+    @if (credencialesReset(); as c) {
+      <div class="cred">
+        <app-icon name="check" [size]="18"></app-icon>
+        <div class="cred__body">
+          <strong>Contraseña restablecida.</strong> Comunícale al cliente sus nuevos datos de acceso:
+          <div class="cred__valores">
+            <span>Usuario: <b>{{ c.usuario }}</b> <button class="link" (click)="copiar(c.usuario)">copiar</button></span>
+            <span>Contraseña: <b>{{ c.password }}</b> <button class="link" (click)="copiar(c.password)">copiar</button></span>
+          </div>
+        </div>
+        <button class="cred__cerrar" (click)="credencialesReset.set(null)"><app-icon name="close" [size]="15"></app-icon></button>
+      </div>
+    }
+    }
+  }
+</div>
+
+<!-- Modal: reset password -->
+@if (mostrarReset()) {
+  <div class="modal-backdrop" (click)="mostrarReset.set(false)"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>{{ resetUsuario() ? 'Restablecer contraseña del usuario' : 'Restablecer contraseña del admin' }}</h3>
+      <button class="modal__close" (click)="mostrarReset.set(false)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      @if (resetUsuario(); as ru) {
+        <p class="hint">Esto cambia la contraseña de <strong>{{ ru.nombre }}</strong> (usuario <strong>{{ ru.usuario }}</strong>) en <strong>{{ negocio()?.nombre }}</strong>. Úsalo cuando pierda su acceso.</p>
+      } @else {
+        <p class="hint">Esto cambia la contraseña del administrador de <strong>{{ negocio()?.nombre }}</strong>. Úsalo cuando el cliente pierda su acceso.</p>
+      }
+      <label>Nueva contraseña</label>
+      <div class="pass-row">
+        <input type="text" [(ngModel)]="passwordNueva" placeholder="Mínimo 8 caracteres, con números" />
+        <button class="btn btn--ghost" (click)="generarPassword()">Generar</button>
+      </div>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="mostrarReset.set(false)">Cancelar</button>
+        <button class="btn btn--primario" (click)="confirmarReset()" [disabled]="guardando()">Restablecer</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal: registrar pago de suscripción -->
+@if (mostrarPago()) {
+  <div class="modal-backdrop" (click)="cerrarPago()"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>Registrar pago de suscripción</h3>
+      <button class="modal__close" (click)="cerrarPago()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <label>Monto cobrado (S/) *</label>
+      <input type="number" min="0.01" step="0.01" [(ngModel)]="formPago.monto" />
+      <label>Método de pago</label>
+      <select [(ngModel)]="formPago.metodo">
+        @for (m of metodosPago; track m) { <option [value]="m">{{ metodoEtiqueta(m) }}</option> }
+      </select>
+      <label>Meses que cubre este pago</label>
+      <input type="number" min="1" max="24" step="1" [(ngModel)]="formPago.meses" />
+      <p class="hint">El próximo pago avanzará esa cantidad de meses y la suscripción quedará al día.</p>
+      <label>Nota <small>(opcional)</small></label>
+      <input type="text" maxlength="300" [(ngModel)]="formPago.nota" placeholder="Ej: pago de agosto por Yape" />
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="cerrarPago()">Cancelar</button>
+        <button class="btn btn--primario" (click)="confirmarPago()" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Registrar y ver recibo' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal: confirmar suspender -->
+@if (confirmarEstado()) {
+  <div class="modal-backdrop" (click)="confirmarEstado.set(false)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Suspender empresa?</h3>
+      <button class="modal__close" (click)="confirmarEstado.set(false)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p><strong>{{ negocio()?.nombre }}</strong> y todo su personal no podrán iniciar sesión hasta que la reactives.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarEstado.set(false)">Cancelar</button>
+        <button class="btn btn--danger" (click)="confirmarSuspender()">Sí, suspender</button>
+      </div>
+    </div>
+  </div>
+}

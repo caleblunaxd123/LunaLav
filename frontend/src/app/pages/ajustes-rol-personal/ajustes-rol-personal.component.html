@@ -1,0 +1,157 @@
+<div class="page">
+  <app-page-header icono="users" color="gris" titulo="Cargos del personal" subtitulo="Etiquetas de puesto para tu personal (ej: Lavandero, Cajero, Supervisor). Son solo descriptivas: NO dan acceso al sistema." volverTexto="Ajustes" (volver)="volver()">
+    <button class="btn btn--primario" (click)="abrirCrear()">+ Nuevo cargo</button>
+  </app-page-header>
+
+  <div class="card aviso-cargos">
+    <app-icon name="info" [size]="18"></app-icon>
+    <p>Estos son solo <strong>nombres de puesto</strong> para clasificar a tu personal. Para dar o quitar <strong>acceso</strong> a los módulos del sistema, usa <strong>Permisos y accesos</strong>.</p>
+  </div>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (error()) {
+    <app-empty-state icono="error" titulo="No se pudo cargar" [mensaje]="error()!">
+      <button class="btn btn--primario" (click)="cargar()">Reintentar</button>
+    </app-empty-state>
+  } @else if (roles().length === 0) {
+    <app-empty-state icono="lista" titulo="Sin cargos aún" mensaje="Crea el primero para empezar a clasificar a tu personal.">
+      <button class="btn btn--primario" (click)="abrirCrear()">+ Nuevo cargo</button>
+    </app-empty-state>
+  } @else {
+    <div class="buscador-lista">
+      <app-icon name="search" [size]="16"></app-icon>
+      <input type="search" placeholder="Buscar cargo por nombre…"
+        [ngModel]="busqueda()" (ngModelChange)="actualizarBusqueda($event)" aria-label="Buscar cargo" />
+      @if (busqueda()) { <button type="button" (click)="actualizarBusqueda('')" title="Limpiar" aria-label="Limpiar búsqueda">×</button> }
+    </div>
+    @if (rolesFiltrados().length === 0) {
+      <p class="hint">Sin coincidencias para “{{ busqueda() }}”.</p>
+    }
+    <div class="card tabla-wrap">
+      <table class="tabla">
+        <thead><tr><th>Nombre</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          @for (r of rolesPaginados(); track r.id) {
+            <tr [class.inactivo]="!r.activo">
+              <td class="nombre">{{ r.nombre }}</td>
+              <td>
+                <span [class]="'badge ' + (r.activo ? 'badge--verde' : 'badge--gris')">
+                  {{ r.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="acciones-row acciones-texto">
+                <button class="btn btn--sm btn--editar" (click)="abrirEditar(r)" title="Editar"><app-icon name="edit" [size]="14"></app-icon> Editar</button>
+                <button class="btn btn--sm btn--desactivar" (click)="toggleActivo(r)" [title]="r.activo ? 'Desactivar' : 'Reactivar'">
+                  @if (r.activo) { <app-icon name="disable" [size]="14"></app-icon> Desactivar } @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+                </button>
+                <button class="btn btn--sm btn--eliminar" (click)="pedirEliminar(r)" title="Eliminar"><app-icon name="trash" [size]="14"></app-icon> Eliminar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile: cards -->
+    <div class="cards">
+      @for (r of rolesPaginados(); track r.id) {
+        <div class="card rol-card" [class.inactivo]="!r.activo">
+          <div class="rol-card__head">
+            <strong>{{ r.nombre }}</strong>
+            <span [class]="'badge ' + (r.activo ? 'badge--verde' : 'badge--gris')">
+              {{ r.activo ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+          <div class="rol-card__acciones">
+            <button class="btn btn--sm btn--editar" (click)="abrirEditar(r)" title="Editar"><app-icon name="edit" [size]="14"></app-icon> Editar</button>
+            <button class="btn btn--sm btn--desactivar" (click)="toggleActivo(r)" [title]="r.activo ? 'Desactivar' : 'Reactivar'">
+              @if (r.activo) { <app-icon name="disable" [size]="14"></app-icon> Desactivar } @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+            </button>
+            <button class="btn btn--sm btn--eliminar" (click)="pedirEliminar(r)" title="Eliminar"><app-icon name="trash" [size]="14"></app-icon> Eliminar</button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="card paginacion-wrap">
+      <app-paginacion
+        [pagina]="pagina()"
+        [tamanoPagina]="tamanoPagina()"
+        [total]="rolesFiltrados().length"
+        (paginaChange)="cambiarPagina($event)"
+        (tamanoPaginaChange)="cambiarTamanoPagina($event)">
+      </app-paginacion>
+    </div>
+  }
+</div>
+
+@if (modalAbierto()) {
+  <div class="modal-backdrop" (click)="cerrar()"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>{{ editando() ? 'Editar cargo' : 'Nuevo cargo' }}</h3>
+      <button class="modal__close" (click)="cerrar()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <form (submit)="guardar(); $event.preventDefault()">
+      <div class="modal__body">
+        <label>Nombre *</label>
+        <input type="text" [(ngModel)]="form.nombre" name="nombre" placeholder="Ej: Lavandero"
+          [class.invalid]="err.get('nombre')" (ngModelChange)="err.limpiar('nombre')" />
+        @if (err.get('nombre')) { <small class="campo-error">{{ err.get('nombre') }}</small> }
+
+        <label class="checkbox-row">
+          <input type="checkbox" [(ngModel)]="form.activo" name="activo" />
+          Cargo activo
+        </label>
+
+        @if (errorForm()) {
+          <div class="modal__error" role="alert">{{ errorForm() }}</div>
+        }
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrar()">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (confirmarEliminar(); as r) {
+  <div class="modal-backdrop" (click)="confirmarEliminar.set(null)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Eliminar cargo?</h3>
+      <button class="modal__close" (click)="confirmarEliminar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p>Vas a eliminar <strong>{{ r.nombre }}</strong>. Si está en uso, quedará desactivado; si no, se elimina definitivamente.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarEliminar.set(null)">Cancelar</button>
+        <button class="btn btn--danger" [disabled]="guardando()" (click)="eliminar()">
+          {{ guardando() ? 'Eliminando…' : 'Sí, eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (confirmarDesactivar(); as r) {
+  <div class="modal-backdrop" (click)="confirmarDesactivar.set(null)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Desactivar cargo?</h3>
+      <button class="modal__close" (click)="confirmarDesactivar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p><strong>{{ r.nombre }}</strong> dejará de estar disponible para asignar al personal.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarDesactivar.set(null)">Cancelar</button>
+        <button class="btn btn--danger" (click)="confirmarDesactivarOk()">Sí, desactivar</button>
+      </div>
+    </div>
+  </div>
+}

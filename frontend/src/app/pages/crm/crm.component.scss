@@ -1,0 +1,122 @@
+.page { padding: 20px 24px; max-width: 1000px; margin: 0 auto; }
+
+.page__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+
+  h2 { margin: 0; font-size: 20px; }
+  p  { margin: 4px 0 0; color: #64748b; font-size: 13px; }
+}
+
+.volver {
+  background: transparent;
+  border: 1px solid var(--gris-borde);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gris-texto);
+  cursor: pointer;
+
+  &:hover { background: #eef4ff; color: var(--azul-oscuro); border-color: var(--azul-oscuro); }
+}
+
+.estado { padding: 40px; text-align: center; color: #64748b; }
+
+.seccion {
+  padding: 20px;
+  margin-bottom: 16px;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    h3 {
+      margin: 0;
+      font-size: 13px;
+      color: var(--azul-oscuro);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+  }
+}
+
+.hint { font-size: 12px; color: #94a3b8; }
+
+.ok-badge {
+  font-size: 12px;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 0;
+}
+
+.tabla-wrap { overflow-x: auto; }
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th {
+    text-align: left;
+    padding: 8px 10px;
+    color: #718096;
+    font-size: 11px;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--gris-borde);
+  }
+
+  td {
+    padding: 10px;
+    border-bottom: 1px solid var(--gris-borde);
+  }
+}
+
+.fila--alerta { color: #dc2626; font-weight: 600; }
+.txt-deuda { color: #dc2626; font-weight: 700; }
+
+.btn-wsp {
+  background: #e6f9ee;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover { background: #d1f5df; }
+}
+
+@media (max-width: 720px) {
+  .page { padding: 14px; }
+  .tabla { font-size: 12px; }
+}
+
+.acciones-cumple {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn--cumple {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) { background: #ede9fe; }
+  &:disabled { opacity: .6; cursor: default; }
+}

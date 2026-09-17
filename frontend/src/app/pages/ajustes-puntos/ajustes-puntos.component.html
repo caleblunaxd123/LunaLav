@@ -1,0 +1,42 @@
+<div class="page">
+  <app-page-header icono="money-bag" color="morado" titulo="Puntos y descuentos" subtitulo="Configura la fidelización por puntos y el tope de descuentos del personal." volverTexto="Ajustes" (volver)="volver()"></app-page-header>
+
+  <div class="card seccion">
+    <h3>Ganar puntos</h3>
+    <label>Soles por punto</label>
+    <div class="fila-input">
+      <span>S/</span>
+      <input type="number" min="0.01" step="0.01" [(ngModel)]="solesPorPunto" />
+      <span>= 1 punto</span>
+    </div>
+    <p class="hint">Ej: si pones 1, por cada S/1 gastado el cliente gana 1 punto. Si pones 5, necesita gastar S/5 para ganar 1 punto.</p>
+  </div>
+
+  <div class="card seccion">
+    <h3>Canjear puntos</h3>
+    <label>Valor de 1 punto al canjear</label>
+    <div class="fila-input">
+      <span>1 punto =</span>
+      <input type="number" min="0" step="0.01" [(ngModel)]="valorPuntoCanje" />
+      <span>S/</span>
+    </div>
+    <p class="hint">Cuánto vale cada punto como descuento al momento de cobrar. Déjalo en <strong>0</strong> para deshabilitar el canje.</p>
+  </div>
+
+  <div class="card seccion">
+    <h3>Control de descuentos</h3>
+    <label>Descuento máximo que puede aplicar el personal</label>
+    <div class="fila-input">
+      <input type="number" min="0" max="100" step="1" [(ngModel)]="maxDescuentoPct" />
+      <span>%</span>
+    </div>
+    <p class="hint">Tope al descuento manual en Registrar. Déjalo en <strong>0</strong> para no poner límite.</p>
+  </div>
+
+  <div class="acciones">
+    <button class="btn btn--ghost" (click)="volver()">Cancelar</button>
+    <button class="btn btn--primario" (click)="guardar()" [disabled]="guardando() || solesPorPunto <= 0">
+      {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
+    </button>
+  </div>
+</div>

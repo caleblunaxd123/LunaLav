@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" role="img" aria-labelledby="title desc">
+  <title id="title">LunaLav</title>
+  <desc id="desc">Luna creciente con una gota de agua y el nombre LunaLav</desc>
+  <defs>
+    <linearGradient id="moon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a78bfa"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="drop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="1" stop-color="#0ea5a8"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(18 18)">
+    <circle cx="92" cy="92" r="78" fill="url(#moon)"/>
+    <circle cx="126" cy="60" r="75" fill="#fff"/>
+    <path d="M128 72c-27 34-39 50-39 68a39 39 0 0 0 78 0c0-18-12-34-39-68Z" fill="url(#drop)"/>
+    <path d="M115 141c6 8 17 11 27 7" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".85"/>
+    <circle cx="47" cy="37" r="8" fill="#5eead4"/>
+    <circle cx="28" cy="63" r="5" fill="#c4b5fd"/>
+  </g>
+  <text x="218" y="126" font-family="Montserrat,Segoe UI,sans-serif" font-size="88" font-weight="800" letter-spacing="-4" fill="#10233f">Luna</text>
+  <text x="426" y="126" font-family="Montserrat,Segoe UI,sans-serif" font-size="88" font-weight="800" letter-spacing="-4" fill="#0ea5a8">Lav</text>
+  <text x="224" y="166" font-family="Montserrat,Segoe UI,sans-serif" font-size="22" font-weight="600" letter-spacing="4" fill="#64748b">GESTIÓN PARA LAVANDERÍAS</text>
+</svg>

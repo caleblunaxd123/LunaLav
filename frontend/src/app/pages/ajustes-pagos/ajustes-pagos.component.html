@@ -1,0 +1,57 @@
+<div class="page">
+  <app-page-header icono="credit-card" color="cian" titulo="Pagos online" subtitulo="Preparación de Izipay para cobrar desde el portal público de seguimiento." volverTexto="Ajustes" (volver)="volver()"></app-page-header>
+
+  @if (cargando()) {
+    <div class="estado">Cargando...</div>
+  } @else {
+    <div class="aviso">
+      <strong>Izipay está en preparación y permanece desactivado.</strong> Cuando el propietario entregue las credenciales se completará la conexión en sandbox, la confirmación server-side y las pruebas de conciliación antes de habilitar cobros reales.
+    </div>
+
+    <div class="secciones">
+      <div class="card seccion">
+        <h3>Credenciales de Izipay</h3>
+
+        <label>Código de comercio <app-info-tooltip texto="Identificador entregado por Izipay para el comercio afiliado."></app-info-tooltip></label>
+        <input type="text" [ngModel]="form().codigoComercio"
+               (ngModelChange)="actualizarCampo('codigoComercio', $event)"
+               autocomplete="off" placeholder="Código del comercio" />
+
+        <label>Llave pública RSA <app-info-tooltip texto="Llave pública entregada por Izipay para el SDK web. No es la clave API."></app-info-tooltip></label>
+        <textarea rows="5" [ngModel]="form().publicKey"
+               (ngModelChange)="actualizarCampo('publicKey', $event)"
+               autocomplete="off" placeholder="-----BEGIN PUBLIC KEY-----"></textarea>
+
+        <label>Clave API <app-info-tooltip texto="Se usa exclusivamente en el backend para obtener el token de sesión. Nunca se devuelve al navegador."></app-info-tooltip></label>
+        @if (form().tieneApiKey) {
+          <p class="ok-badge">Existe una clave API cifrada. Ingresa otra solo para reemplazarla.</p>
+        }
+        <input type="password" [ngModel]="form().apiKeyNueva"
+               (ngModelChange)="actualizarCampo('apiKeyNueva', $event)"
+               autocomplete="new-password" placeholder="Solo si agregas o cambias la clave" />
+
+        <label>Clave Hash <app-info-tooltip texto="Se usa en el servidor para verificar la firma de las respuestas de pago."></app-info-tooltip></label>
+        @if (form().tieneHashKey) {
+          <p class="ok-badge">Existe una clave Hash cifrada. Ingresa otra solo para reemplazarla.</p>
+        }
+        <input type="password" [ngModel]="form().hashKeyNueva"
+               (ngModelChange)="actualizarCampo('hashKeyNueva', $event)"
+               autocomplete="new-password" placeholder="Solo si agregas o cambias la clave" />
+      </div>
+    </div>
+
+    <div class="card seccion activar">
+      <label class="checkbox-row">
+        <input type="checkbox" [ngModel]="form().activo" disabled />
+        Activación bloqueada hasta completar Izipay y aprobar las pruebas de sandbox
+      </label>
+    </div>
+
+    <div class="acciones">
+      <button type="button" class="btn btn--ghost" (click)="volver()">Cancelar</button>
+      <button type="button" class="btn btn--primario" [disabled]="guardando()" (click)="guardar()">
+        {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+      </button>
+    </div>
+  }
+</div>

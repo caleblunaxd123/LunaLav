@@ -1,0 +1,19 @@
+<div class="page">
+  <app-page-header icono="cash" color="naranja" titulo="Ajuste de Cargo Extra (Impuesto)" subtitulo="Actualiza el porcentaje de IGV que se aplica a los pedidos." volverTexto="Ajustes" (volver)="volver()"></app-page-header>
+
+  <div class="card seccion">
+    <label>IGV <app-info-tooltip texto="IGV = Impuesto General a las Ventas. Es el impuesto que el Estado cobra sobre tus ventas (normalmente 18% en Perú); el sistema lo suma automáticamente al precio."></app-info-tooltip></label>
+    <div class="fila-input">
+      <input type="number" min="0" max="100" step="0.01" [(ngModel)]="igv" />
+      <span>%</span>
+    </div>
+    <p class="hint">Porcentaje de impuesto general a las ventas aplicado en los cálculos del negocio.</p>
+  </div>
+
+  <div class="acciones">
+    <button class="btn btn--ghost" (click)="volver()">Cancelar</button>
+    <button class="btn btn--primario" (click)="guardar()" [disabled]="guardando() || igv < 0 || igv > 100">
+      {{ guardando() ? 'Guardando…' : 'Guardar cambios' }}
+    </button>
+  </div>
+</div>

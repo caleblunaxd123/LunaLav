@@ -1,0 +1,430 @@
+<div class="page">
+  <app-page-header icono="users" color="cian" titulo="Clientes" tourId="clientes"
+    [subtitulo]="clientes().length + (clientes().length === 1 ? ' resultado' : ' resultados')">
+    <a class="btn btn--ghost" routerLink="/clientes/crm">CRM</a>
+    <button class="btn btn--ghost" (click)="abrirImportar()"><app-icon name="clipboard" [size]="15"></app-icon>Importar</button>
+    <button class="btn btn--primario" data-tour="clientes-nuevo" (click)="abrirModal()">+ Nuevo cliente</button>
+  </app-page-header>
+
+  <div class="tabs">
+    <button class="tabs__item" [class.is-active]="tab()==='buscar'" (click)="cambiarTab('buscar')">Buscar</button>
+    <button class="tabs__item" [class.is-active]="tab()==='frecuentes'" (click)="cambiarTab('frecuentes')">Informe</button>
+    <button class="tabs__item" [class.is-active]="tab()==='unir'" (click)="cambiarTab('unir')">Unir</button>
+  </div>
+
+  @if (tab() === 'buscar') {
+
+  @if (tendencia(); as t) {
+    <div class="tendencias-grid">
+      <app-mini-barras titulo="Clientes nuevos por mes" subtitulo="Últimos 6 meses" color="azul" [datos]="t"></app-mini-barras>
+    </div>
+  }
+
+  <div class="buscador card" data-tour="clientes-buscar">
+    <label>Buscar por</label>
+    <div class="buscador__row">
+      <select [(ngModel)]="campoBusqueda" (ngModelChange)="onBuscarChange()">
+        <option>Nombre</option>
+        <option>Celular</option>
+        <option>DNI</option>
+      </select>
+      <input
+        type="text"
+        [(ngModel)]="textoBusqueda"
+        (input)="onBuscarChange()"
+        [placeholder]="'Buscar por ' + campoBusqueda + '…'" />
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (error()) {
+    <app-empty-state icono="error" titulo="No se pudo conectar" [mensaje]="error()!" accionTexto="Reintentar">
+      <button class="btn btn--primario" (click)="recargar()">Reintentar</button>
+    </app-empty-state>
+  } @else if (clientes().length === 0) {
+    <app-empty-state
+      icono="busqueda"
+      titulo="Sin resultados"
+      [mensaje]="textoBusqueda ? 'No hay clientes que coincidan con la búsqueda. Prueba con otro criterio o agrega uno nuevo.' : 'Aún no hay clientes registrados. Empieza agregando el primero.'"
+      accionTexto="Nuevo cliente">
+      <button class="btn btn--primario" (click)="abrirModal()">+ Nuevo cliente</button>
+    </app-empty-state>
+  } @else {
+    <div class="card tabla-wrap">
+      <table class="tabla">
+        <thead>
+          <tr><th>Nombre</th><th>Celular</th><th>DNI</th><th>Doc. Fiscal</th><th>Puntos</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (c of clientesPaginados(); track c.id) {
+            <tr>
+              <td class="nombre">{{ c.nombre }}</td>
+              <td>{{ c.celular || '—' }}</td>
+              <td>{{ c.dni || '—' }}</td>
+              <td>{{ c.documentoFiscal || '—' }}</td>
+              <td><span class="badge-puntos">{{ c.puntos }} pts</span></td>
+              <td class="acciones-row acciones-texto">
+                <button class="btn btn--sm btn--ver" (click)="abrirDetalle(c)" title="Ver detalle"><app-icon name="search" [size]="14"></app-icon> Ver</button>
+                <button class="btn btn--sm btn--editar" (click)="editar(c)" title="Editar"><app-icon name="edit" [size]="14"></app-icon> Editar</button>
+                <button class="btn btn--sm btn--eliminar" (click)="pedirEliminar(c)" title="Eliminar"><app-icon name="trash" [size]="14"></app-icon> Eliminar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cards">
+      @for (c of clientesPaginados(); track c.id) {
+        <div class="card cliente-card">
+          <div class="cliente-card__head">
+            <strong>{{ c.nombre }}</strong>
+            <span class="badge-puntos">{{ c.puntos }} pts</span>
+          </div>
+          <div class="cliente-card__body">
+            <div><span>Celular:</span> {{ c.celular || '—' }}</div>
+            <div><span>DNI:</span> {{ c.dni || '—' }}</div>
+            @if (c.direccion) {
+              <div><span>Dirección:</span> {{ c.direccion }}</div>
+            }
+          </div>
+          <div class="cliente-card__acciones">
+            <button class="btn btn--secundario btn--sm" (click)="abrirDetalle(c)">Ver detalle</button>
+            <button class="btn btn--ghost btn--sm" (click)="editar(c)">Editar</button>
+            <button class="btn btn--danger btn--sm" (click)="pedirEliminar(c)">Eliminar</button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="card paginacion-wrap">
+      <app-paginacion
+        [pagina]="pagina()"
+        [tamanoPagina]="tamanoPagina()"
+        [total]="clientes().length"
+        (paginaChange)="cambiarPagina($event)"
+        (tamanoPaginaChange)="cambiarTamanoPagina($event)">
+      </app-paginacion>
+    </div>
+  }
+
+  } @else if (tab() === 'frecuentes') {
+    <!-- Informe: clientes más frecuentes -->
+    <div class="card filtros-frecuentes">
+      <div>
+        <label>Desde</label>
+        <input type="date" [(ngModel)]="desdeFrecuentes" />
+      </div>
+      <div>
+        <label>Hasta</label>
+        <input type="date" [(ngModel)]="hastaFrecuentes" />
+      </div>
+      <button class="btn btn--secundario" (click)="cargarFrecuentes()">Filtrar</button>
+      <button class="btn btn--ghost" (click)="exportarFrecuentesCsv()" [disabled]="frecuentes().length === 0"><app-icon name="download" [size]="15"></app-icon> Exportar CSV</button>
+    </div>
+
+    @if (cargandoFrecuentes()) {
+      <div class="estado">Cargando…</div>
+    } @else if (errorFrecuentes()) {
+      <app-empty-state icono="error" titulo="No se pudo cargar" [mensaje]="errorFrecuentes()!">
+        <button class="btn btn--primario" (click)="cargarFrecuentes()">Reintentar</button>
+      </app-empty-state>
+    } @else if (frecuentes().length === 0) {
+      <app-empty-state icono="lista" titulo="Sin datos" mensaje="No hay pedidos en el rango de fechas seleccionado."></app-empty-state>
+    } @else {
+      <div class="card frecuentes-wrap">
+        @for (f of frecuentes(); track f.clienteId) {
+          <div class="frecuente-fila">
+            <div class="frecuente-fila__nombre">
+              <strong>{{ f.nombre }}</strong>
+              <span>{{ f.celular || 'Sin celular' }}</span>
+            </div>
+            <div class="frecuente-fila__barra">
+              <div class="frecuente-fila__barra-fill" [style.width.%]="(f.visitas / maxVisitas()) * 100"></div>
+            </div>
+            <div class="frecuente-fila__visitas">{{ f.visitas }} visita{{ f.visitas === 1 ? '' : 's' }}</div>
+          </div>
+        }
+      </div>
+    }
+  } @else {
+    <!-- Unir clientes duplicados -->
+    <div class="card unir-panel">
+      <p class="unir-panel__aviso">
+        Selecciona el cliente <strong>duplicado</strong> y el cliente <strong>que se conservará</strong>.
+        Todos los pedidos del duplicado pasarán al cliente que conservas, y sus puntos se sumarán. Esta acción no se puede deshacer.
+      </p>
+
+      @if (cargandoUnir()) {
+        <div class="estado">Cargando clientes…</div>
+      } @else {
+        <div class="unir-panel__selects">
+          <div>
+            <label>Cliente duplicado (se elimina)</label>
+            <select [(ngModel)]="origenId">
+              <option [ngValue]="''" disabled>Escoge…</option>
+              @for (c of todosClientes(); track c.id) {
+                <option [ngValue]="c.id">{{ c.nombre }} · {{ c.celular || 'sin celular' }}</option>
+              }
+            </select>
+          </div>
+          <div class="unir-panel__flecha"><app-icon name="arrow-right" [size]="18"></app-icon></div>
+          <div>
+            <label>Cliente que se conserva</label>
+            <select [(ngModel)]="destinoId">
+              <option [ngValue]="''" disabled>Escoge…</option>
+              @for (c of todosClientes(); track c.id) {
+                <option [ngValue]="c.id">{{ c.nombre }} · {{ c.celular || 'sin celular' }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <button class="btn btn--danger" [disabled]="!puedeFusionar" (click)="fusionarClientes()">
+          {{ fusionando() ? 'Fusionando…' : 'Fusionar clientes' }}
+        </button>
+      }
+    </div>
+  }
+</div>
+
+@if (modalAbierto()) {
+  <div class="modal-backdrop" (click)="cerrarModal()"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>{{ editando() ? 'Editar cliente' : 'Nuevo cliente' }}</h3>
+      <button class="modal__close" (click)="cerrarModal()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <form class="modal__body" (submit)="guardar(); $event.preventDefault()">
+      <label>Nombre *</label>
+      <input type="text" [(ngModel)]="nuevoCliente.nombre" name="nombre" placeholder="Nombre completo"
+             [class.invalid]="err.get('nombre')" (ngModelChange)="err.limpiar('nombre')" />
+      @if (err.get('nombre')) { <small class="campo-error">{{ err.get('nombre') }}</small> }
+
+      <label>Celular</label>
+      <app-telefono-pais [(ngModel)]="nuevoCliente.celular" name="celular" inputId="celular"
+             [class.invalid]="!!err.get('celular')" (ngModelChange)="err.limpiar('celular')"></app-telefono-pais>
+      @if (err.get('celular')) { <small class="campo-error">{{ err.get('celular') }}</small> }
+
+      <label>DNI</label>
+      <input type="text" [(ngModel)]="nuevoCliente.dni" name="dni" placeholder="DNI"
+             [class.invalid]="err.get('dni')" (ngModelChange)="err.limpiar('dni')" />
+      @if (err.get('dni')) { <small class="campo-error">{{ err.get('dni') }}</small> }
+
+      <label>Documento Fiscal (RUC)</label>
+      <input type="text" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" [(ngModel)]="nuevoCliente.documentoFiscal" name="ruc" placeholder="RUC de 11 dígitos (opcional)"
+             [class.invalid]="err.get('ruc')" (ngModelChange)="err.limpiar('ruc')" />
+      @if (err.get('ruc')) { <small class="campo-error">{{ err.get('ruc') }}</small> }
+
+      <label>Dirección</label>
+      <input type="text" [(ngModel)]="nuevoCliente.direccion" name="direccion" placeholder="Dirección (opcional)" />
+
+      <label>Fecha de nacimiento</label>
+      <input type="date" [(ngModel)]="nuevoCliente.fechaNacimiento" name="fechaNacimiento" />
+
+      @if (errorNuevo()) {
+        <div class="modal__error" role="alert">{{ errorNuevo() }}</div>
+      }
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (confirmarEliminar(); as c) {
+  <div class="modal-backdrop" (click)="confirmarEliminar.set(null)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Eliminar cliente?</h3>
+      <button class="modal__close" (click)="confirmarEliminar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p>Vas a eliminar a <strong>{{ c.nombre }}</strong>. Si tiene pedidos históricos, se conservarán y el cliente quedará desactivado.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarEliminar.set(null)">Cancelar</button>
+        <button class="btn btn--danger" [disabled]="guardando()" (click)="eliminar()">
+          {{ guardando() ? 'Eliminando…' : 'Sí, eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (clienteDetalle(); as c) {
+  <div class="modal-backdrop" (click)="cerrarDetalle()"></div>
+  <div class="modal modal--detalle">
+    <div class="modal__header">
+      <h3>{{ c.nombre }} <span class="badge-puntos">{{ c.puntos }} pts</span></h3>
+      <button class="modal__close" (click)="cerrarDetalle()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+
+    <div class="detalle-subtabs">
+      <button [class.is-active]="subTabDetalle()==='puntos'" (click)="cambiarSubTabDetalle('puntos')">Puntos</button>
+      <button [class.is-active]="subTabDetalle()==='ordenes'" (click)="cambiarSubTabDetalle('ordenes')">Órdenes</button>
+    </div>
+
+    <div class="modal__body">
+      @if (subTabDetalle() === 'puntos') {
+        <div class="detalle-puntos__head">
+          <span>Lista de puntos</span>
+          <div class="detalle-puntos__acciones">
+            @if (c.puntos > 0) {
+              <button type="button" class="btn btn--canje btn--sm" (click)="abrirModalCanje()">⭐ Canjear por código</button>
+            }
+            <button type="button" class="btn btn--secundario btn--sm" (click)="abrirModalPunto()">+ Agregar registro</button>
+          </div>
+        </div>
+
+        @if (cargandoPuntos()) {
+          <div class="estado">Cargando…</div>
+        } @else if (movimientosPuntos().length === 0) {
+          <p class="sin-datos">No hay registros de puntos para mostrar.</p>
+        } @else {
+          <table class="tabla-mini">
+            <thead><tr><th>Fecha</th><th>Motivo</th><th>Puntos</th><th>Tipo</th></tr></thead>
+            <tbody>
+              @for (m of movimientosPuntos(); track m.id) {
+                <tr>
+                  <td>{{ m.fecha | date:'dd/MM/yy HH:mm' }}</td>
+                  <td>{{ m.motivo }}<br><small>{{ m.usuarioNombre || '—' }}</small></td>
+                  <td [class.txt-verde]="m.tipo==='SUMA'" [class.txt-rojo]="m.tipo==='RESTA'">
+                    {{ m.tipo === 'RESTA' ? '-' : '+' }}{{ m.puntos }}
+                  </td>
+                  <td>{{ m.tipo === 'SUMA' ? 'Suma' : 'Resta' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      } @else {
+        <div class="detalle-ordenes__filtros">
+          <button [class.is-active]="ordenesFiltro()==='en-proceso'" (click)="cambiarOrdenesFiltro('en-proceso')">En proceso</button>
+          <button [class.is-active]="ordenesFiltro()==='con-deuda'" (click)="cambiarOrdenesFiltro('con-deuda')">Con deuda</button>
+          <button [class.is-active]="ordenesFiltro()==='entregados'" (click)="cambiarOrdenesFiltro('entregados')">Entregados</button>
+          <button [class.is-active]="ordenesFiltro()==='todos'" (click)="cambiarOrdenesFiltro('todos')">Todos</button>
+        </div>
+
+        @if (cargandoOrdenes()) {
+          <div class="estado">Cargando…</div>
+        } @else if (ordenesCliente().length === 0) {
+          <p class="sin-datos">No hay órdenes para mostrar.</p>
+        } @else {
+          <table class="tabla-mini">
+            <thead><tr><th>N°</th><th>Fecha</th><th>Total</th><th>Pago</th><th>Saldo</th><th>Estado</th></tr></thead>
+            <tbody>
+              @for (p of ordenesCliente(); track p.id) {
+                <tr>
+                  <td>{{ p.numero }}</td>
+                  <td>{{ p.fechaIngreso | date:'dd/MM/yy' }}</td>
+                  <td>S/ {{ p.total.toFixed(2) }}</td>
+                  <td>{{ etiquetaEstadoPago(p) }}</td>
+                  <td [class.txt-rojo]="saldoPendiente(p) > 0">S/ {{ saldoPendiente(p).toFixed(2) }}</td>
+                  <td>{{ p.estadoProceso }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          <app-paginacion
+            [pagina]="ordenesPagina()"
+            [tamanoPagina]="ordenesTamanoPagina"
+            [total]="ordenesTotal()"
+            [opcionesTamano]="[10]"
+            (paginaChange)="cambiarOrdenesPagina($event)">
+          </app-paginacion>
+        }
+      }
+    </div>
+  </div>
+}
+
+@if (modalPuntoAbierto()) {
+  <div class="modal-backdrop" (click)="modalPuntoAbierto.set(false)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>Agregar registro de puntos</h3>
+      <button class="modal__close" (click)="modalPuntoAbierto.set(false)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <form class="modal__body" (submit)="confirmarAgregarPunto(); $event.preventDefault()">
+      <label>Motivo *</label>
+      <input type="text" [(ngModel)]="nuevoPuntoMotivo" name="motivo" placeholder="Ej: Promoción de cumpleaños" />
+
+      <label>Puntos *</label>
+      <input type="number" min="1" [(ngModel)]="nuevoPuntoCantidad" name="cantidad" />
+
+      <label>Tipo</label>
+      <div class="switch-row">
+        <button type="button" class="switch-btn" [class.is-active]="nuevoPuntoTipo==='SUMA'" (click)="nuevoPuntoTipo='SUMA'">Sumar</button>
+        <button type="button" class="switch-btn" [class.is-active]="nuevoPuntoTipo==='RESTA'" (click)="nuevoPuntoTipo='RESTA'">Restar</button>
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="modalPuntoAbierto.set(false)">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="guardandoPunto() || !nuevoPuntoMotivo.trim() || nuevoPuntoCantidad <= 0">
+          {{ guardandoPunto() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+<!-- Modal: canjear puntos por un código de descuento -->
+@if (modalCanjeAbierto()) {
+  <div class="modal-backdrop" (click)="cerrarModalCanje()"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>⭐ Canjear puntos por código</h3>
+      <button class="modal__close" (click)="cerrarModalCanje()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+
+    @if (codigoCanje(); as res) {
+      <div class="modal__body">
+        <div class="canje-codigo">
+          <span class="canje-codigo__label">Código generado</span>
+          <strong class="canje-codigo__valor">{{ res.promocion.codigo }}</strong>
+          <button class="btn btn--ghost btn--sm" (click)="copiarCodigoCanje()">Copiar</button>
+        </div>
+        <p class="hint">{{ res.promocion.descripcion }} · vence {{ res.promocion.fechaFin | date:'dd/MM/yy' }}</p>
+        <label>Mensaje para el cliente</label>
+        <textarea rows="5" readonly class="canje-msg">{{ res.mensajeWhatsapp }}</textarea>
+      </div>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarModalCanje()">Cerrar</button>
+        <button type="button" class="btn btn--wsp" (click)="enviarWhatsappCanje()">
+          <app-icon name="whatsapp" [size]="16"></app-icon> Enviar por WhatsApp
+        </button>
+      </div>
+    } @else {
+      <div class="modal__body">
+        <p class="hint">Convierte los puntos del cliente en un código de descuento de un solo uso. Los puntos se descuentan de su saldo.</p>
+        <label>Puntos a convertir *</label>
+        <input type="number" min="1" [(ngModel)]="canjePuntos" name="canjePuntos" />
+        <label>Vigencia (días)</label>
+        <input type="number" min="1" max="365" [(ngModel)]="canjeDias" name="canjeDias" />
+      </div>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarModalCanje()">Cancelar</button>
+        <button type="button" class="btn btn--primario" [disabled]="generandoCanje()" (click)="generarCodigoCanje()">
+          {{ generandoCanje() ? 'Generando…' : 'Generar código' }}
+        </button>
+      </div>
+    }
+  </div>
+}
+
+@if (importarAbierto()) {
+  <app-importador-masivo
+    titulo="Importar clientes"
+    [columnas]="columnasImport"
+    plantillaTipo="clientes"
+    [procesando]="importando()"
+    (cerrar)="cerrarImportar()"
+    (confirmar)="importarClientes($event)">
+  </app-importador-masivo>
+}

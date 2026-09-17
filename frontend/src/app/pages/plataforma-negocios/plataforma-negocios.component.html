@@ -1,0 +1,142 @@
+<div class="page">
+  <app-page-header icono="bank" color="gris" titulo="Panel de plataforma"
+    subtitulo="Clientes que alquilan el sistema. Cada uno tiene sus propios datos, usuarios y sedes.">
+    <button class="btn btn--primario" (click)="nueva()">+ Nueva empresa</button>
+  </app-page-header>
+
+  <!-- KPIs -->
+  @if (resumen(); as r) {
+    <div class="kpis">
+      <div class="kpi">
+        <span class="kpi__valor">{{ r.empresasActivas }}<small>/ {{ r.totalEmpresas }}</small></span>
+        <span class="kpi__label">Empresas activas</span>
+      </div>
+      <div class="kpi kpi--verde">
+        <span class="kpi__valor">S/ {{ r.ingresoMensualRecurrente | number:'1.0-0' }}</span>
+        <span class="kpi__label">Ingreso mensual (MRR)</span>
+      </div>
+      <div class="kpi kpi--verde">
+        <span class="kpi__valor">S/ {{ r.recaudadoMes | number:'1.0-0' }}</span>
+        <span class="kpi__label">Recaudado este mes</span>
+      </div>
+      <div class="kpi kpi--azul">
+        <span class="kpi__valor">{{ r.pedidosMesTotal }}</span>
+        <span class="kpi__label">Pedidos del mes (todas)</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__valor">{{ r.empresasNuevasMes }}</span>
+        <span class="kpi__label">Nuevas este mes</span>
+      </div>
+      <div class="kpi" [class.kpi--naranja]="r.empresasPorVencer > 0">
+        <span class="kpi__valor">{{ r.empresasPorVencer }}</span>
+        <span class="kpi__label">Por cobrar (≤7 días)</span>
+      </div>
+      <div class="kpi" [class.kpi--rojo]="r.empresasVencidas > 0">
+        <span class="kpi__valor">{{ r.empresasVencidas }}</span>
+        <span class="kpi__label">Vencidas / suspendidas</span>
+      </div>
+    </div>
+  }
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (error()) {
+    <app-empty-state icono="error" titulo="No se pudo cargar" [mensaje]="error()!">
+      <button class="btn btn--primario" (click)="cargar()">Reintentar</button>
+    </app-empty-state>
+  } @else if (negocios().length === 0) {
+    <app-empty-state icono="lista" titulo="Sin empresas aún" mensaje="Crea la primera empresa para empezar a alquilar el sistema.">
+      <button class="btn btn--primario" (click)="nueva()">+ Nueva empresa</button>
+    </app-empty-state>
+  } @else {
+    <!-- Buscador + filtros -->
+    <div class="controles">
+      <div class="buscador">
+        <app-icon name="search" [size]="15"></app-icon>
+        <input type="text" placeholder="Buscar por nombre o slug…"
+               [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" />
+      </div>
+      <div class="filtros">
+        <button [class.is-active]="filtro()==='todas'" (click)="filtro.set('todas')">Todas</button>
+        <button [class.is-active]="filtro()==='activas'" (click)="filtro.set('activas')">Activas</button>
+        <button [class.is-active]="filtro()==='por-cobrar'" (click)="filtro.set('por-cobrar')">Por cobrar</button>
+        <button [class.is-active]="filtro()==='suspendidas'" (click)="filtro.set('suspendidas')">Suspendidas</button>
+      </div>
+    </div>
+
+    <div class="card tabla-wrap">
+      <table class="tabla">
+        <thead><tr>
+          <th>Empresa</th><th>Plan</th><th>Mensual</th><th>Próximo pago</th><th>Pedidos/mes</th><th>Suscripción</th><th></th>
+        </tr></thead>
+        <tbody>
+          @for (n of negociosFiltrados(); track n.id) {
+            <tr [class.inactivo]="!n.activo" (click)="abrir(n)" (keydown.enter)="abrir(n)"
+                role="button" tabindex="0" [attr.aria-label]="'Abrir ficha de ' + n.nombre">
+              <td class="nombre">
+                {{ n.nombre }}
+                <small class="mono">/{{ n.slug }}</small>
+              </td>
+              <td><span class="plan">{{ n.planSuscripcion }}</span></td>
+              <td class="mono">S/ {{ n.montoMensual | number:'1.2-2' }}</td>
+              <td>{{ n.proximoPago ? (n.proximoPago | date:'dd/MM/yyyy') : '—' }}</td>
+              <td class="mono">{{ n.pedidosMes }}</td>
+              <td>
+                <span [class]="'badge ' + estadoSuscripcion(n).clase">{{ estadoSuscripcion(n).texto }}</span>
+              </td>
+              <td class="acciones-row acciones-texto">
+                <button class="btn btn--sm btn--desactivar" (click)="toggleActivo(n, $event)" [title]="n.activo ? 'Suspender' : 'Reactivar'">
+                  @if (n.activo) { <app-icon name="disable" [size]="14"></app-icon> Desactivar } @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+                </button>
+                <app-icon name="chevron-right" [size]="16"></app-icon>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile: cards -->
+    <div class="cards">
+      @for (n of negociosFiltrados(); track n.id) {
+        <div class="card negocio-card" [class.inactivo]="!n.activo" (click)="abrir(n)"
+             (keydown.enter)="abrir(n)" role="button" tabindex="0"
+             [attr.aria-label]="'Abrir ficha de ' + n.nombre">
+          <div class="negocio-card__head">
+            <strong>{{ n.nombre }}</strong>
+            <span [class]="'badge ' + estadoSuscripcion(n).clase">{{ estadoSuscripcion(n).texto }}</span>
+          </div>
+          <div class="negocio-card__body">
+            <div><span>Slug:</span> {{ n.slug }}</div>
+            <div><span>Plan:</span> {{ n.planSuscripcion }} · S/ {{ n.montoMensual | number:'1.2-2' }}/mes</div>
+            <div><span>Próximo pago:</span> {{ n.proximoPago ? (n.proximoPago | date:'dd/MM/yyyy') : '—' }}</div>
+            <div><span>Pedidos/mes:</span> {{ n.pedidosMes }}</div>
+          </div>
+          <div class="negocio-card__acciones">
+            <button class="btn btn--sm btn--desactivar" (click)="toggleActivo(n, $event)" [title]="n.activo ? 'Suspender' : 'Reactivar'">
+              @if (n.activo) { <app-icon name="disable" [size]="14"></app-icon> Desactivar } @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+            </button>
+            <span class="ver-mas">Ver ficha ›</span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@if (confirmarDesactivar(); as n) {
+  <div class="modal-backdrop" (click)="confirmarDesactivar.set(null)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Suspender empresa?</h3>
+      <button class="modal__close" (click)="confirmarDesactivar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p><strong>{{ n.nombre }}</strong> y todo su personal no podrán iniciar sesión hasta que la reactives.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarDesactivar.set(null)">Cancelar</button>
+        <button class="btn btn--danger" (click)="confirmarDesactivarOk()">Sí, suspender</button>
+      </div>
+    </div>
+  </div>
+}

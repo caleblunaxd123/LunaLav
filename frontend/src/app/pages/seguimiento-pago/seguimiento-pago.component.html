@@ -1,0 +1,194 @@
+<div class="pagina">
+  @if (cargando()) {
+    <div class="estado">Cargando tu pedido...</div>
+  } @else if (error()) {
+    <div class="tarjeta">
+      <p class="estado estado--error" role="alert">{{ error() }}</p>
+    </div>
+  } @else if (data()) {
+    @let d = data()!;
+    <div class="tarjeta">
+      <div class="cabecera">
+        @if (logoSeguimiento()) {
+          <img [src]="logoSeguimiento()" alt="" class="logo" />
+        }
+        <h1>{{ d.nombreNegocio }}</h1>
+        <p class="numero">Pedido #{{ d.numeroPedido }}</p>
+        <p class="resumen">{{ d.resumenEstado }}</p>
+      </div>
+
+      @if (d.anulado) {
+        <p class="aviso aviso--anulado">Este pedido fue anulado.</p>
+      } @else {
+        <div class="pasos">
+          @for (paso of d.pasos; track paso.codigo) {
+            <div class="paso" [class.paso--alcanzado]="paso.alcanzado" [class.paso--actual]="paso.actual">
+              <span class="paso__punto"></span>
+              <span class="paso__nombre">{{ paso.nombre }}</span>
+            </div>
+          }
+        </div>
+
+        @if (d.fechaCompromiso) {
+          <div class="fecha">
+            <div>
+              <span>{{ d.etiquetaFechaCompromiso }}</span><br />
+              <strong>{{ d.fechaCompromiso | date:'EEE d MMM, h:mm a' }}</strong>
+            </div>
+            @if (d.puedeReprogramar) {
+              <button type="button" class="btn-reprogramar" (click)="abrirReprogramar()">Cambiar</button>
+            }
+          </div>
+        }
+
+        @if (d.modalidad === 'Delivery' && d.direccionEntrega) {
+          <div class="destino">
+            <span class="destino__etiqueta">Destino de entrega</span>
+            <strong>{{ d.direccionEntrega }}</strong>
+            @if (d.distritoEntrega) { <span>{{ d.distritoEntrega }}</span> }
+            @if (d.referenciaEntrega) { <small>Referencia: {{ d.referenciaEntrega }}</small> }
+            @if (urlMapaEntrega(d); as urlMapa) {
+              <a [href]="urlMapa" target="_blank" rel="noopener noreferrer">Ver punto exacto en el mapa</a>
+            }
+          </div>
+        }
+
+        @if (enRutaVivo(d)) {
+          <div class="vivo" [class.vivo--cerca]="d.estadoRuta === 'CERCA'" [class.vivo--llego]="d.estadoRuta === 'LLEGO'">
+            <div class="vivo__cab">
+              <span class="vivo__punto"></span>
+              <div>
+                <strong>{{ tituloRutaVivo(d) }}</strong>
+                <span>{{ subtituloRutaVivo(d) }}</span>
+              </div>
+            </div>
+            @if (d.latitudEntrega != null && d.longitudEntrega != null) {
+              <div class="vivo__mapa">
+                <app-mapa-seguimiento
+                  [destinoLat]="d.latitudEntrega" [destinoLng]="d.longitudEntrega"
+                  [motoLat]="d.motorizadoLat ?? null" [motoLng]="d.motorizadoLng ?? null"
+                  [colorMoto]="d.colorPrimario">
+                </app-mapa-seguimiento>
+              </div>
+            }
+            <div class="vivo__pie">
+              @if (d.motorizadoNombre) { <span>🛵 Lo lleva <b>{{ d.motorizadoNombre }}</b></span> }
+              @if (telMotorizado()) { <a class="reparto__llamar" [href]="'tel:' + telMotorizado()">Llamar</a> }
+            </div>
+          </div>
+        } @else if (estaEnReparto(d) && d.motorizadoNombre) {
+          <div class="reparto">
+            <div class="reparto__icono">🛵</div>
+            <div class="reparto__texto">
+              <strong>¡Tu pedido está listo para salir!</strong>
+              <span>Lo llevará <b>{{ d.motorizadoNombre }}</b></span>
+            </div>
+            @if (telMotorizado()) {
+              <a class="reparto__llamar" [href]="'tel:' + telMotorizado()">Llamar</a>
+            }
+          </div>
+        } @else if (d.motorizadoNombre) {
+          <div class="fecha">
+            <div>
+              <span>Repartidor asignado</span><br />
+              <strong>{{ d.motorizadoNombre }}{{ d.motorizadoCelular ? ' · ' + d.motorizadoCelular : '' }}</strong>
+            </div>
+          </div>
+        }
+
+        @if (d.items.length > 0) {
+          <div class="items">
+            @for (item of d.items; track item.nombre + item.cantidad) {
+              <span class="item-chip">{{ item.nombre }} · {{ item.cantidad }}</span>
+            }
+          </div>
+        }
+
+        @if (d.fotos && d.fotos.length > 0) {
+          <div class="fotos-cliente">
+            <h3 class="fotos-cliente__titulo">📷 Fotos de tus prendas</h3>
+            <div class="fotos-cliente__grid">
+              @for (foto of d.fotos; track foto.id) {
+                <figure class="foto-cliente" (click)="fotoAmpliada.set(fotoUrl(foto.id))"
+                  (keydown.enter)="fotoAmpliada.set(fotoUrl(foto.id))" role="button" tabindex="0"
+                  [attr.aria-label]="'Ampliar foto ' + etiquetaMomento(foto.momento)">
+                  <img [src]="fotoUrl(foto.id)" [alt]="etiquetaMomento(foto.momento)" loading="lazy" />
+                  <figcaption>{{ etiquetaMomento(foto.momento) }}</figcaption>
+                </figure>
+              }
+            </div>
+          </div>
+        }
+
+        <div class="montos">
+          <div class="montos__fila">
+            <span>Total del pedido</span>
+            <strong>S/ {{ d.total.toFixed(2) }}</strong>
+          </div>
+          <div class="montos__fila">
+            <span>Pagado</span>
+            <strong>S/ {{ d.montoPagado.toFixed(2) }}</strong>
+          </div>
+          @if (d.saldo > 0.01) {
+            <div class="montos__fila montos__fila--saldo">
+              <span>Saldo pendiente</span>
+              <strong>S/ {{ d.saldo.toFixed(2) }}</strong>
+            </div>
+          }
+        </div>
+
+        @if (d.saldo <= 0.01) {
+          <p class="aviso aviso--ok">Tu pedido ya está pagado. Gracias.</p>
+        } @else {
+          <p class="aviso">{{ d.mensajePagoOnline || 'Coordina el pago directamente con la lavandería.' }}</p>
+        }
+
+        @if (d.telefonoNegocio || d.direccionNegocio) {
+          <div class="contacto">
+            <h2>Contacto</h2>
+            @if (d.telefonoNegocio) {
+              <p><strong>Teléfono:</strong> {{ d.telefonoNegocio }}</p>
+            }
+            @if (d.direccionNegocio) {
+              <p><strong>Dirección:</strong> {{ d.direccionNegocio }}</p>
+            }
+            @if (telefonoWhatsapp()) {
+              <button type="button" class="btn-secundario" (click)="abrirWhatsappNegocio()">Escribir por WhatsApp</button>
+            }
+          </div>
+        }
+      }
+    </div>
+  }
+</div>
+
+@if (modalReprogramar()) {
+  <div class="modal-backdrop" (click)="cerrarReprogramar()"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>Cambiar fecha</h3>
+      <button type="button" class="modal__close" aria-label="Cerrar" (click)="cerrarReprogramar()">✕</button>
+    </div>
+    <div class="modal__body">
+      <p>Elige la nueva fecha y hora que te acomode. La lavandería verá el cambio de inmediato.</p>
+      <label for="nueva-fecha-entrega">Nueva fecha y hora</label>
+      <input id="nueva-fecha-entrega" type="datetime-local" [(ngModel)]="nuevaFecha" name="nuevaFecha" required />
+      @if (errorReprogramar()) {
+        <p class="modal__error" role="alert">{{ errorReprogramar() }}</p>
+      }
+    </div>
+    <div class="modal__actions">
+      <button type="button" class="btn-secundario" (click)="cerrarReprogramar()">Cancelar</button>
+      <button type="button" class="btn-pagar" [disabled]="reprogramando()" (click)="confirmarReprogramar()">
+        {{ reprogramando() ? 'Guardando…' : 'Confirmar' }}
+      </button>
+    </div>
+  </div>
+}
+
+@if (fotoAmpliada(); as urlFoto) {
+  <div class="foto-lightbox" (click)="fotoAmpliada.set(null)">
+    <button type="button" class="foto-lightbox__cerrar" (click)="fotoAmpliada.set(null)" aria-label="Cerrar">✕</button>
+    <img [src]="urlFoto" alt="Foto ampliada" (click)="$event.stopPropagation()" />
+  </div>
+}

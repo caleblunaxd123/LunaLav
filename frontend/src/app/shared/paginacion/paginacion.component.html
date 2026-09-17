@@ -1,0 +1,22 @@
+@if (total > 0) {
+  <div class="paginacion">
+    <div class="paginacion__tamano">
+      <label>Filas por página</label>
+      <select [ngModel]="tamanoPagina" (ngModelChange)="cambiarTamano($event)">
+        @for (op of opcionesTamano; track op) {
+          <option [value]="op">{{ op }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="paginacion__rango">{{ desde() }}–{{ hasta() }} de {{ total }}</div>
+
+    <div class="paginacion__botones">
+      <button type="button" (click)="irA(1)" [disabled]="pagina === 1" title="Primera página"><app-icon name="chevron-first" [size]="15"></app-icon></button>
+      <button type="button" (click)="irA(pagina - 1)" [disabled]="pagina === 1" title="Anterior"><app-icon name="chevron-left" [size]="15"></app-icon></button>
+      <span class="paginacion__actual">{{ pagina }} / {{ totalPaginas() }}</span>
+      <button type="button" (click)="irA(pagina + 1)" [disabled]="pagina >= totalPaginas()" title="Siguiente"><app-icon name="chevron-right" [size]="15"></app-icon></button>
+      <button type="button" (click)="irA(totalPaginas())" [disabled]="pagina >= totalPaginas()" title="Última página"><app-icon name="chevron-last" [size]="15"></app-icon></button>
+    </div>
+  </div>
+}

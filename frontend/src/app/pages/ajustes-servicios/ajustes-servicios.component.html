@@ -1,0 +1,272 @@
+<div class="page">
+  <app-page-header icono="tag" color="morado" titulo="Servicios y precios" subtitulo="Gestiona el catálogo de servicios que ofreces al cliente." volverTexto="Ajustes" (volver)="volver()">
+    <button type="button" class="btn btn--ghost" (click)="abrirImportar()"><app-icon name="clipboard" [size]="15"></app-icon>Importar</button>
+    <button type="button" class="btn btn--primario" (click)="abrirCrear()"><app-icon name="plus" [size]="15"></app-icon>Nuevo servicio</button>
+  </app-page-header>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (error()) {
+    <app-empty-state icono="error" titulo="No se pudo cargar" [mensaje]="error()!">
+      <button type="button" class="btn btn--primario" (click)="cargar()">Reintentar</button>
+    </app-empty-state>
+  } @else if (servicios().length === 0) {
+    <app-empty-state icono="lista" titulo="Sin servicios aún"
+      mensaje="Empieza creando los servicios que ofreces (lavado por kilo, doblado, etc.)">
+      <button type="button" class="btn btn--primario" (click)="abrirCrear()"><app-icon name="plus" [size]="15"></app-icon>Nuevo servicio</button>
+    </app-empty-state>
+  } @else {
+    <section class="catalog-summary" aria-label="Resumen del catálogo">
+      <div><span>Servicios activos</span><strong>{{ totalActivos() }}</strong></div>
+      <div><span>Inactivos</span><strong>{{ totalInactivos() }}</strong></div>
+      <div><span>Precio promedio</span><strong>S/ {{ precioPromedio() | number:'1.2-2' }}</strong></div>
+    </section>
+
+    <div class="catalog-toolbar" aria-label="Filtros del catálogo">
+      <label class="catalog-search">
+        <app-icon name="search" [size]="16"></app-icon>
+        <input type="search" placeholder="Buscar por nombre del servicio"
+          [ngModel]="busqueda()" (ngModelChange)="actualizarBusqueda($event)" aria-label="Buscar servicios" />
+        @if (busqueda()) {
+          <button type="button" (click)="actualizarBusqueda('')" title="Limpiar búsqueda" aria-label="Limpiar búsqueda">
+            <app-icon name="close" [size]="13"></app-icon>
+          </button>
+        }
+      </label>
+      <select [ngModel]="filtroEstado()" (ngModelChange)="actualizarEstado($event)" aria-label="Filtrar por estado">
+        <option value="todos">Todos los estados</option>
+        <option value="activos">Solo activos</option>
+        <option value="inactivos">Solo inactivos</option>
+      </select>
+      <select [ngModel]="filtroCategoria()" (ngModelChange)="actualizarCategoria($event)" aria-label="Filtrar por categoría">
+        <option value="todas">Todas las categorías</option>
+        @for (c of categorias(); track c.id) {
+          @if (c.activa) { <option [ngValue]="c.id">{{ c.nombre }}</option> }
+        }
+      </select>
+    </div>
+
+    @if (serviciosFiltrados().length === 0) {
+      <app-empty-state icono="busqueda" titulo="Sin coincidencias"
+        mensaje="No hay servicios que coincidan con la búsqueda y los filtros seleccionados.">
+        <button type="button" class="btn btn--ghost" (click)="limpiarFiltros()">Limpiar filtros</button>
+      </app-empty-state>
+    } @else {
+    <!-- Desktop: tabla -->
+    <div class="card tabla-wrap">
+      <table class="tabla">
+        <thead>
+          <tr><th>Nombre</th><th>Precio</th><th>Costo</th><th>Margen</th><th>Unidad</th><th>Categoría</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (s of serviciosPaginados(); track s.id) {
+            <tr [class.inactivo]="!s.activo">
+              <td class="nombre">{{ s.nombre }}</td>
+              <td class="mono">S/ {{ s.precio | number:'1.2-2' }}</td>
+              <td class="mono">{{ s.costo ? ('S/ ' + (s.costo | number:'1.2-2')) : '—' }}</td>
+              <td class="mono" [class.txt-rojo]="(s.precio - (s.costo || 0)) < 0">
+                S/ {{ (s.precio - (s.costo || 0)) | number:'1.2-2' }}
+                @if (s.precio) { <small>({{ ((s.precio - (s.costo || 0)) / s.precio * 100) | number:'1.0-0' }}%)</small> }
+              </td>
+              <td>{{ s.unidad }}</td>
+              <td>{{ s.categoriaNombre || '—' }}</td>
+              <td>
+                <span [class]="'badge ' + (s.activo ? 'badge--verde' : 'badge--gris')">
+                  {{ s.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="acciones-row acciones-texto">
+                <button type="button" class="btn btn--sm btn--editar" (click)="abrirEditar(s)" title="Editar" [attr.aria-label]="'Editar ' + s.nombre"><app-icon name="edit" [size]="14"></app-icon> Editar</button>
+                <button type="button" class="btn btn--sm btn--desactivar" (click)="toggleActivo(s)" [disabled]="guardando()"
+                  [title]="s.activo ? 'Desactivar' : 'Reactivar'" [attr.aria-label]="(s.activo ? 'Desactivar ' : 'Reactivar ') + s.nombre">
+                  @if (s.activo) { <app-icon name="disable" [size]="14"></app-icon> Desactivar } @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+                </button>
+                <button type="button" class="btn btn--sm btn--eliminar" (click)="pedirEliminar(s)" [disabled]="s.enUso" [title]="s.enUso ? 'En uso en pedidos — solo puedes desactivarlo' : 'Eliminar'" [attr.aria-label]="'Eliminar ' + s.nombre"><app-icon name="trash" [size]="14"></app-icon> Eliminar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile: cards -->
+    <div class="cards">
+      @for (s of serviciosPaginados(); track s.id) {
+        <div class="card servicio-card" [class.inactivo]="!s.activo">
+          <div class="servicio-card__head">
+            <strong>{{ s.nombre }}</strong>
+            <span [class]="'badge ' + (s.activo ? 'badge--verde' : 'badge--gris')">
+              {{ s.activo ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+          <div class="servicio-card__body">
+            <div><span>Precio:</span> <strong>S/ {{ s.precio | number:'1.2-2' }}</strong></div>
+            <div><span>Costo:</span> {{ s.costo ? ('S/ ' + (s.costo | number:'1.2-2')) : '—' }}</div>
+            <div><span>Margen:</span> <strong [class.txt-rojo]="(s.precio - (s.costo || 0)) < 0">S/ {{ (s.precio - (s.costo || 0)) | number:'1.2-2' }}</strong></div>
+            <div><span>Unidad:</span> {{ s.unidad }}</div>
+            <div><span>Categoría:</span> {{ s.categoriaNombre || '—' }}</div>
+          </div>
+          <div class="servicio-card__acciones">
+            <button type="button" class="btn btn--ghost btn--sm" (click)="abrirEditar(s)"><app-icon name="edit" [size]="14"></app-icon>Editar</button>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="toggleActivo(s)" [disabled]="guardando()">
+              {{ s.activo ? 'Desactivar' : 'Reactivar' }}
+            </button>
+            <button type="button" class="btn btn--danger btn--sm" (click)="pedirEliminar(s)" [disabled]="s.enUso" [title]="s.enUso ? 'En uso en pedidos — solo puedes desactivarlo' : 'Eliminar'" aria-label="Eliminar servicio"><app-icon name="trash" [size]="14"></app-icon> Eliminar</button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="card paginacion-wrap">
+      <app-paginacion
+        [pagina]="pagina()"
+        [tamanoPagina]="tamanoPagina()"
+        [total]="serviciosFiltrados().length"
+        (paginaChange)="cambiarPagina($event)"
+        (tamanoPaginaChange)="cambiarTamanoPagina($event)">
+      </app-paginacion>
+    </div>
+    }
+  }
+</div>
+
+<!-- Modal Crear/Editar -->
+@if (modalAbierto()) {
+  <div class="modal-backdrop" (click)="cerrar()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="servicio-modal-title">
+    <div class="modal__header">
+      <h3 id="servicio-modal-title">{{ editando() ? 'Editar servicio' : 'Nuevo servicio' }}</h3>
+      <button type="button" class="modal__close" (click)="cerrar()" title="Cerrar" aria-label="Cerrar formulario de servicio"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <form (submit)="guardar(); $event.preventDefault()">
+      <div class="modal__body">
+        <label for="servicio-nombre">Nombre *</label>
+        <input id="servicio-nombre" type="text" [(ngModel)]="form.nombre" name="nombre"
+          maxlength="120" required autocomplete="off" placeholder="Ej: Lavado al agua por kilo"
+          [class.invalid]="err.get('nombre')" (ngModelChange)="err.limpiar('nombre')" />
+        @if (err.get('nombre')) { <small class="campo-error">{{ err.get('nombre') }}</small> }
+
+        <div class="row-2">
+          <div>
+            <label for="servicio-precio">Precio *</label>
+            <div class="money-input"><span>S/</span><input id="servicio-precio" type="number" inputmode="decimal"
+              step="0.01" min="0.01" max="10000" required [(ngModel)]="form.precio" name="precio"
+              [class.invalid]="err.get('precio')" (ngModelChange)="err.limpiar('precio')" /></div>
+            @if (err.get('precio')) { <small class="campo-error">{{ err.get('precio') }}</small> }
+          </div>
+          <div>
+            <label for="servicio-unidad">Unidad *</label>
+            <select id="servicio-unidad" [(ngModel)]="form.unidad" name="unidad" required
+              [class.invalid]="err.get('unidad')" (ngModelChange)="err.limpiar('unidad')">
+              @for (u of unidades; track u) {
+                <option [value]="u">{{ u }}</option>
+              }
+            </select>
+            @if (err.get('unidad')) { <small class="campo-error">{{ err.get('unidad') }}</small> }
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div>
+            <label for="servicio-costo">Costo <small class="hint">(opcional, para rentabilidad)</small></label>
+            <div class="money-input"><span>S/</span><input id="servicio-costo" type="number" inputmode="decimal"
+              step="0.01" min="0" max="10000" [(ngModel)]="form.costo" name="costo" placeholder="0.00"
+              [class.invalid]="err.get('costo')" (ngModelChange)="err.limpiar('costo')" /></div>
+            @if (err.get('costo')) { <small class="campo-error">{{ err.get('costo') }}</small> }
+          </div>
+          <div>
+            <label>Margen estimado</label>
+            <div class="margen-preview" [class.negativo]="(form.precio || 0) - (form.costo || 0) < 0">
+              S/ {{ ((form.precio || 0) - (form.costo || 0)) | number:'1.2-2' }}
+              @if (form.precio) {
+                <small>({{ (((form.precio || 0) - (form.costo || 0)) / form.precio * 100) | number:'1.0-0' }}%)</small>
+              }
+            </div>
+          </div>
+        </div>
+
+        <label for="servicio-categoria">Categoría <small class="hint">(opcional)</small></label>
+        <select id="servicio-categoria" [(ngModel)]="form.categoriaId" name="categoriaId">
+          <option [ngValue]="null">Sin categoría</option>
+          @for (c of categorias(); track c.id) {
+            @if (c.activa) {
+              <option [ngValue]="c.id">{{ c.nombre }}</option>
+            }
+          }
+        </select>
+
+        <label class="checkbox-row">
+          <input type="checkbox" [(ngModel)]="form.activo" name="activo" />
+          Servicio activo (visible en el wizard de registro)
+        </label>
+
+        @if (errorForm()) {
+          <div class="modal__error" role="alert">{{ errorForm() }}</div>
+        }
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrar()">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+<!-- Modal confirmar eliminar -->
+@if (confirmarEliminar(); as s) {
+  <div class="modal-backdrop" (click)="confirmarEliminar.set(null)"></div>
+  <div class="modal modal--sm" role="alertdialog" aria-modal="true" aria-labelledby="eliminar-servicio-title">
+    <div class="modal__header">
+      <h3 id="eliminar-servicio-title">¿Eliminar servicio?</h3>
+      <button type="button" class="modal__close" (click)="confirmarEliminar.set(null)" aria-label="Cerrar confirmación"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p>Vas a eliminar <strong>{{ s.nombre }}</strong> de forma permanente. Esta acción no se puede deshacer.</p>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="confirmarEliminar.set(null)">Cancelar</button>
+        <button type="button" class="btn btn--danger" [disabled]="guardando()" (click)="eliminar()">
+          {{ guardando() ? 'Eliminando…' : 'Sí, eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal importar masivo (componente reutilizable) -->
+@if (importarAbierto()) {
+  <app-importador-masivo
+    titulo="Importar servicios"
+    [columnas]="columnasImport"
+    plantillaTipo="servicios"
+    [existentes]="nombresExistentes()"
+    claveDuplicado="nombre"
+    [procesando]="importando()"
+    (cerrar)="cerrarImportar()"
+    (confirmar)="importarServicios($event)">
+    <label class="checkbox-row">
+      <input type="checkbox" [ngModel]="crearCategorias()" (ngModelChange)="crearCategorias.set($event)" name="crearCat" />
+      Crear automáticamente las categorías que no existan
+    </label>
+  </app-importador-masivo>
+}
+
+<!-- Modal confirmar desactivar -->
+@if (confirmarDesactivar(); as s) {
+  <div class="modal-backdrop" (click)="confirmarDesactivar.set(null)"></div>
+  <div class="modal modal--sm" role="alertdialog" aria-modal="true" aria-labelledby="desactivar-servicio-title">
+    <div class="modal__header">
+      <h3 id="desactivar-servicio-title">¿Desactivar servicio?</h3>
+      <button type="button" class="modal__close" (click)="confirmarDesactivar.set(null)" aria-label="Cerrar confirmación"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p><strong>{{ s.nombre }}</strong> dejará de estar visible en el wizard de registro.</p>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="confirmarDesactivar.set(null)">Cancelar</button>
+        <button type="button" class="btn btn--danger" [disabled]="guardando()" (click)="confirmarDesactivarOk()">Sí, desactivar</button>
+      </div>
+    </div>
+  </div>
+}

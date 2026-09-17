@@ -1,0 +1,39 @@
+@if (servicio.alertas().length > 0) {
+  <section class="global-alerts" aria-label="Avisos importantes">
+    <div class="global-alerts__stack">
+      @for (alerta of visibles(); track alerta.clave + alerta.huella) {
+        <article class="global-alert global-alert--clickable" [class]="'global-alert global-alert--clickable global-alert--' + alerta.nivel"
+          [attr.role]="alerta.ruta ? 'link' : (alerta.nivel === 'critica' ? 'alert' : 'status')"
+          [attr.tabindex]="alerta.ruta ? 0 : null"
+          [attr.title]="alerta.ruta ? alerta.accion : null"
+          (click)="irAAlerta(alerta)"
+          (keydown.enter)="irAAlerta(alerta)"
+          (keydown.space)="irAAlerta(alerta); $event.preventDefault()">
+          <span class="global-alert__icon" aria-hidden="true">
+            <app-icon [name]="alerta.icono" [size]="18"></app-icon>
+          </span>
+          <div class="global-alert__copy">
+            <strong>{{ alerta.titulo }}</strong>
+            <span>{{ alerta.detalle }}</span>
+          </div>
+          <a class="global-alert__action" [routerLink]="alerta.ruta" [queryParams]="alerta.queryParams ?? null"
+            (click)="$event.stopPropagation()" tabindex="-1">
+            {{ alerta.accion }}
+            <app-icon name="chevron-right" [size]="15"></app-icon>
+          </a>
+          <button type="button" class="global-alert__close" (click)="descartar(alerta); $event.stopPropagation()"
+            [attr.aria-label]="'Ocultar aviso: ' + alerta.titulo" title="Ocultar temporalmente">
+            <app-icon name="close" [size]="16"></app-icon>
+          </button>
+        </article>
+      }
+    </div>
+
+    @if (restantes() > 0 || expandido()) {
+      <button type="button" class="global-alerts__toggle" (click)="toggleExpandido()">
+        @if (expandido()) { Ver menos avisos }
+        @else { Mostrar {{ restantes() }} aviso{{ restantes() === 1 ? '' : 's' }} más }
+      </button>
+    }
+  </section>
+}

@@ -1,0 +1,38 @@
+<div class="sel">
+  <div class="sel__card">
+    <div class="sel__brand">
+      <div class="sel__logo-fallback">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
+        </svg>
+      </div>
+      <h1>Elige una sede</h1>
+      <p>Tu usuario tiene acceso a varias sucursales. Selecciona con cuál quieres trabajar ahora.</p>
+    </div>
+
+    @if (cargando()) {
+      <p class="sel__estado">Cargando sedes…</p>
+    } @else if (sedes().length === 0) {
+      <p class="sel__estado">No hay sedes activas configuradas todavía.</p>
+    } @else {
+      <div class="sel__lista">
+        @for (s of sedes(); track s.id) {
+          <button
+            class="sel__item"
+            [disabled]="seleccionando() !== null"
+            (click)="elegir(s)">
+            <span class="sel__item-nombre">{{ s.nombre }}</span>
+            @if (s.direccion) { <span class="sel__item-direccion">{{ s.direccion }}</span> }
+            @if (seleccionando() === s.id) { <span class="sel__item-loading">Entrando…</span> }
+          </button>
+        }
+      </div>
+    }
+
+    @if (error()) {
+      <div class="sel__error" role="alert">{{ error() }}</div>
+    }
+
+    <button class="sel__logout" (click)="cerrarSesion()">Cerrar sesión</button>
+  </div>
+</div>

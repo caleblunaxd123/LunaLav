@@ -1,0 +1,222 @@
+<div class="page">
+  <app-page-header icono="chart" color="azul" titulo="Vista Gerencial"
+    subtitulo="El pulso del negocio: ventas, rentabilidad, cobranza, operación e inventario en una sola pantalla."
+    volverTexto="Reportes" (volver)="volver()"></app-page-header>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (kpis(); as k) {
+
+    <!-- ===== Fila protagonista: los 4 números que un gerente mira primero ===== -->
+    <div class="hero">
+      <div class="hero-card hero-card--ventas">
+        <span class="hero-card__label">Ventas del mes</span>
+        <strong class="hero-card__valor">S/ {{ k.ventasMes | number:'1.2-2' }}</strong>
+        @if (crecimientoPct() !== null) {
+          <span class="hero-card__delta" [class.up]="crecimientoPct()! >= 0" [class.down]="crecimientoPct()! < 0">
+            {{ crecimientoPct()! >= 0 ? '▲' : '▼' }} {{ crecimientoPct()! >= 0 ? '+' : '' }}{{ crecimientoPct() }}%
+            <small>vs mes anterior (mismo día)</small>
+          </span>
+        }
+      </div>
+
+      <div class="hero-card">
+        <span class="hero-card__label">Utilidad del mes</span>
+        <strong class="hero-card__valor" [class.neg]="k.utilidadMes < 0">S/ {{ k.utilidadMes | number:'1.2-2' }}</strong>
+        <span class="hero-card__sub">Margen {{ margenPct() }}% · gastos S/ {{ k.gastosMes | number:'1.2-2' }}</span>
+      </div>
+
+      <div class="hero-card">
+        <span class="hero-card__label">Ticket promedio</span>
+        <strong class="hero-card__valor">S/ {{ k.ticketPromedioMes | number:'1.2-2' }}</strong>
+        <span class="hero-card__sub">{{ k.pedidosMesCount }} pedido{{ k.pedidosMesCount === 1 ? '' : 's' }} este mes</span>
+      </div>
+
+      <div class="hero-card" [class.hero-card--alerta]="k.saldoPorCobrar > 0">
+        <span class="hero-card__label">Por cobrar</span>
+        <strong class="hero-card__valor">S/ {{ k.saldoPorCobrar | number:'1.2-2' }}</strong>
+        <div class="hero-card__meter" [attr.title]="cobranzaPct() + '% de la venta del mes ya cobrada'">
+          <span [style.width.%]="cobranzaPct()"></span>
+        </div>
+        <span class="hero-card__sub">{{ cobranzaPct() }}% cobrado del mes</span>
+      </div>
+    </div>
+
+    <!-- ===== Tendencia de ventas (14 días) ===== -->
+    <div class="card grafico">
+      <div class="grafico__head">
+        <h3>Ventas de los últimos 14 días</h3>
+        <span class="grafico__hint">Promedio S/ {{ promedioDiario14() | number:'1.0-0' }}/día · pico S/ {{ ventaMaxTendencia() | number:'1.0-0' }}</span>
+      </div>
+      @if (ventaMaxTendencia() <= 0) {
+        <p class="hint">Aún no hay ventas registradas en este periodo.</p>
+      } @else {
+        <div class="barras" role="img" aria-label="Ventas diarias de los últimos 14 días">
+          @for (b of barras(); track b.fecha) {
+            <div class="barras__col" [class.es-hoy]="b.esHoy"
+                 [attr.title]="b.etiqueta + ': S/ ' + (b.total | number:'1.2-2')">
+              <span class="barras__valor">{{ b.total > 0 ? (b.total | number:'1.0-0') : '' }}</span>
+              <div class="barras__track">
+                <div class="barras__fill" [style.height.%]="b.alturaPct"></div>
+              </div>
+              <span class="barras__dia">{{ b.etiqueta }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- ===== Composición de ingresos + Embudo de pedidos ===== -->
+    <div class="duo">
+      <div class="card grafico">
+        <div class="grafico__head">
+          <h3>¿Cómo nos pagan? (mes)</h3>
+          <span class="grafico__hint">Total cobrado S/ {{ totalIngresosMes() | number:'1.2-2' }}</span>
+        </div>
+        @if (totalIngresosMes() <= 0) {
+          <p class="hint">Sin cobros registrados este mes.</p>
+        } @else {
+          <div class="stack">
+            <span class="stack__seg stack__seg--efectivo" [style.width.%]="pctMetodo(k.ingresosEfectivoMes)"></span>
+            <span class="stack__seg stack__seg--digital" [style.width.%]="pctMetodo(k.ingresosDigitalMes)"></span>
+            <span class="stack__seg stack__seg--tarjeta" [style.width.%]="pctMetodo(k.ingresosTarjetaMes)"></span>
+          </div>
+          <div class="leyenda">
+            <div class="leyenda__item"><span class="dot dot--efectivo"></span>Efectivo
+              <strong>{{ pctMetodo(k.ingresosEfectivoMes) }}%</strong>
+              <small>S/ {{ k.ingresosEfectivoMes | number:'1.2-2' }}</small></div>
+            <div class="leyenda__item"><span class="dot dot--digital"></span>Yape / Plin / Transf.
+              <strong>{{ pctMetodo(k.ingresosDigitalMes) }}%</strong>
+              <small>S/ {{ k.ingresosDigitalMes | number:'1.2-2' }}</small></div>
+            <div class="leyenda__item"><span class="dot dot--tarjeta"></span>Tarjeta / POS
+              <strong>{{ pctMetodo(k.ingresosTarjetaMes) }}%</strong>
+              <small>S/ {{ k.ingresosTarjetaMes | number:'1.2-2' }}</small></div>
+          </div>
+        }
+      </div>
+
+      <div class="card grafico">
+        <div class="grafico__head">
+          <h3>Pedidos en operación</h3>
+          <span class="grafico__hint">{{ totalEmbudo() }} activos ahora</span>
+        </div>
+        @if (totalEmbudo() <= 0) {
+          <p class="ok-badge">✓ No hay pedidos en cola. Operación al día.</p>
+        } @else {
+          <div class="embudo">
+            <div class="embudo__fila">
+              <span class="embudo__nom">Pendientes</span>
+              <div class="embudo__track"><div class="embudo__bar embudo__bar--pend"
+                [style.width.%]="totalEmbudo() ? (k.pedidosPendientes / totalEmbudo() * 100) : 0"></div></div>
+              <strong class="embudo__num">{{ k.pedidosPendientes }}</strong>
+            </div>
+            <div class="embudo__fila">
+              <span class="embudo__nom">En proceso</span>
+              <div class="embudo__track"><div class="embudo__bar embudo__bar--proc"
+                [style.width.%]="totalEmbudo() ? (k.pedidosEnProceso / totalEmbudo() * 100) : 0"></div></div>
+              <strong class="embudo__num">{{ k.pedidosEnProceso }}</strong>
+            </div>
+            <div class="embudo__fila">
+              <span class="embudo__nom">Listos sin recoger</span>
+              <div class="embudo__track"><div class="embudo__bar embudo__bar--listo"
+                [style.width.%]="totalEmbudo() ? (k.pedidosListosSinRecoger / totalEmbudo() * 100) : 0"></div></div>
+              <strong class="embudo__num" [class.alerta]="k.pedidosListosSinRecoger > 0">{{ k.pedidosListosSinRecoger }}</strong>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ===== Top servicios del mes ===== -->
+    <div class="card grafico">
+      <div class="grafico__head">
+        <h3>Servicios que más facturan (mes)</h3>
+      </div>
+      @if (!k.topServiciosMes.length) {
+        <p class="hint">Aún no hay ventas de servicios este mes.</p>
+      } @else {
+        <div class="ranking">
+          @for (s of k.topServiciosMes; track s.nombre; let i = $index) {
+            <div class="ranking__fila">
+              <span class="ranking__pos">{{ i + 1 }}</span>
+              <span class="ranking__nom">{{ s.nombre }}</span>
+              <div class="ranking__track">
+                <div class="ranking__bar" [style.width.%]="s.total / maxTopServicio() * 100"></div>
+              </div>
+              <span class="ranking__val">S/ {{ s.total | number:'1.2-2' }}<small>{{ s.cantidad | number:'1.0-2' }} und.</small></span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- ===== KPIs operativos del día ===== -->
+    <div class="mini-kpis">
+      <div class="mini"><span>Ventas hoy</span><strong>S/ {{ k.ventasHoy | number:'1.2-2' }}</strong></div>
+      <div class="mini"><span>Cobrado hoy</span><strong>S/ {{ k.cobradoHoy | number:'1.2-2' }}</strong></div>
+      <div class="mini"><span>Caja esperada (efectivo)</span><strong>S/ {{ k.cajaEsperadaHoy | number:'1.2-2' }}</strong></div>
+      <div class="mini"><span>Entregados hoy</span><strong>{{ k.pedidosEntregadosHoy }}</strong>
+        <small>{{ k.pedidosEntregadosTiendaHoy }} tienda · {{ k.pedidosEntregadosDomicilioHoy }} entrega</small></div>
+      <div class="mini"><span>Entregados en el mes</span><strong>{{ k.pedidosEntregadosMes }}</strong>
+        <small>{{ k.pedidosEntregadosSemana }} esta semana</small></div>
+    </div>
+
+    <!-- ===== Alertas que requieren decisión del gerente ===== -->
+    @if (k.comprobantesPendientes > 0 || k.comprobantesRechazados > 0 || k.insumosBajoStock > 0) {
+      <div class="alertas">
+        @if (k.comprobantesPendientes > 0) {
+          <div class="alerta-chip"><strong>{{ k.comprobantesPendientes }}</strong> comprobantes pendientes de envío</div>
+        }
+        @if (k.comprobantesRechazados > 0) {
+          <div class="alerta-chip alerta-chip--rojo"><strong>{{ k.comprobantesRechazados }}</strong> comprobantes rechazados</div>
+        }
+        @if (k.insumosBajoStock > 0) {
+          <div class="alerta-chip alerta-chip--ambar"><strong>{{ k.insumosBajoStock }}</strong> insumos bajo stock mínimo</div>
+        }
+      </div>
+    }
+  }
+
+  @if (sla(); as s) {
+    <div class="card seccion">
+      <h3>Tiempo promedio por área (últimos 30 días)</h3>
+      @if (s.areas.length === 0) {
+        <p class="hint">Aún no hay suficientes pedidos completados para calcular esto.</p>
+      } @else {
+        <div class="areas">
+          @for (a of s.areas; track a.areaId) {
+            <div class="area-fila">
+              <span class="area-fila__nombre">{{ a.areaNombre }}</span>
+              @if (a.minutosPromedioReal > 0) {
+                <span class="area-fila__dato">{{ duracion(a.minutosPromedioReal) }} real · meta {{ duracion(a.tiempoEstMinutos) }}</span>
+                <span class="area-fila__desvio" [class.area-fila__desvio--mal]="desvioClase(a) === 'mal'">
+                  {{ desvioEtiqueta(a) }}
+                </span>
+              } @else {
+                <span class="area-fila__dato">Sin datos · meta {{ duracion(a.tiempoEstMinutos) }}</span>
+                <span class="area-fila__desvio">—</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="card seccion">
+      <h3>Pedidos estancados ahora</h3>
+      @if (s.estancados.length === 0) {
+        <p class="ok-badge">✓ Ningún pedido lleva más tiempo del esperado en su área actual.</p>
+      } @else {
+        <div class="estancados">
+          @for (p of s.estancados; track p.pedidoId) {
+            <div class="estancado-fila">
+              <span><strong>#{{ p.numero }}</strong> {{ p.clienteNombre }}</span>
+              <span>{{ p.areaNombre }}</span>
+              <span class="estancado-fila__tiempo">{{ duracion(p.minutosEnArea) }} (meta {{ duracion(p.tiempoEstMinutos) }})</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

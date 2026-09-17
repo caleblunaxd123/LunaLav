@@ -1,0 +1,631 @@
+// ============================================================
+// Ticket para impresora térmica (58mm o 80mm)
+// - En pantalla: preview centrado con fondo gris
+// - Al imprimir: se ajusta a la página @page definida en TS
+// ============================================================
+
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #e9edf3;
+  font-family: 'Helvetica Neue', Arial, 'Segoe UI', sans-serif;
+}
+
+// -------- Barra superior (solo pantalla) --------
+.acciones-print {
+  background: var(--azul-oscuro);
+  color: #fff;
+  padding: 14px 16px;
+
+  &__inner {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  &__hint {
+    flex: 1;
+    margin: 0;
+    font-size: 12px;
+    opacity: .9;
+    min-width: 200px;
+  }
+}
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+
+  &--primario { background: var(--naranja); color: var(--texto-sobre-acento, #fff); }
+  &--ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.35); }
+  &--descargar { background: var(--azul-claro); color: var(--texto-sobre-secundario, #fff); display: inline-flex; align-items: center; gap: 6px; }
+  &--pdf { background: #25d366; color: #fff; display: inline-flex; align-items: center; gap: 6px; }
+  &:disabled { opacity: .55; cursor: not-allowed; }
+}
+
+.whatsapp-envio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 12px 6px 6px;
+
+  &__boton {
+    border: none;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #25d366;
+    color: #fff;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:disabled { opacity: .5; cursor: not-allowed; }
+  }
+
+  &__campo {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+
+    span {
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+
+    input {
+      border: none;
+      font-size: 13px;
+      font-weight: 700;
+      color: #1a202c;
+      font-family: inherit;
+      width: 130px;
+      padding: 0;
+
+      &:focus { outline: none; }
+    }
+  }
+}
+
+.toggle-grupo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &__label {
+    font-size: 12px;
+    font-weight: 700;
+    opacity: .9;
+  }
+
+  &__botones {
+    display: flex;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.35);
+
+    button {
+      border: none;
+      background: transparent;
+      color: #fff;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+
+      &.is-active {
+        background: var(--naranja);
+        color: var(--texto-sobre-acento, #fff);
+      }
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .acciones-print {
+    padding: 10px;
+
+    &__inner {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    &__hint {
+      grid-column: 1 / -1;
+      min-width: 0;
+      font-size: 11px;
+    }
+  }
+
+  .btn {
+    justify-content: center;
+    min-height: 40px;
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+
+  .whatsapp-envio {
+    grid-column: 1 / -1;
+    padding-right: 8px;
+
+    &__campo {
+      flex: 1;
+      min-width: 0;
+
+      input {
+        width: 100%;
+      }
+    }
+  }
+
+  .toggle-grupo {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+
+    &__botones {
+      flex: 1;
+
+      button {
+        flex: 1;
+        min-height: 34px;
+      }
+    }
+  }
+}
+
+.msg {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+
+  &.error { color: var(--rojo); }
+}
+
+// -------- Ticket container --------
+.ticket-wrap {
+  padding: 24px 16px 60px;
+  display: flex;
+  justify-content: center;
+}
+
+.ticket {
+  background: #fff;
+  color: #000;
+  padding: 10px 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.12);
+  font-size: 12.5px;
+  line-height: 1.28;
+  font-weight: 500;
+
+  // Preview en pantalla — 80mm ≈ 302px; 58mm ≈ 220px
+  &[data-ancho="80"] { width: 302px; }
+  &[data-ancho="58"] { width: 220px; font-size: 11px; }
+
+  &__header {
+    text-align: center;
+    margin-bottom: 4px;
+
+    h1 {
+      font-size: 14px;
+      margin: 4px 0 2px;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+
+    p {
+      margin: 1px 0;
+      font-size: 10px;
+    }
+  }
+
+  &__horario { white-space: pre-line; }
+
+  &__logo {
+    // El logo del negocio es un banner horizontal: lo mostramos casi a todo el
+    // ancho del ticket para que se vea profesional (antes quedaba diminuto a 60px).
+    width: 90%;
+    max-width: 240px;
+    height: auto;
+    margin: 0 auto 6px;
+    display: block;
+    border-radius: 8px;
+    // Que el fondo/colores del logo se respeten al imprimir o "Guardar como PDF".
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  &__divider {
+    // Línea fina sólida (ocultamos los guiones del HTML con font-size:0).
+    font-size: 0;
+    line-height: 0;
+    height: 0;
+    border-top: 1px solid #000;
+    margin: 6px 0;
+  }
+
+  &__numero {
+    text-align: center;
+    padding: 4px 0;
+  }
+
+  &__label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+  }
+
+  &__numero-valor {
+    display: block;
+    font-size: 34px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  &__barcode {
+    text-align: center;
+    padding: 2px 0 4px;
+
+    svg { max-width: 100%; }
+  }
+
+  &__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+
+    span { color: #333; }
+    strong { text-align: right; }
+
+    &--total {
+      font-size: 13px;
+      font-weight: 800;
+      padding: 3px 0;
+      border-top: 1px solid #000;
+      border-bottom: 1px solid #000;
+      margin: 4px 0;
+    }
+
+    &--saldo {
+      font-weight: 800;
+    }
+  }
+
+  &__cliente { margin: 2px 0; }
+
+  &__destino {
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px dotted #555;
+
+    strong {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+    }
+
+    p { margin: 1px 0; font-size: 10px; line-height: 1.25; }
+  }
+
+  &__items {
+    strong {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+  }
+
+  &__item {
+    margin-bottom: 5px;
+  }
+
+  &__item-nombre {
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  &__item-linea {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding-left: 6px;
+
+    strong { font-size: 13px; }
+  }
+
+  &__item-desc {
+    display: block;
+    font-size: 11px;
+    color: #333;
+    font-style: italic;
+    margin-top: 1px;
+  }
+
+  &__estado {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+
+    small { font-size: 10.5px; color: #333; font-weight: 400; }
+  }
+
+  &__pago-estado {
+    padding: 8px 4px 6px;
+    text-align: center;
+
+    strong, span { display: block; }
+    strong { font-size: 22px; font-weight: 800; line-height: 1.1; letter-spacing: .3px; }
+    span { margin-top: 2px; font-size: 17px; font-weight: 800; }
+
+    &--ok strong { font-size: 22px; }
+  }
+
+  &__pie {
+    text-align: center;
+    font-size: 10px;
+    margin: 6px 0;
+    font-style: italic;
+  }
+
+  &__aviso {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    margin: 4px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  &__condiciones {
+    font-size: 9px;
+    line-height: 1.4;
+
+    strong {
+      display: block;
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    ol {
+      margin: 0;
+      padding-left: 14px;
+    }
+
+    li { margin-bottom: 2px; }
+
+    &-intro, &-cierre {
+      margin: 4px 0;
+      text-align: justify;
+    }
+
+    &-cierre { font-weight: 700; }
+  }
+
+  &__observaciones {
+    font-size: 10px;
+    line-height: 1.4;
+    padding: 6px 8px;
+    border: 1px dashed #000;
+    border-radius: 4px;
+
+    strong {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    p { margin: 0; font-weight: 600; }
+  }
+
+  &__notas-produccion {
+    font-size: 10px;
+    line-height: 1.4;
+
+    strong {
+      display: block;
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+      background: #000;
+      color: #fff;
+      padding: 2px 6px;
+    }
+
+    p { margin: 4px 0; }
+    em { font-style: italic; }
+  }
+
+  &__aviso-recojo {
+    text-align: center;
+    font-size: 9px;
+    margin: 4px 0;
+    font-style: italic;
+    line-height: 1.3;
+  }
+
+  &__espacio-final {
+    height: 14px; // corte de papel
+  }
+
+  // ---- Estilo "referencia": fechas, cliente, tabla, totales ----
+  &__fechas {
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+  &__fecha {
+    margin: 1px 0;
+    strong { font-weight: 700; }
+  }
+
+  &__cliente-label {
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: .5px;
+    margin-top: 2px;
+  }
+  &__cliente-nombre {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.15;
+    margin: 1px 0 4px;
+    text-transform: uppercase;
+  }
+  &__cliente-dato {
+    font-size: 12.5px;
+    margin: 1px 0;
+    strong { font-weight: 700; }
+  }
+
+  &__tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+
+    thead th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      border-bottom: 1px solid #000;
+      padding: 2px 0 3px;
+      &.c { text-align: center; }
+      &.r { text-align: right; }
+    }
+    tbody td {
+      vertical-align: top;
+      padding: 4px 0;
+      border-bottom: 1px dotted #bbb;
+      // Un nombre de servicio largo debe cortarse en dos renglones, nunca ensanchar
+      // la tabla (eso empujaba la columna de montos fuera del área imprimible).
+      overflow-wrap: anywhere;
+      &.c { text-align: center; white-space: nowrap; padding-left: 6px; }
+      &.r { text-align: right; white-space: nowrap; font-weight: 700; padding-left: 6px; }
+    }
+  }
+  &__tabla-item { font-weight: 700; display: block; }
+
+  &__totales {
+    margin-top: 5px;
+  }
+  &__total-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    font-size: 12.5px;
+    padding: 1px 0;
+    span:first-child { color: #333; }
+    span:last-child { min-width: 70px; text-align: right; }
+
+    &--fuerte {
+      font-weight: 800;
+      font-size: 14px;
+      border-top: 1px solid #000;
+      margin-top: 3px;
+      padding-top: 4px;
+    }
+  }
+}
+
+// ============================================================
+// PRINT: cuando el usuario imprime, ocultar la barra superior
+// y hacer que el ticket ocupe todo el ancho de la página
+// (que ya está definido en @page desde el componente TS)
+// ============================================================
+@media print {
+  :host {
+    background: #fff;
+    min-height: 0;
+  }
+
+  .acciones-print { display: none !important; }
+
+  .ticket-wrap {
+    padding: 0;
+    display: block; // sin flex/centrado: el ticket manda desde el margen izquierdo
+    // Última red de seguridad: nada puede sobresalir del ancho imprimible.
+    overflow: hidden;
+  }
+
+  .ticket {
+    box-shadow: none;
+    // IMPORTANTE (RawBT / impresión desde celular a térmica):
+    // No se puede confiar en el ancho de @page en mm — RawBT maqueta y ESCALA el
+    // ticket a su manera, y la zona realmente imprimible del cabezal termina antes
+    // del borde del papel (~68mm en papel de 80). Pelear con milímetros no funcionó.
+    //
+    // Solución: el ticket ocupa solo un PORCENTAJE del ancho y se pega a la IZQUIERDA
+    // (ticket-wrap es display:block, sin centrado). Así queda un colchón proporcional
+    // a la derecha que absorbe el recorte AUNQUE RawBT escale la página. La columna de
+    // montos (alineada a la derecha del ticket) queda muy adentro de la zona imprimible.
+    // Si aún se corta, BAJAR este porcentaje (p. ej. 78%); si sobra mucho papel a la
+    // derecha, subirlo (p. ej. 85%).
+    width: 78% !important;
+    max-width: 78% !important;
+    margin: 0 !important;
+    padding: 1.5mm 2mm 1.5mm 2mm !important;
+    box-sizing: border-box !important;
+    font-size: 9.5pt;
+    line-height: 1.22;
+  }
+
+  .ticket[data-ancho="58"] {
+    // Papel de 58mm: mismo criterio, un poco más de ancho relativo disponible.
+    width: 82% !important;
+    max-width: 82% !important;
+    font-size: 8pt;
+    padding: 1mm 2mm 1mm 2mm !important;
+  }
+
+  // Encabezados grandes: los bajamos para que el ticket no salga tan largo.
+  .ticket__numero-valor { font-size: 19pt !important; }
+  .ticket__label { font-size: 8pt !important; letter-spacing: 1px !important; }
+
+  .ticket__total-row--fuerte { font-size: 10pt !important; }
+
+  .ticket__cliente-nombre { font-size: 12pt !important; }
+
+  .ticket__pago-estado {
+    padding: 4px 2px 3px !important;
+    strong { font-size: 13pt !important; }
+    span { font-size: 11pt !important; }
+    &--ok strong { font-size: 13pt !important; }
+  }
+
+  // Menos separación vertical general -> ticket más corto.
+  .ticket__divider { margin: 3px 0 !important; }
+  .ticket__numero { padding: 2px 0 !important; }
+  .ticket__espacio-final { height: 8px !important; }
+
+  // Evita que se corte info entre paginas
+  .ticket__tabla, .ticket__totales { page-break-inside: avoid; }
+}

@@ -1,0 +1,170 @@
+<div class="page">
+  <app-page-header icono="refresh" color="naranja" titulo="Áreas de lavado" subtitulo="Define las etapas por las que pasa un pedido y sus tiempos estándar." volverTexto="Ajustes" (volver)="volver()">
+    <button class="btn btn--primario" (click)="abrirCrear()">+ Nueva área</button>
+  </app-page-header>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (error()) {
+    <app-empty-state icono="error" titulo="No se pudo cargar" [mensaje]="error()!">
+      <button class="btn btn--primario" (click)="cargar()">Reintentar</button>
+    </app-empty-state>
+  } @else if (areas().length === 0) {
+    <app-empty-state icono="lista" titulo="Sin áreas aún" mensaje="Crea la primera etapa de tu proceso de lavado (ej. Recepción).">
+      <button class="btn btn--primario" (click)="abrirCrear()">+ Nueva área</button>
+    </app-empty-state>
+  } @else {
+    <div class="buscador-lista">
+      <app-icon name="search" [size]="16"></app-icon>
+      <input type="search" placeholder="Buscar área por nombre…"
+        [ngModel]="busqueda()" (ngModelChange)="actualizarBusqueda($event)" aria-label="Buscar área" />
+      @if (busqueda()) { <button type="button" (click)="actualizarBusqueda('')" title="Limpiar" aria-label="Limpiar búsqueda">×</button> }
+    </div>
+    @if (areasFiltradas().length === 0) {
+      <p class="hint">Sin coincidencias para “{{ busqueda() }}”.</p>
+    }
+    <div class="card tabla-wrap">
+      <table class="tabla">
+        <thead><tr><th>Orden</th><th>Nombre</th><th>Tiempo estimado</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          @for (a of areasPaginadas(); track a.id) {
+            <tr [class.inactivo]="!a.activa">
+              <td class="mono">{{ a.orden }}</td>
+              <td class="nombre">{{ a.nombre }}</td>
+              <td>{{ a.tiempoEstMinutos }} min</td>
+              <td>
+                <span [class]="'badge ' + (a.activa ? 'badge--verde' : 'badge--gris')">
+                  {{ a.activa ? 'Activa' : 'Inactiva' }}
+                </span>
+              </td>
+              <td class="acciones-row acciones-texto">
+                <button class="btn btn--sm btn--editar" (click)="abrirEditar(a)" title="Editar"><app-icon name="edit" [size]="14"></app-icon> Editar</button>
+                <button class="btn btn--sm btn--desactivar" (click)="toggleActiva(a)" [title]="a.activa ? 'Desactivar' : 'Reactivar'">
+                  @if (a.activa) { <app-icon name="disable" [size]="14"></app-icon> Desactivar } @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+                </button>
+                <button class="btn btn--sm btn--eliminar" (click)="pedirEliminar(a)" [disabled]="a.enUso" [title]="a.enUso ? 'Ya hay pedidos que pasaron por esta área — solo puedes desactivarla' : 'Eliminar'"><app-icon name="trash" [size]="14"></app-icon> Eliminar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile: cards -->
+    <div class="cards">
+      @for (a of areasPaginadas(); track a.id) {
+        <div class="card area-card" [class.inactivo]="!a.activa">
+          <div class="area-card__head">
+            <strong>{{ a.orden }}. {{ a.nombre }}</strong>
+            <span [class]="'badge ' + (a.activa ? 'badge--verde' : 'badge--gris')">
+              {{ a.activa ? 'Activa' : 'Inactiva' }}
+            </span>
+          </div>
+          <div class="area-card__body">
+            <div><span>Tiempo estimado:</span> {{ a.tiempoEstMinutos }} min</div>
+          </div>
+          <div class="area-card__acciones">
+            <button class="btn btn--sm btn--editar" (click)="abrirEditar(a)" title="Editar"><app-icon name="edit" [size]="14"></app-icon> Editar</button>
+            <button class="btn btn--sm btn--desactivar" (click)="toggleActiva(a)" [title]="a.activa ? 'Desactivar' : 'Reactivar'">
+              @if (a.activa) { <app-icon name="disable" [size]="14"></app-icon> Desactivar } @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+            </button>
+            <button class="btn btn--sm btn--eliminar" (click)="pedirEliminar(a)" title="Eliminar"><app-icon name="trash" [size]="14"></app-icon> Eliminar</button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="card paginacion-wrap">
+      <app-paginacion
+        [pagina]="pagina()"
+        [tamanoPagina]="tamanoPagina()"
+        [total]="areasFiltradas().length"
+        (paginaChange)="cambiarPagina($event)"
+        (tamanoPaginaChange)="cambiarTamanoPagina($event)">
+      </app-paginacion>
+    </div>
+  }
+</div>
+
+@if (modalAbierto()) {
+  <div class="modal-backdrop" (click)="cerrar()"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>{{ editando() ? 'Editar área' : 'Nueva área' }}</h3>
+      <button class="modal__close" (click)="cerrar()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <form (submit)="guardar(); $event.preventDefault()">
+      <div class="modal__body">
+        <label>Nombre *</label>
+        <input type="text" [(ngModel)]="form.nombre" name="nombre" placeholder="Ej: Doblado"
+          [class.invalid]="err.get('nombre')" (ngModelChange)="err.limpiar('nombre')" />
+        @if (err.get('nombre')) { <small class="campo-error">{{ err.get('nombre') }}</small> }
+
+        <div class="row-2">
+          <div>
+            <label>Orden *</label>
+            <input type="number" min="1" [(ngModel)]="form.orden" name="orden"
+              [class.invalid]="err.get('orden')" (ngModelChange)="err.limpiar('orden')" />
+            @if (err.get('orden')) { <small class="campo-error">{{ err.get('orden') }}</small> }
+          </div>
+          <div>
+            <label>Tiempo estimado (min)</label>
+            <input type="number" min="1" [(ngModel)]="form.tiempoEstMinutos" name="tiempoEstMinutos" />
+          </div>
+        </div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" [(ngModel)]="form.activa" name="activa" />
+          Área activa
+        </label>
+
+        @if (errorForm()) {
+          <div class="modal__error" role="alert">{{ errorForm() }}</div>
+        }
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrar()">Cancelar</button>
+        <button type="submit" class="btn btn--primario" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (confirmarEliminar(); as a) {
+  <div class="modal-backdrop" (click)="confirmarEliminar.set(null)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Eliminar área?</h3>
+      <button class="modal__close" (click)="confirmarEliminar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p>Vas a eliminar <strong>{{ a.nombre }}</strong> de forma permanente. Esta acción no se puede deshacer.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarEliminar.set(null)">Cancelar</button>
+        <button class="btn btn--danger" [disabled]="guardando()" (click)="eliminar()">
+          {{ guardando() ? 'Eliminando…' : 'Sí, eliminar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (confirmarDesactivar(); as a) {
+  <div class="modal-backdrop" (click)="confirmarDesactivar.set(null)"></div>
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <h3>¿Desactivar área?</h3>
+      <button class="modal__close" (click)="confirmarDesactivar.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal__body">
+      <p><strong>{{ a.nombre }}</strong> dejará de estar disponible en el flujo de pedidos.</p>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" (click)="confirmarDesactivar.set(null)">Cancelar</button>
+        <button class="btn btn--danger" (click)="confirmarDesactivarOk()">Sí, desactivar</button>
+      </div>
+    </div>
+  </div>
+}

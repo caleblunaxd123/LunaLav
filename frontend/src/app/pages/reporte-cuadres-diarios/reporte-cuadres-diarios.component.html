@@ -1,0 +1,523 @@
+<div class="page">
+  <app-page-header icono="calendar" color="verde" titulo="Reporte de cuadres diarios"
+    subtitulo="Revisa los cierres de caja, ingresos digitales y días pendientes de cuadrar."
+    volverTexto="Reportes" (volver)="volver()"></app-page-header>
+
+  <div class="toolbar">
+    <div class="campo-mes">
+      <label for="mes-cuadres">Mes</label>
+      <input id="mes-cuadres" type="month" [(ngModel)]="mesFiltro" (change)="cargar()" />
+    </div>
+    @if (usuarios().length > 1) {
+      <div class="campo-mes">
+        <label for="filtro-trab">Trabajador</label>
+        <select id="filtro-trab" [ngModel]="trabajador()" (ngModelChange)="trabajador.set($event)">
+          <option value="todos">Todos</option>
+          @for (u of usuarios(); track u) { <option [value]="u">{{ u }}</option> }
+        </select>
+      </div>
+    }
+    <div class="toolbar__botones">
+      <button type="button" class="btn btn--secundario" [class.is-on]="soloConDif()" (click)="soloConDif.set(!soloConDif())">
+        <app-icon name="warning" [size]="16"></app-icon> Solo con diferencia
+      </button>
+      <button type="button" class="btn btn--secundario" [attr.aria-expanded]="expandido()" (click)="toggleExpandido()">
+        <app-icon [name]="expandido() ? 'eye-off' : 'eye'" [size]="16"></app-icon>
+        {{ expandido() ? 'Menos detalle' : 'Más detalle' }}
+      </button>
+      <button type="button" class="btn btn--secundario" (click)="exportarCsv()">
+        <app-icon name="download" [size]="16"></app-icon> Exportar
+      </button>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (data()) {
+    @if (data(); as rep) {
+    <!-- Resumen del mes -->
+    <div class="kpis">
+      <div class="kpi kpi--efe">
+        <span class="kpi__ic"><app-icon name="cash" [size]="18"></app-icon></span>
+        <div class="kpi__cont"><span class="kpi__lbl">Efectivo del mes</span><span class="kpi__val">S/ {{ resumen().efectivo | number:'1.2-2' }}</span></div>
+      </div>
+      <div class="kpi kpi--dig">
+        <span class="kpi__ic"><app-icon name="cash" [size]="18"></app-icon></span>
+        <div class="kpi__cont"><span class="kpi__lbl">Yape / Plin / Transf.</span><span class="kpi__val">S/ {{ resumen().digital | number:'1.2-2' }}</span></div>
+      </div>
+      <div class="kpi kpi--tar">
+        <span class="kpi__ic"><app-icon name="cash" [size]="18"></app-icon></span>
+        <div class="kpi__cont"><span class="kpi__lbl">Tarjeta / POS</span><span class="kpi__val">S/ {{ resumen().tarjeta | number:'1.2-2' }}</span></div>
+      </div>
+      <div class="kpi kpi--falta">
+        <span class="kpi__ic"><app-icon name="warning" [size]="18"></app-icon></span>
+        <div class="kpi__cont"><span class="kpi__lbl">Faltó (acumulado)</span><span class="kpi__val">S/ {{ resumen().faltante | number:'1.2-2' }}</span></div>
+      </div>
+      <div class="kpi kpi--sobra">
+        <span class="kpi__ic"><app-icon name="warning" [size]="18"></app-icon></span>
+        <div class="kpi__cont"><span class="kpi__lbl">Sobró (acumulado)</span><span class="kpi__val">S/ {{ resumen().sobrante | number:'1.2-2' }}</span></div>
+      </div>
+      <div class="kpi kpi--dias">
+        <span class="kpi__ic"><app-icon name="calendar" [size]="18"></app-icon></span>
+        <div class="kpi__cont"><span class="kpi__lbl">Días cerrados</span><span class="kpi__val">{{ resumen().cerrados }} <small>· {{ resumen().conDiferencia }} con dif.</small></span></div>
+      </div>
+      <div class="kpi" [class.kpi--ok]="resumen().pctCuadraron >= 80" [class.kpi--falta]="resumen().pctCuadraron < 60 && resumen().cerrados > 0" [class.kpi--dias]="resumen().pctCuadraron >= 60 && resumen().pctCuadraron < 80">
+        <span class="kpi__ic"><app-icon name="check" [size]="18"></app-icon></span>
+        <div class="kpi__cont"><span class="kpi__lbl">Cuadraron</span><span class="kpi__val">{{ resumen().pctCuadraron }}% <small>· {{ resumen().cuadrados }}/{{ resumen().cerrados }}</small></span></div>
+      </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="graficas">
+      <div class="card grafica">
+        <div class="grafica__head">
+          <h3>¿Dónde está la diferencia?</h3>
+          <p class="hint">Rojo = faltó dinero · Ámbar = sobró · Verde = cuadró. Toca un día para ver el detalle.</p>
+        </div>
+        @if (serieDif().length === 0) {
+          <p class="hint">Sin cierres guardados este mes.</p>
+        } @else {
+          @for (f of serieDif(); track $index) {
+            <button type="button" class="dif-row" (click)="verFecha(f.fecha)" [title]="'Ver el cuadre del ' + (f.fecha | date:'dd/MM/yyyy')">
+              <span class="dif-fecha">{{ f.fecha | date:'dd/MM' }}</span>
+              <span class="dif-neg">@if (f.valor < 0) { <i class="dif-bar dif-bar--falta" [style.width.%]="pct(f.valor, maxDifAbs())"></i> }</span>
+              <span class="dif-pos">@if (f.valor > 0) { <i class="dif-bar dif-bar--sobra" [style.width.%]="pct(f.valor, maxDifAbs())"></i> }</span>
+              <span class="dif-val" [class.rojo]="f.valor < 0" [class.ambar]="f.valor > 0" [class.verde]="f.valor === 0">
+                @if (f.valor < 0) { −S/ {{ -f.valor | number:'1.2-2' }} }
+                @else if (f.valor > 0) { +S/ {{ f.valor | number:'1.2-2' }} }
+                @else { Cuadró }
+              </span>
+            </button>
+          }
+        }
+        <p class="grafica__nota">La diferencia es lo <b>contado</b> menos lo que <b>debería haber</b> (caja inicial + cobros en efectivo − gastos). Un faltante suele ser vuelto mal dado o un gasto sin registrar.</p>
+      </div>
+
+      <div class="card grafica">
+        <div class="grafica__head">
+          <h3>Ingresos por día</h3>
+          <div class="leyenda">
+            <span><i class="sw sw--efe"></i>Efectivo</span>
+            <span><i class="sw sw--dig"></i>Yape/Plin</span>
+            <span><i class="sw sw--tar"></i>Tarjeta</span>
+          </div>
+        </div>
+        @if (serieIng().length === 0) {
+          <p class="hint">Sin ingresos registrados este mes.</p>
+        } @else {
+          @for (s of serieIng(); track s.fecha) {
+            <div class="ing-row">
+              <span class="ing-fecha">{{ s.fecha | date:'dd/MM' }}</span>
+              <span class="ing-bar">
+                @if (s.efectivo > 0) { <i class="seg seg--efe" [style.width.%]="pct(s.efectivo, maxIng())" [title]="'Efectivo: ' + (s.efeN > 0 ? s.efeN + ' cobro(s) · ' : '') + 'S/ ' + (s.efectivo | number:'1.2-2')"></i> }
+                @if (s.digital > 0) { <i class="seg seg--dig" [style.width.%]="pct(s.digital, maxIng())" [title]="'Yape/Plin/Transf.: ' + (s.digN > 0 ? s.digN + ' cobro(s) · ' : '') + 'S/ ' + (s.digital | number:'1.2-2')"></i> }
+                @if (s.tarjeta > 0) { <i class="seg seg--tar" [style.width.%]="pct(s.tarjeta, maxIng())" [title]="'Tarjeta: ' + (s.tarN > 0 ? s.tarN + ' cobro(s) · ' : '') + 'S/ ' + (s.tarjeta | number:'1.2-2')"></i> }
+              </span>
+              <span class="ing-tot">S/ {{ (s.efectivo + s.digital + s.tarjeta) | number:'1.2-2' }}</span>
+            </div>
+          }
+        }
+      </div>
+    </div>
+
+    <!-- Formas de pago del mes + Resumen por trabajador -->
+    <div class="paneles">
+      @if (formasMes().length > 0) {
+      <div class="card panel">
+        <div class="grafica__head">
+          <h3>Formas de pago del mes</h3>
+          <p class="hint">Cuántas operaciones y cuánto por cada método (cada forma de pago es distinta).</p>
+        </div>
+        <div class="formas">
+            @for (f of formasMes(); track f.metodo) {
+              <div class="forma" [class]="'forma--' + metodoClase(f.metodo)">
+                <span class="forma__met"><i class="forma__punto"></i>{{ f.metodo }}</span>
+                <span class="forma__cant">{{ f.cantidad }} <small>oper.</small></span>
+                <span class="forma__monto">S/ {{ f.monto | number:'1.2-2' }}</span>
+              </div>
+            }
+          </div>
+          <p class="grafica__nota">{{ totalOperaciones() }} operaciones en total este mes.</p>
+      </div>
+      }
+
+      <div class="card panel">
+        <div class="grafica__head">
+          <h3>Resumen por trabajador</h3>
+          <p class="hint">Ingresos y descuadres por persona, para saber dónde revisar.</p>
+        </div>
+        @if (resumenTrab().length === 0) {
+          <p class="hint">Sin cierres este mes.</p>
+        } @else {
+          <table class="tabla-trab">
+            <thead><tr><th>Trabajador</th><th class="num">Cierres</th><th class="num">Ingresos</th><th class="num">Faltó</th><th class="num">Sobró</th></tr></thead>
+            <tbody>
+              @for (t of resumenTrab(); track t.usuario) {
+                <tr>
+                  <td>{{ t.usuario }}</td>
+                  <td class="num">{{ t.cierres }} <small>· {{ t.descuadres }} dif.</small></td>
+                  <td class="num">S/ {{ t.ingresos | number:'1.2-2' }}</td>
+                  <td class="num rojo">{{ t.falto > 0 ? '−S/ ' + (t.falto | number:'1.2-2') : '—' }}</td>
+                  <td class="num ambar">{{ t.sobro > 0 ? '+S/ ' + (t.sobro | number:'1.2-2') : '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </div>
+
+    <div class="layout">
+      <!-- Tabla principal -->
+      <div class="card tabla-wrap">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Usuario</th>
+              @if (expandido()) {
+                <th class="num">Caja Inicial</th>
+                <th class="num">Ingresos (efectivo)</th>
+                <th class="num">Egresos</th>
+                <th class="num">Monto en Caja</th>
+                <th class="num">Corte</th>
+                <th class="num">Caja Final</th>
+              }
+              <th>Estado</th>
+              <th class="num">Diferencia</th>
+              <th>Nota</th>
+              @if (expandido()) {
+                <th class="num">Transf. Móvil</th>
+                <th class="num">Tarjeta</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of diasTabla(); track item.dia.fecha) {
+              @if (item.dia.sinInformacion) {
+                <tr class="fila-vacia">
+                  <td>{{ item.dia.fecha | date:'dd/MM/yyyy' }}</td>
+                  <td [attr.colspan]="expandido() ? 12 : 4">
+                    <span class="sin-info">Sin información</span>
+                    @if (item.dia.noCuadradoIngresos > 0 || item.dia.noCuadradoEgresos > 0) {
+                      <button type="button" class="link-nocuadrado" (click)="verDia(item.dia)">
+                        · Hay movimientos sin cuadrar (ver)
+                      </button>
+                    }
+                  </td>
+                </tr>
+              } @else {
+                @for (c of item.cuadres; track c.id) {
+                  <tr class="fila-click" [class.fila-abierta]="filaAbierta() === c.id"
+                      (click)="toggleDetalle(item.dia, c)" [attr.aria-expanded]="filaAbierta() === c.id"
+                      title="Clic para ver de dónde viene el resultado">
+                    <td>{{ $first ? (item.dia.fecha | date:'dd/MM/yyyy') : '' }}</td>
+                    <td>
+                      <app-icon name="chevron-right" [size]="12" class="caret" [class.caret--abierto]="filaAbierta() === c.id"></app-icon>
+                      {{ c.usuarioNombre }}
+                    </td>
+                    @if (expandido()) {
+                      <td class="num">{{ c.cajaInicial | number:'1.2-2' }}</td>
+                      <td class="num">{{ c.ingresosEfectivo | number:'1.2-2' }}</td>
+                      <td class="num">{{ c.egresos | number:'1.2-2' }}</td>
+                      <td class="num">{{ c.montoEnCaja | number:'1.2-2' }}</td>
+                      <td class="num">{{ c.corte | number:'1.2-2' }}</td>
+                      <td class="num">{{ c.cajaFinal | number:'1.2-2' }}</td>
+                    }
+                    <td><span [class]="claseEstado(c.estado)">{{ c.estado === 'CUADRA' ? 'Cuadró' : (c.estado === 'SOBRA' ? 'Sobra' : 'Falta') }}</span></td>
+                    <td class="num dif-cel" [class.rojo]="c.estado === 'FALTA'" [class.ambar]="c.estado === 'SOBRA'">
+                      @if (c.estado === 'FALTA') { −S/ {{ c.margenError | number:'1.2-2' }} }
+                      @else if (c.estado === 'SOBRA') { +S/ {{ c.margenError | number:'1.2-2' }} }
+                      @else { S/ 0.00 }
+                    </td>
+                    <td class="nota">{{ c.nota || '—' }}</td>
+                    @if (expandido()) {
+                      <td class="num">{{ c.ingresosDigital | number:'1.2-2' }}</td>
+                      <td class="num">{{ c.ingresosTarjeta | number:'1.2-2' }}</td>
+                    }
+                  </tr>
+
+                  @if (filaAbierta() === c.id) {
+                    <tr class="fila-detalle">
+                      <td [attr.colspan]="expandido() ? 13 : 5">
+                        <div class="detalle-error">
+                          <!-- La cuenta: de dónde sale el resultado -->
+                          <div class="detalle-error__cuenta">
+                            <h5>¿De dónde viene el {{ c.estado === 'FALTA' ? 'faltante' : (c.estado === 'SOBRA' ? 'sobrante' : 'resultado') }}?</h5>
+                            <div class="cuenta-fila"><span>Caja inicial (día anterior)</span><span class="num">S/ {{ c.cajaInicial | number:'1.2-2' }}</span></div>
+                            <div class="cuenta-fila"><span>+ Cobros en efectivo</span><span class="num">S/ {{ c.ingresosEfectivo | number:'1.2-2' }}</span></div>
+                            <div class="cuenta-fila"><span>− Egresos / gastos</span><span class="num">S/ {{ c.egresos | number:'1.2-2' }}</span></div>
+                            <div class="cuenta-fila cuenta-fila--sub"><span>= Debía haber en caja</span><span class="num">S/ {{ esperadoCaja(c) | number:'1.2-2' }}</span></div>
+                            <div class="cuenta-fila"><span>Contó físicamente</span><span class="num">S/ {{ c.montoEnCaja | number:'1.2-2' }}</span></div>
+                            <div class="cuenta-fila cuenta-fila--res"
+                                 [class.rojo]="c.estado === 'FALTA'" [class.ambar]="c.estado === 'SOBRA'" [class.verde]="c.estado === 'CUADRA'">
+                              <span>
+                                @if (c.estado === 'FALTA') { Faltó dinero } @else if (c.estado === 'SOBRA') { Sobró dinero } @else { Cuadró perfecto }
+                              </span>
+                              <span class="num">{{ diferenciaFirmada(c) >= 0 ? '+' : '−' }}S/ {{ (diferenciaFirmada(c) < 0 ? -diferenciaFirmada(c) : diferenciaFirmada(c)) | number:'1.2-2' }}</span>
+                            </div>
+                            @if (c.estado === 'CUADRA') {
+                              <p class="detalle-error__ayuda">El efectivo contado coincide con lo esperado. 👍</p>
+                            }
+                          </div>
+
+                          <!-- Movimientos del día + posibles causas (para auditar) -->
+                          <div class="detalle-error__movs">
+                            @if (cargandoMovs() === c.id) {
+                              <p class="detalle-error__cargando">Cargando movimientos…</p>
+                            } @else {
+                              <!-- Posibles causas: dónde revisar -->
+                              @if (c.estado !== 'CUADRA' && movsCargados(c.id)) {
+                                <div class="pistas">
+                                  <h5 class="pistas__titulo"><app-icon name="warning" [size]="14"></app-icon> ¿Dónde puede estar el error?</h5>
+                                  <ul class="pistas__lista">
+                                    @for (p of pistasError(c, c.id); track $index) { <li>{{ p }}</li> }
+                                  </ul>
+                                </div>
+                              }
+
+                              <h5>Movimientos en efectivo <small>({{ item.dia.fecha | date:'dd/MM/yyyy' }})</small></h5>
+                              @if (movsEfectivo(c.id).length === 0) {
+                                <p class="hint">No hay cobros en efectivo ni egresos registrados este día.</p>
+                              } @else {
+                                <ul class="movs">
+                                  @for (m of movsEfectivo(c.id); track m.id) {
+                                    <li class="movs__item" [class.movs__item--gasto]="m.tipo === 'GASTO'" [class.movs__item--candidato]="esCandidato(m, c)">
+                                      <span class="movs__tipo">{{ m.tipo === 'GASTO' ? 'Egreso' : 'Cobro' }}</span>
+                                      <span class="movs__desc">
+                                        @if (m.pedidoNumero) { Pedido #{{ m.pedidoNumero }} }
+                                        @if (m.clienteNombre) { · {{ m.clienteNombre }} }
+                                        @if (m.tipoGastoNombre) { {{ m.tipoGastoNombre }} }
+                                        @if (m.descripcion) { · {{ m.descripcion }} }
+                                        @if (esCandidato(m, c)) { <span class="movs__flag">⚠ coincide con la diferencia</span> }
+                                      </span>
+                                      <span class="movs__hora">{{ m.fecha | date:'hh:mm a' }}</span>
+                                      <span class="movs__monto" [class.rojo]="m.tipo === 'GASTO'">{{ m.tipo === 'GASTO' ? '−' : '+' }}S/ {{ m.monto | number:'1.2-2' }}</span>
+                                    </li>
+                                  }
+                                </ul>
+                              }
+
+                              <!-- Pagos digitales: no afectan el efectivo, pero pueden estar con el método equivocado -->
+                              @if (movsDigitales(c.id).length > 0) {
+                                <h5 class="movs-titulo-sec">Otros pagos del día <small>(Yape/Plin — no afectan el efectivo)</small></h5>
+                                <ul class="movs movs--digital">
+                                  @for (m of movsDigitales(c.id); track m.id) {
+                                    <li class="movs__item" [class.movs__item--candidato]="esCandidato(m, c)">
+                                      <span class="movs__tipo movs__tipo--dig">{{ metodoLabel(m.metodoPago || '') }}</span>
+                                      <span class="movs__desc">
+                                        @if (m.pedidoNumero) { Pedido #{{ m.pedidoNumero }} }
+                                        @if (m.clienteNombre) { · {{ m.clienteNombre }} }
+                                        @if (esCandidato(m, c)) { <span class="movs__flag">⚠ coincide con la diferencia</span> }
+                                      </span>
+                                      <span class="movs__hora">{{ m.fecha | date:'hh:mm a' }}</span>
+                                      <span class="movs__monto">S/ {{ m.monto | number:'1.2-2' }}</span>
+                                    </li>
+                                  }
+                                </ul>
+                              }
+                            }
+                            <button type="button" class="btn btn--outline-primary btn--sm" (click)="verFecha(item.dia.fecha); $event.stopPropagation()">
+                              <app-icon name="cash" [size]="14"></app-icon> Abrir cuadre completo del día
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                }
+              }
+            } @empty {
+              <tr><td [attr.colspan]="expandido() ? 12 : 5" class="sin-info">Sin resultados con este filtro.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Vista de tarjetas (solo móvil) -->
+      <div class="cards-rep">
+        @for (item of diasTabla(); track item.dia.fecha) {
+          @if (item.dia.sinInformacion) {
+            <div class="rep-card">
+              <div class="rep-card__titulo">{{ item.dia.fecha | date:'dd/MM/yyyy' }}</div>
+              <div class="rep-card__row"><span>Sin información</span><strong>—</strong></div>
+              @if (item.dia.noCuadradoIngresos > 0 || item.dia.noCuadradoEgresos > 0) {
+                <button type="button" class="btn btn--outline-primary btn--sm rep-card__accion" (click)="verDia(item.dia)">Hay movimientos sin cuadrar (ver)</button>
+              }
+            </div>
+          } @else {
+            @for (c of item.cuadres; track c.id) {
+              <div class="rep-card">
+                <div class="rep-card__top">
+                  <div class="rep-card__titulo">{{ item.dia.fecha | date:'dd/MM/yyyy' }} · {{ c.usuarioNombre }}</div>
+                  <span [class]="claseEstado(c.estado)">{{ c.estado === 'CUADRA' ? 'Cuadró' : (c.estado === 'SOBRA' ? 'Sobra' : 'Falta') }}</span>
+                </div>
+                <div class="rep-card__row"><span>Caja inicial</span><strong>S/ {{ c.cajaInicial | number:'1.2-2' }}</strong></div>
+                <div class="rep-card__row"><span>Ingresos (efectivo)</span><strong>S/ {{ c.ingresosEfectivo | number:'1.2-2' }}</strong></div>
+                <div class="rep-card__row"><span>Egresos</span><strong>S/ {{ c.egresos | number:'1.2-2' }}</strong></div>
+                <div class="rep-card__row"><span>Monto en caja</span><strong>S/ {{ c.montoEnCaja | number:'1.2-2' }}</strong></div>
+                <div class="rep-card__row"><span>Corte</span><strong>S/ {{ c.corte | number:'1.2-2' }}</strong></div>
+                <div class="rep-card__row"><span>Caja final</span><strong>S/ {{ c.cajaFinal | number:'1.2-2' }}</strong></div>
+                <div class="rep-card__row"><span>Transf. móvil</span><strong>S/ {{ c.ingresosDigital | number:'1.2-2' }}</strong></div>
+                <div class="rep-card__row"><span>Tarjeta</span><strong>S/ {{ c.ingresosTarjeta | number:'1.2-2' }}</strong></div>
+                <div class="rep-card__row"><span>Diferencia</span><strong class="dif-cel" [class.rojo]="c.estado === 'FALTA'" [class.ambar]="c.estado === 'SOBRA'">@if (c.estado === 'FALTA') { −S/ {{ c.margenError | number:'1.2-2' }} } @else if (c.estado === 'SOBRA') { +S/ {{ c.margenError | number:'1.2-2' }} } @else { S/ 0.00 }</strong></div>
+                <div class="rep-card__row"><span>Nota</span><strong>{{ c.nota || '—' }}</strong></div>
+
+                @if (c.estado !== 'CUADRA') {
+                  <button type="button" class="btn btn--outline-primary btn--sm rep-card__accion" (click)="toggleDetalle(item.dia, c)">
+                    {{ filaAbierta() === c.id ? 'Ocultar' : '¿Dónde está el error?' }}
+                  </button>
+                } @else {
+                  <button type="button" class="btn btn--outline-primary btn--sm rep-card__accion" (click)="toggleDetalle(item.dia, c)">
+                    {{ filaAbierta() === c.id ? 'Ocultar' : 'Ver el detalle' }}
+                  </button>
+                }
+
+                @if (filaAbierta() === c.id) {
+                  <div class="detalle-error detalle-error--card">
+                    <div class="detalle-error__cuenta">
+                      <div class="cuenta-fila"><span>Caja inicial</span><span class="num">S/ {{ c.cajaInicial | number:'1.2-2' }}</span></div>
+                      <div class="cuenta-fila"><span>+ Cobros efectivo</span><span class="num">S/ {{ c.ingresosEfectivo | number:'1.2-2' }}</span></div>
+                      <div class="cuenta-fila"><span>− Egresos</span><span class="num">S/ {{ c.egresos | number:'1.2-2' }}</span></div>
+                      <div class="cuenta-fila cuenta-fila--sub"><span>= Debía haber</span><span class="num">S/ {{ esperadoCaja(c) | number:'1.2-2' }}</span></div>
+                      <div class="cuenta-fila"><span>Contó</span><span class="num">S/ {{ c.montoEnCaja | number:'1.2-2' }}</span></div>
+                      <div class="cuenta-fila cuenta-fila--res" [class.rojo]="c.estado === 'FALTA'" [class.ambar]="c.estado === 'SOBRA'" [class.verde]="c.estado === 'CUADRA'">
+                        <span>@if (c.estado === 'FALTA') { Faltó } @else if (c.estado === 'SOBRA') { Sobró } @else { Cuadró }</span>
+                        <span class="num">{{ diferenciaFirmada(c) >= 0 ? '+' : '−' }}S/ {{ (diferenciaFirmada(c) < 0 ? -diferenciaFirmada(c) : diferenciaFirmada(c)) | number:'1.2-2' }}</span>
+                      </div>
+                    </div>
+                    <div class="detalle-error__movs">
+                      @if (cargandoMovs() === c.id) {
+                        <p class="detalle-error__cargando">Cargando…</p>
+                      } @else {
+                        @if (c.estado !== 'CUADRA' && movsCargados(c.id)) {
+                          <div class="pistas">
+                            <h5 class="pistas__titulo">⚠ ¿Dónde puede estar el error?</h5>
+                            <ul class="pistas__lista">
+                              @for (p of pistasError(c, c.id); track $index) { <li>{{ p }}</li> }
+                            </ul>
+                          </div>
+                        }
+                        <h5>Movimientos en efectivo</h5>
+                        @if (movsEfectivo(c.id).length === 0) {
+                          <p class="hint">No hay cobros en efectivo ni egresos este día.</p>
+                        } @else {
+                          <ul class="movs">
+                            @for (m of movsEfectivo(c.id); track m.id) {
+                              <li class="movs__item" [class.movs__item--gasto]="m.tipo === 'GASTO'" [class.movs__item--candidato]="esCandidato(m, c)">
+                                <span class="movs__tipo">{{ m.tipo === 'GASTO' ? 'Egreso' : 'Cobro' }}</span>
+                                <span class="movs__desc">@if (m.pedidoNumero) { #{{ m.pedidoNumero }} }@if (m.clienteNombre) { {{ m.clienteNombre }} }@if (m.tipoGastoNombre) { {{ m.tipoGastoNombre }} }@if (esCandidato(m, c)) { <span class="movs__flag">⚠</span> }</span>
+                                <span class="movs__monto" [class.rojo]="m.tipo === 'GASTO'">{{ m.tipo === 'GASTO' ? '−' : '+' }}S/ {{ m.monto | number:'1.2-2' }}</span>
+                              </li>
+                            }
+                          </ul>
+                        }
+                        @if (movsDigitales(c.id).length > 0) {
+                          <h5 class="movs-titulo-sec">Otros pagos (Yape/Plin)</h5>
+                          <ul class="movs movs--digital">
+                            @for (m of movsDigitales(c.id); track m.id) {
+                              <li class="movs__item" [class.movs__item--candidato]="esCandidato(m, c)">
+                                <span class="movs__tipo movs__tipo--dig">{{ metodoLabel(m.metodoPago || '') }}</span>
+                                <span class="movs__desc">@if (m.pedidoNumero) { #{{ m.pedidoNumero }} }@if (m.clienteNombre) { {{ m.clienteNombre }} }@if (esCandidato(m, c)) { <span class="movs__flag">⚠</span> }</span>
+                                <span class="movs__monto">S/ {{ m.monto | number:'1.2-2' }}</span>
+                              </li>
+                            }
+                          </ul>
+                        }
+                      }
+                    </div>
+                    <button type="button" class="btn btn--outline-primary btn--sm rep-card__accion" (click)="verFecha(item.dia.fecha)">Abrir cuadre completo</button>
+                  </div>
+                }
+              </div>
+            }
+          }
+        }
+      </div>
+
+      <!-- Panel lateral: montos no cuadrados -->
+      <aside class="card panel-nocuadrado">
+        <h3>Montos no cuadrados</h3>
+        @if (noCuadrados().length === 0) {
+          <p class="hint">Todos los días con movimientos tienen su cuadre. 👍</p>
+        } @else {
+          <p class="hint">Días con dinero registrado pero sin cuadre guardado:</p>
+          <ul>
+            @for (d of noCuadrados(); track d.fecha) {
+              <li>
+                <div class="nc-fecha">{{ d.fecha | date:'dd/MM/yyyy' }}</div>
+                <div class="nc-montos">
+                  <span class="nc-ing">Ingresos S/ {{ d.noCuadradoIngresos | number:'1.2-2' }}</span>
+                  <span class="nc-egr">Egresos S/ {{ d.noCuadradoEgresos | number:'1.2-2' }}</span>
+                </div>
+                <div class="nc-acciones">
+                  <button type="button" class="btn-icon" (click)="verDetalleNoCuadrado(d)" title="Ver los movimientos de este día" aria-label="Ver movimientos del día">
+                    <app-icon name="eye" [size]="15"></app-icon>
+                  </button>
+                  <button type="button" class="btn-icon" (click)="verDia(d)" title="Ir a cuadrar este día" aria-label="Ir a cuadrar este día">
+                    <app-icon name="arrow-right" [size]="15"></app-icon>
+                  </button>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </aside>
+    </div>
+    }
+  }
+</div>
+
+<!-- Modal: movimientos no cuadrados de un día (los que aún no están en un cuadre guardado) -->
+@if (modalNoCuadrado(); as d) {
+  <div class="modal-backdrop" (click)="cerrarNoCuadrado()"></div>
+  <div class="modal-nc" role="dialog" aria-modal="true" aria-labelledby="titulo-nc">
+    <div class="modal-nc__head">
+      <div>
+        <h3 id="titulo-nc">Movimientos sin cuadrar</h3>
+        <span class="modal-nc__fecha">{{ d.fecha | date:'EEEE d \'de\' MMMM, y' }}</span>
+      </div>
+      <button type="button" aria-label="Cerrar" (click)="cerrarNoCuadrado()"><app-icon name="close" [size]="16"></app-icon></button>
+    </div>
+    <div class="modal-nc__body">
+      @if (cargandoNoCuadrado()) {
+        <p class="detalle-error__cargando">Cargando movimientos…</p>
+      } @else if (movsNoCuadrado().length === 0) {
+        <p class="hint">No se encontraron movimientos para este día.</p>
+      } @else {
+        <p class="hint">Estos movimientos ya están registrados pero el día aún <strong>no tiene un cuadre guardado</strong>. Ciérralo para dejarlo cuadrado.</p>
+        <ul class="nc-movs">
+          @for (m of movsNoCuadrado(); track m.id) {
+            <li class="nc-mov" [class.nc-mov--gasto]="m.tipo === 'GASTO'">
+              <span class="nc-mov__check"><app-icon [name]="m.tipo === 'GASTO' ? 'warning' : 'check'" [size]="14"></app-icon></span>
+              <div class="nc-mov__info">
+                <div class="nc-mov__linea1">
+                  <strong>{{ m.tipo === 'GASTO' ? 'Egreso' : 'Ingreso' }}</strong>
+                  <span class="nc-mov__metodo" [class]="'m-' + (m.metodoPago || '').toLowerCase()">{{ metodoLabel(m.metodoPago || '') }}</span>
+                </div>
+                <div class="nc-mov__linea2">
+                  @if (m.pedidoNumero) { Orden N° {{ m.pedidoNumero }} }
+                  @if (m.clienteNombre) { · {{ m.clienteNombre }} }
+                  @if (m.tipoGastoNombre) { {{ m.tipoGastoNombre }} }
+                  @if (m.descripcion && !m.pedidoNumero) { · {{ m.descripcion }} }
+                </div>
+                <div class="nc-mov__meta">
+                  {{ m.fecha | date:'hh:mm a' }}@if (m.usuarioNombre) { · {{ m.usuarioNombre }} }
+                </div>
+              </div>
+              <span class="nc-mov__monto" [class.rojo]="m.tipo === 'GASTO'">{{ m.tipo === 'GASTO' ? '−' : '+' }}S/ {{ m.monto | number:'1.2-2' }}</span>
+            </li>
+          }
+        </ul>
+        <div class="nc-totales">
+          <div><span>Ingresos</span><strong class="txt-verde">S/ {{ ncIngresos() | number:'1.2-2' }}</strong></div>
+          <div><span>Egresos</span><strong class="rojo">S/ {{ ncEgresos() | number:'1.2-2' }}</strong></div>
+        </div>
+      }
+    </div>
+    <div class="modal-nc__actions">
+      <button type="button" class="btn btn--ghost" (click)="cerrarNoCuadrado()">Cerrar</button>
+      <button type="button" class="btn btn--primario" (click)="verDia(d)"><app-icon name="cash" [size]="15"></app-icon> Ir a cuadrar este día</button>
+    </div>
+  </div>
+}

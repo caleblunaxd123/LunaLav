@@ -1,0 +1,109 @@
+<div class="page">
+  <app-page-header icono="users" color="cian" titulo="CRM" subtitulo="Frecuencia, ticket promedio, recompra y cumpleaños de tus clientes." volverTexto="Clientes" (volver)="volver()"></app-page-header>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else {
+    <div class="card seccion">
+      <div class="seccion__head">
+        <h3>Clientes por recuperar</h3>
+        <span class="hint">No compran hace {{ diasMinimoRecompra() }} días o más</span>
+      </div>
+      @if (candidatosRecompra().length === 0) {
+        <p class="ok-badge">✓ No hay clientes frecuentes que se estén alejando por ahora.</p>
+      } @else {
+        <div class="tabla-wrap">
+          <table class="tabla">
+            <thead>
+              <tr><th>Cliente</th><th>Pedidos</th><th>Ticket promedio</th><th>Última compra</th><th></th></tr>
+            </thead>
+            <tbody>
+              @for (c of candidatosRecompra(); track c.clienteId) {
+                <tr>
+                  <td>{{ c.nombre }}</td>
+                  <td>{{ c.totalPedidos }}</td>
+                  <td>S/ {{ c.ticketPromedio | number:'1.2-2' }}</td>
+                  <td class="fila--alerta">{{ c.diasSinComprar }} días</td>
+                  <td>
+                    <button class="btn-wsp" (click)="avisarRecompra(c)" title="Enviar WhatsApp">
+                      <app-icon name="whatsapp" [size]="14"></app-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <div class="card seccion">
+      <div class="seccion__head">
+        <h3>Clientes con deuda</h3>
+        @if (deudaTotalNegocio() > 0) {
+          <span class="hint">Por cobrar: <strong class="txt-deuda">S/ {{ deudaTotalNegocio() | number:'1.2-2' }}</strong></span>
+        }
+      </div>
+      @if (clientesConDeuda().length === 0) {
+        <p class="ok-badge">✓ Ningún cliente tiene saldo pendiente.</p>
+      } @else {
+        <div class="tabla-wrap">
+          <table class="tabla">
+            <thead>
+              <tr><th>Cliente</th><th>Pedidos</th><th>Debe</th><th></th></tr>
+            </thead>
+            <tbody>
+              @for (c of clientesConDeuda(); track c.clienteId) {
+                <tr>
+                  <td>{{ c.nombre }}</td>
+                  <td>{{ c.totalPedidos }}</td>
+                  <td class="txt-deuda">S/ {{ c.deudaTotal | number:'1.2-2' }}</td>
+                  <td>
+                    <button class="btn-wsp" (click)="cobrarDeuda(c)" title="Recordar por WhatsApp">
+                      <app-icon name="whatsapp" [size]="14"></app-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <div class="card seccion">
+      <div class="seccion__head">
+        <h3>Cumpleaños próximos</h3>
+        <span class="hint">Próximos 30 días</span>
+      </div>
+      @if (cumpleanos().length === 0) {
+        <p class="hint">Ningún cliente con fecha de nacimiento registrada tiene cumpleaños pronto.</p>
+      } @else {
+        <div class="tabla-wrap">
+          <table class="tabla">
+            <thead>
+              <tr><th>Cliente</th><th>Cuándo</th><th></th></tr>
+            </thead>
+            <tbody>
+              @for (c of cumpleanos(); track c.clienteId) {
+                <tr>
+                  <td>{{ c.nombre }}</td>
+                  <td>{{ etiquetaDias(c.diasParaCumpleanos) }}</td>
+                  <td class="acciones-cumple">
+                    <button class="btn btn--sm btn--cumple" (click)="generarCodigoCumple(c)"
+                      [disabled]="generandoCumpleId() === c.clienteId" title="Generar código de cumpleaños y enviar por WhatsApp">
+                      {{ generandoCumpleId() === c.clienteId ? '…' : '🎂 Código' }}
+                    </button>
+                    <button class="btn-wsp" (click)="saludarCumpleanos(c)" title="Solo saludar por WhatsApp">
+                      <app-icon name="whatsapp" [size]="14"></app-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,555 @@
+<div class="page">
+  <app-page-header icono="plus" color="azul" tourId="registrar"
+    [titulo]="siguienteNumero() ? 'Nuevo pedido N° ' + siguienteNumero() : 'Nuevo pedido'"
+    subtitulo="Registra al cliente, las prendas, la entrega y el pago en un solo flujo.">
+    <div class="order-header-actions">
+      <div class="modalidad" data-tour="registrar-modalidad" role="group" aria-label="Modalidad del pedido">
+        <button type="button" class="modalidad__btn" [class.is-active]="modalidad==='Tienda'" (click)="cambiarModalidad('Tienda')">Tienda</button>
+        <button type="button" class="modalidad__btn" [class.is-active]="modalidad==='Recojo'" (click)="cambiarModalidad('Recojo')">Recojo</button>
+        <button type="button" class="modalidad__btn" [class.is-active]="modalidad==='Delivery'" (click)="cambiarModalidad('Delivery')">Delivery</button>
+      </div>
+    </div>
+  </app-page-header>
+
+  @if (!registrado() && validacionPedido; as mensajeValidacion) {
+    <div class="form-status" role="status" aria-live="polite">{{ mensajeValidacion }}</div>
+  }
+
+  @if (registrado()) {
+    <div class="card confirmacion">
+      <div class="confirmacion__ilus">
+        <svg viewBox="0 0 240 200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="cnfBg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#dcfce7"/><stop offset="1" stop-color="#a7f3d0"/>
+            </linearGradient>
+          </defs>
+          <ellipse cx="120" cy="180" rx="90" ry="8" fill="#000" opacity=".08"/>
+          <circle cx="120" cy="95" r="70" fill="url(#cnfBg)"/>
+          <rect x="72" y="80" width="96" height="66" rx="4" fill="#f59e0b"/>
+          <rect x="72" y="80" width="96" height="18" fill="#d97706"/>
+          <rect x="112" y="60" width="16" height="86" fill="#dc2626"/>
+          <path d="M120 60c-14 0-22-14-10-22 6-4 12 4 10 12M120 60c14 0 22-14 10-22-6-4-12 4-10 12" fill="#dc2626"/>
+          <circle cx="120" cy="112" r="16" fill="#fff"/>
+          <path d="M112 112l6 6 10-12" stroke="#059669" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="40" y="30" width="6" height="14" rx="2" fill="#fbbf24" transform="rotate(20 43 37)"/>
+          <rect x="190" y="35" width="6" height="14" rx="2" fill="#3b82f6" transform="rotate(-30 193 42)"/>
+          <rect x="30" y="120" width="6" height="14" rx="2" fill="#8b5cf6" transform="rotate(45 33 127)"/>
+          <rect x="200" y="120" width="6" height="14" rx="2" fill="#f43f5e" transform="rotate(-15 203 127)"/>
+          <circle cx="60" cy="20" r="4" fill="#fbbf24"/>
+          <circle cx="180" cy="15" r="4" fill="#f43f5e"/>
+          <circle cx="215" cy="70" r="4" fill="#8b5cf6"/>
+          <circle cx="25" cy="70" r="4" fill="#06b6d4"/>
+          <circle cx="215" cy="150" r="3" fill="#10b981"/>
+          <circle cx="25" cy="150" r="3" fill="#fbbf24"/>
+        </svg>
+      </div>
+      <h3>Pedido #{{ pedidoCreado()?.numero }} registrado</h3>
+      <p>Cliente: <strong>{{ pedidoCreado()?.clienteNombre }}</strong></p>
+      <p>Total: <strong>S/ {{ (pedidoCreado()?.total || 0) | number:'1.2-2' }}</strong></p>
+
+      <!-- Botón principal (celeste): ticket de PRODUCCIÓN, que va con las prendas al taller. -->
+      <button class="btn btn--primario btn--grande" (click)="imprimirTicket('produccion')">
+        <app-icon name="printer" [size]="16"></app-icon> Imprimir ticket de producción
+      </button>
+
+      <button class="btn btn--secundario btn--grande" (click)="imprimirTicket('cliente')">
+        <app-icon name="printer" [size]="16"></app-icon> Imprimir ticket del cliente
+      </button>
+
+      <!-- WhatsApp con seguimiento: solo tiene sentido cuando el pedido es Delivery. -->
+      @if (notificarWhatsapp && pedidoCreado()?.clienteCelular && pedidoCreado()?.modalidad === 'Delivery') {
+        <button class="btn btn--wsp btn--grande" (click)="enviarEnCamino()">
+          <app-icon name="whatsapp" [size]="16"></app-icon> Enviar pedido y seguimiento
+        </button>
+      }
+
+      <div class="confirmacion__acciones">
+        <button class="btn btn--ghost" (click)="nuevaOrden()">Registrar otro</button>
+        <button class="btn btn--secundario" (click)="irAPedidos()">Ver en lista</button>
+      </div>
+    </div>
+  } @else {
+    <!-- Barra de acción de arriba: visible por defecto cuando el pedido cabe sin scroll -->
+    <div class="barra-registrar barra-registrar--top" #barraTop>
+      <div class="barra-registrar__total">
+        <span>Total del pedido</span>
+        <strong>S/ {{ totalFinal().toFixed(2) }}</strong>
+      </div>
+      @if (!puedeRegistrar && validacionPedido) {
+        <span class="barra-registrar__aviso">{{ validacionPedido }}</span>
+      }
+      <button type="button" class="btn btn--primario barra-registrar__btn"
+        [disabled]="!puedeRegistrar" (click)="registrarOrden()">
+        <app-icon name="check" [size]="17"></app-icon>
+        {{ registrando() ? 'Registrando…' : 'Registrar pedido' }}
+      </button>
+    </div>
+
+    <div class="pasos">
+      <div class="card paso" data-tour="registrar-cliente"><h4>PASO 1 <span>Información del cliente</span></h4>
+
+        @if (clienteExistente) {
+          <div class="cliente-seleccionado">
+            <div>
+              <strong><app-icon name="check" [size]="13"></app-icon> {{ clienteExistente.nombre }}</strong>
+              <span>{{ clienteExistente.celular || 'Sin celular' }}</span>
+              @if (clienteExistente.puntos > 0) {
+                <span class="puntos-badge">{{ clienteExistente.puntos }} pts</span>
+              }
+            </div>
+            <button type="button" class="btn-quitar-cliente" (click)="quitarClienteSeleccionado()" title="Quitar selección"><app-icon name="close" [size]="12"></app-icon></button>
+          </div>
+        } @else {
+          <label>Buscar cliente frecuente</label>
+          <div class="buscador-cliente">
+            <select [(ngModel)]="campoBusquedaCliente">
+              <option>Nombre</option>
+              <option>Celular</option>
+              <option>DNI</option>
+            </select>
+            <input type="text" [placeholder]="'Buscar por ' + campoBusquedaCliente + '...'"
+              [ngModel]="textoBusquedaCliente" (ngModelChange)="onBuscarClienteInput($event)" />
+          </div>
+          @if (buscandoCliente()) { <p class="hint">Buscando...</p> }
+          @if (resultadosBusquedaCliente().length > 0) {
+            <ul class="resultados-cliente">
+              @for (c of resultadosBusquedaCliente(); track c.id) {
+                <li (click)="seleccionarClienteFrecuente(c)" (keydown.enter)="seleccionarClienteFrecuente(c)"
+                    role="button" tabindex="0" [attr.aria-label]="'Seleccionar cliente ' + c.nombre">
+                  <strong>{{ c.nombre }}</strong>
+                  <span>{{ c.celular || 'Sin celular' }}{{ c.dni ? ' · DNI ' + c.dni : '' }}</span>
+                  @if (c.puntos > 0) {
+                    <span class="puntos-badge">{{ c.puntos }} pts</span>
+                  }
+                </li>
+              }
+            </ul>
+          } @else if (textoBusquedaCliente.trim().length >= 2 && !buscandoCliente()) {
+            <p class="hint">Sin resultados. Se registrará como cliente nuevo.</p>
+          }
+        }
+
+        <label>Nombre *</label>
+        <input type="text" placeholder="Nombre completo" [(ngModel)]="nombre" />
+
+        <label>Celular</label>
+        <app-telefono-pais [(ngModel)]="celular" inputId="celular"></app-telefono-pais>
+        <p class="hint">Opcional. Sirve para avisar por WhatsApp y compartir el seguimiento del pedido; si el cliente no quiere darlo, puedes dejarlo vacío. Para un número extranjero, elige el país en el selector.</p>
+
+        <label>Dirección habitual @if (modalidad === 'Recojo') { <small class="hint">*</small> }</label>
+        <input type="text" [placeholder]="modalidad === 'Recojo' ? 'Dirección donde recoger el pedido' : 'Dirección habitual (opcional)'" [(ngModel)]="direccion" />
+        @if (modalidad === 'Recojo') {
+          <p class="hint">La usaremos para coordinar el recojo a domicilio.</p>
+        }
+
+        <label>DNI</label>
+        <input type="text" placeholder="DNI" [(ngModel)]="documentoIdentidad" />
+
+        <label>RUC <small class="hint">(opcional)</small></label>
+        <input type="text" placeholder="RUC" [(ngModel)]="documentoFiscal" />
+      </div>
+
+      <div class="columna-central">
+      <div class="card paso paso--items" data-tour="registrar-servicios"><h4>PASO 2 <span>¿Qué trajo el cliente?</span></h4>
+
+        <label>Productos y servicios</label>
+        <div class="row-agregar">
+          <div class="combo-servicio">
+            <input type="text" class="combo-servicio__input" autocomplete="off" inputmode="search"
+              [value]="busquedaServicio()"
+              (input)="onBuscarServicio($any($event.target).value)"
+              (focus)="comboServicioAbierto.set(true)"
+              (blur)="cerrarComboServicio()"
+              (keydown.escape)="cerrarComboServicio()"
+              (keydown.enter)="$event.preventDefault(); catalogoFiltrado()[0] && elegirServicio(catalogoFiltrado()[0])"
+              placeholder="Escribe para buscar un servicio…" />
+            @if (comboServicioAbierto()) {
+              <ul class="combo-servicio__lista">
+                @for (s of catalogoFiltrado(); track s.id) {
+                  <li>
+                    <button type="button" class="combo-servicio__item" (mousedown)="elegirServicio(s)">
+                      <span class="combo-servicio__nombre">{{ s.nombre }}</span>
+                      <span class="combo-servicio__precio">S/ {{ s.precio }} / {{ s.unidad }}</span>
+                    </button>
+                  </li>
+                } @empty {
+                  <li class="combo-servicio__vacio">Sin resultados para “{{ busquedaServicio() }}”. Usa <strong>“Nuevo”</strong> para crearlo.</li>
+                }
+              </ul>
+            }
+          </div>
+          <button class="btn btn--secundario" (click)="agregarItem()" [disabled]="!servicioSeleccionadoId">Agregar</button>
+          <button type="button" class="btn btn--ghost btn-nuevo-servicio" (click)="abrirNuevoServicio()"
+            title="Crear un producto que no está en la lista">
+            <app-icon name="plus" [size]="14"></app-icon>Nuevo
+          </button>
+        </div>
+        @if (catalogo().length === 0) {
+          <div class="aviso-catalogo-vacio">
+            <app-icon name="tag" [size]="15"></app-icon>
+            <span>Aún no tienes servicios en tu catálogo. Créalos al instante con <strong>“+ Nuevo”</strong>, o
+              <button type="button" class="link-inline" (click)="irAServicios()">configúralos en Ajustes → Servicios y precios</button>.</span>
+          </div>
+        } @else {
+          <p class="hint hint--nuevo">¿Falta un producto en la lista? Créalo al instante con <strong>“Nuevo”</strong> sin salir de aquí.</p>
+        }
+
+        <table class="tabla-items">
+          <thead>
+            <tr><th>Cant.</th><th>Item</th><th>Precio</th><th>Total</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (it of items(); track it.servicioId) {
+              <tr [class.is-new]="itemAnimadoId() === it.servicioId">
+                <td>
+                  @if (esItemM2(it)) {
+                    <span class="cant-m2" title="Área calculada">{{ it.cantidad.toFixed(2) }} m²</span>
+                  } @else {
+                    <input type="number" step="0.01" min="0.01" [ngModel]="it.cantidad"
+                      (ngModelChange)="cambiarCantidad(it.servicioId, $event)" class="input-cantidad" />
+                  }
+                </td>
+                <td>{{ it.nombre }} <small>({{ it.unidad }})</small></td>
+                <td>
+                  @if (esItemDelivery(it.servicioId)) {
+                    S/ {{ it.precio.toFixed(2) }}
+                  } @else {
+                    <div class="input-precio">
+                      <span>S/</span>
+                      <input type="number" step="0.10" min="0" [ngModel]="it.precio"
+                        (ngModelChange)="cambiarPrecio(it.servicioId, $event)"
+                        title="Precio editable: el del catálogo es solo referencial" />
+                    </div>
+                  }
+                </td>
+                <td>S/ {{ (it.precio * it.cantidad).toFixed(2) }}</td>
+                <td><button class="btn-quitar" (click)="quitarItem(it.servicioId)"><app-icon name="close" [size]="11"></app-icon></button></td>
+              </tr>
+
+              @if (esItemM2(it)) {
+                <tr class="fila-medidas">
+                  <td></td>
+                  <td colspan="4">
+                    <div class="medidas">
+                      <span class="medidas__lbl"><app-icon name="tag" [size]="13"></app-icon> Medidas de la alfombra</span>
+                      <label>Ancho
+                        <input type="number" step="0.01" min="0" inputmode="decimal" [ngModel]="it.ancho"
+                          (ngModelChange)="cambiarMedida(it.servicioId, 'ancho', $event)" /> m
+                      </label>
+                      <span class="medidas__x">×</span>
+                      <label>Largo
+                        <input type="number" step="0.01" min="0" inputmode="decimal" [ngModel]="it.largo"
+                          (ngModelChange)="cambiarMedida(it.servicioId, 'largo', $event)" /> m
+                      </label>
+                      <span class="medidas__x">×</span>
+                      <label>Cantidad
+                        <input type="number" step="1" min="1" inputmode="numeric" [ngModel]="it.piezas"
+                          (ngModelChange)="cambiarMedida(it.servicioId, 'piezas', $event)" /> alfombra(s)
+                      </label>
+                      <strong class="medidas__area">= {{ it.cantidad.toFixed(2) }} m² · S/ {{ (it.precio * it.cantidad).toFixed(2) }}</strong>
+                    </div>
+                  </td>
+                </tr>
+              }
+
+              <tr class="fila-nota">
+                <td></td>
+                <td colspan="4">
+                  <input type="text" class="input-nota" placeholder="Observación de la prenda (ej. mancha, botón suelto...)"
+                    [ngModel]="it.descripcion" (ngModelChange)="cambiarDescripcion(it.servicioId, $event)" />
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="vacio">Debe haber al menos un item</td></tr>
+            }
+          </tbody>
+        </table>
+
+        <div class="totales">
+          <div><span>Subtotal:</span> S/ {{ subtotal().toFixed(2) }}</div>
+          @if (aplicaDescuento()) {
+            <div class="descuento"><span>Descuento ({{ descuentoPorcentaje() }}%):</span> - S/ {{ descuentoMonto().toFixed(2) }}</div>
+          }
+          @if (descuentoPuntosMonto() > 0) {
+            <div class="descuento"><span>Canje de puntos ({{ puntosACanjear() }} pts):</span> - S/ {{ descuentoPuntosMonto().toFixed(2) }}</div>
+          }
+          @if (esUrgente()) {
+            <div class="recargo"><span><app-icon name="fire" [size]="11"></app-icon> Recargo urgente ({{ recargoUrgentePorcentaje() }}%):</span> + S/ {{ recargoUrgenteMonto().toFixed(2) }}</div>
+          }
+          @if (redondeo() !== 0) {
+            <div class="redondeo"><span>Redondeo:</span> {{ redondeo() > 0 ? '+' : '' }} S/ {{ redondeo().toFixed(2) }}</div>
+          }
+          <div class="total-neto"><span>Total:</span> S/ {{ totalFinal().toFixed(2) }}</div>
+        </div>
+      </div>
+
+      <!-- Fotos de evidencia (opcional) — se suben al registrar, momento "Recepción" -->
+      <div class="card paso paso--fotos">
+        <h4>Fotos <span>de la prenda (opcional)</span></h4>
+        <p class="hint">Evidencia del estado en que llega la ropa. El cliente las verá en su seguimiento.</p>
+
+        <div class="fotos-grid">
+          @for (f of fotosStaged(); track f.url; let i = $index) {
+            <div class="foto-thumb">
+              <img [src]="f.url" alt="Foto de la prenda" />
+              <button type="button" class="foto-quitar" (click)="quitarFoto(i)" aria-label="Quitar foto"><app-icon name="close" [size]="12"></app-icon></button>
+            </div>
+          }
+          @if (fotosStaged().length < maxFotos) {
+            <label class="foto-agregar" [class.is-loading]="procesandoFotos()">
+              @if (procesandoFotos()) {
+                <span class="foto-spinner"></span><small>Procesando…</small>
+              } @else {
+                <app-icon name="camera" [size]="22"></app-icon><small>Agregar foto</small>
+              }
+              <input type="file" accept="image/*" capture="environment" multiple hidden
+                     (change)="onFotosSeleccionadas($event)" [disabled]="procesandoFotos()" />
+            </label>
+          }
+        </div>
+
+        @if (fotosStaged().length > 0) {
+          <p class="fotos-contador">{{ fotosStaged().length }} de {{ maxFotos }} · se subirán al registrar el pedido</p>
+        }
+      </div>
+      </div><!-- /columna-central -->
+
+      <div class="columna-derecha">
+        <div class="card paso">
+          <h4>PASO 3 <span>{{ descripcionPaso3() }}</span></h4>
+
+          <label>Área de lavado inicial</label>
+          <select [(ngModel)]="areaInicialId">
+            @for (a of areas(); track a.id) {
+              <option [ngValue]="a.id">{{ a.nombre }}</option>
+            }
+          </select>
+
+          @if (modalidad === 'Delivery') {
+            <section class="destino-delivery" aria-labelledby="titulo-destino-delivery">
+              <div class="destino-delivery__head">
+                <div>
+                  <strong id="titulo-destino-delivery"><app-icon name="pin" [size]="14"></app-icon> Destino de entrega</strong>
+                  <span>Datos propios de este pedido</span>
+                </div>
+                <span class="requerido">Obligatorio</span>
+              </div>
+
+              <label for="direccion-entrega">Dirección exacta *</label>
+              <input id="direccion-entrega" type="text" maxlength="250"
+                     placeholder="Av., calle, número, Mz., lote, urbanización"
+                     [ngModel]="direccionEntrega"
+                     (ngModelChange)="actualizarDireccionEntrega($event)" />
+
+              <label for="distrito-entrega">Distrito *</label>
+              <input id="distrito-entrega" type="text" maxlength="100" list="distritos-entrega-sugeridos"
+                     placeholder="Escribe o selecciona un distrito"
+                     [ngModel]="distritoEntrega"
+                     (ngModelChange)="actualizarDistritoEntrega($event)" />
+              <datalist id="distritos-entrega-sugeridos">
+                @for (distrito of distritos; track distrito) {
+                  <option [value]="distrito"></option>
+                }
+              </datalist>
+
+              <label for="referencia-entrega">Referencia <small class="hint">(recomendado)</small></label>
+              <input id="referencia-entrega" type="text" maxlength="250"
+                     placeholder="Fachada, piso, puerta o lugar cercano"
+                     [(ngModel)]="referenciaEntrega" />
+
+              <app-mapa-ubicacion
+                [latitud]="latitudEntrega"
+                [longitud]="longitudEntrega"
+                [direccion]="direccionEntrega"
+                [distrito]="distritoEntrega"
+                [confirmada]="ubicacionEntregaConfirmada"
+                (ubicacionChange)="actualizarUbicacion($event)">
+              </app-mapa-ubicacion>
+            </section>
+          }
+
+          @if (esDomicilio() && negocioConfig.servicioDeliveryId) {
+            <div class="cargo-domicilio">
+              <div class="cargo-domicilio__head">
+                <label>{{ modalidad === 'Delivery' ? 'Costo de delivery' : 'Costo de recojo' }}</label>
+                <span>Tarifa de este pedido</span>
+              </div>
+              <div class="cargo-domicilio__input">
+                <span>S/</span>
+                <input type="number" min="0" max="10000" step="0.50"
+                       [ngModel]="costoDeliveryPedido"
+                       (ngModelChange)="actualizarCostoDelivery($event)"
+                       aria-label="Costo de delivery del pedido" />
+              </div>
+              <p class="hint">Puedes ajustar el monto según la zona. La sugerencia inicial es S/ {{ negocioConfig.costoDelivery.toFixed(2) }}.</p>
+            </div>
+          }
+
+          <label>{{ etiquetaFechaProgramada() }}</label>
+          <input type="datetime-local" [ngModel]="fechaEntregaValor()"
+                 (ngModelChange)="fechaEntregaValor.set($event)" />
+
+          <div class="presets">
+            <button type="button" class="preset" (click)="presetEntrega(2)">En 2h</button>
+            <button type="button" class="preset" (click)="presetEntrega(3)">En 3h</button>
+            <button type="button" class="preset" (click)="presetEntrega(5)">En 5h</button>
+            <button type="button" class="preset" (click)="presetEntrega(8)">En 8h</button>
+            <button type="button" class="preset" (click)="presetEntrega(24)">En 24h</button>
+            <button type="button" class="preset" (click)="presetEntrega(36)">En 36h</button>
+            <button type="button" class="preset" (click)="presetEntrega(48)">En 48h</button>
+          </div>
+
+          <p class="hint"><app-icon name="calendar" [size]="13"></app-icon> <strong>{{ fechaEntregaEstimada() | date:'EEEE d MMM, h:mm a' }}</strong></p>
+          <p class="hint hint--sub">Si hay demora, luego ajustas la fecha en el detalle del pedido y el cliente recibe el nuevo horario por WhatsApp.</p>
+        </div>
+
+        <div class="card paso">
+          <h4>PASO 4 <span>¿Descuento?</span></h4>
+
+          <label>Código de promoción <small class="hint">(opcional)</small></label>
+          @if (promoAplicada(); as promo) {
+            <div class="promo-aplicada">
+              <div>
+                <strong><app-icon name="check" [size]="13"></app-icon> {{ codigoPromo }}</strong>
+                <span>{{ promo.descripcion }}</span>
+              </div>
+              <button type="button" class="btn-quitar-cliente" (click)="quitarPromo()" title="Quitar promoción"><app-icon name="close" [size]="12"></app-icon></button>
+            </div>
+          } @else {
+            <div class="row-agregar">
+              <input type="text" placeholder="Ej: VERANO10" [(ngModel)]="codigoPromo" style="text-transform: uppercase;" />
+              <button class="btn btn--secundario" (click)="validarPromo()" [disabled]="validandoPromo() || !codigoPromo.trim()">
+                {{ validandoPromo() ? '...' : 'Aplicar' }}
+              </button>
+            </div>
+            @if (errorPromo()) { <p class="hint hint--error">{{ errorPromo() }}</p> }
+          }
+
+          <div class="switch-row">
+            <button class="switch-btn" [class.is-active]="!aplicaDescuento()" (click)="aplicaDescuento.set(false)">NO</button>
+            <button class="switch-btn" [class.is-active]="aplicaDescuento()" (click)="aplicaDescuento.set(true)">SI</button>
+          </div>
+          @if (aplicaDescuento()) {
+            <label>Porcentaje @if (maxDescuentoPct > 0) { <small class="hint">(máx. {{ maxDescuentoPct }}%)</small> }</label>
+            <input type="number" min="0" max="100" [ngModel]="descuentoPorcentaje()" (ngModelChange)="setDescuentoPct($event)" />
+          }
+
+          @if (canjeHabilitado) {
+            <div class="canje">
+              <div class="canje__head">
+                <span>★ Canjear puntos</span>
+                <strong>{{ puntosDisponibles }} pts disponibles</strong>
+              </div>
+              <div class="canje__input">
+                <input type="number" min="0" [ngModel]="puntosACanjear()" (ngModelChange)="setPuntosACanjear($event)" placeholder="0" />
+                <span>pts = <strong>S/ {{ descuentoPuntosMonto().toFixed(2) }}</strong> de descuento</span>
+              </div>
+              <p class="hint">Cada punto vale S/ {{ valorPuntoCanje.toFixed(2) }}.</p>
+            </div>
+          }
+
+          <label class="label-urgente"><app-icon name="fire" [size]="14"></app-icon> ¿Servicio urgente?</label>
+          <div class="switch-row">
+            <button class="switch-btn" [class.is-active]="!esUrgente()" (click)="esUrgente.set(false)">NO</button>
+            <button class="switch-btn switch-btn--urgente" [class.is-active]="esUrgente()" (click)="esUrgente.set(true)">SI</button>
+          </div>
+          @if (esUrgente()) {
+            <label>Recargo (%)</label>
+            <input type="number" min="0" max="100" [ngModel]="recargoUrgentePorcentaje()" (ngModelChange)="recargoUrgentePorcentaje.set($event)" />
+          }
+        </div>
+
+        <div class="card paso" data-tour="registrar-pago"><h4>PASO 5 <span>Pago</span></h4>
+          <label>Monto pagado ahora</label>
+          <input type="number" step="0.01" min="0" [(ngModel)]="montoPagado" />
+          <p class="hint">
+            @if (montoPagado <= 0) { Pendiente }
+            @else if (montoPagado >= totalFinal()) { Pagado completo }
+            @else { Pago parcial · falta S/ {{ (totalFinal() - montoPagado).toFixed(2) }} }
+          </p>
+
+          @if (montoPagado > 0) {
+            <label>Método de pago</label>
+            <select [(ngModel)]="metodoPagoInicial">
+              <option value="EFECTIVO">Efectivo</option>
+              <option value="YAPE">Yape</option>
+              <option value="PLIN">Plin</option>
+              <option value="TRANSFERENCIA">Transferencia</option>
+              <option value="POS">POS/Tarjeta</option>
+            </select>
+          }
+
+          <label class="checkbox-row">
+            <input type="checkbox" [(ngModel)]="notificarWhatsapp" />
+            Enviar confirmación por WhatsApp
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de acción fija abajo: aparece al hacer scroll (cuando la de arriba ya no se ve) -->
+    @if (mostrarBarraAbajo()) {
+      <div class="barra-registrar barra-registrar--abajo" data-tour="registrar-confirmar">
+        <div class="barra-registrar__total">
+          <span>Total del pedido</span>
+          <strong>S/ {{ totalFinal().toFixed(2) }}</strong>
+        </div>
+        @if (!puedeRegistrar && validacionPedido) {
+          <span class="barra-registrar__aviso">{{ validacionPedido }}</span>
+        }
+        <button type="button" class="btn btn--primario barra-registrar__btn"
+          [disabled]="!puedeRegistrar" (click)="registrarOrden()">
+          <app-icon name="check" [size]="17"></app-icon>
+          {{ registrando() ? 'Registrando…' : 'Registrar pedido' }}
+        </button>
+      </div>
+    }
+  }
+
+  <!-- Modal: crear un producto/servicio que falta en la lista, sin salir del registro -->
+  @if (modalNuevoServicio()) {
+    <div class="modal-backdrop" (click)="cerrarNuevoServicio()"></div>
+    <div class="modal modal--nuevo-servicio" role="dialog" aria-modal="true" aria-labelledby="nuevo-serv-title">
+      <div class="modal__header">
+        <h3 id="nuevo-serv-title">Nuevo producto o servicio</h3>
+        <button type="button" class="modal__close" (click)="cerrarNuevoServicio()" aria-label="Cerrar"><app-icon name="close" [size]="16"></app-icon></button>
+      </div>
+      <form (submit)="guardarNuevoServicio(); $event.preventDefault()">
+        <div class="modal__body">
+          <label for="ns-nombre">Nombre *</label>
+          <input id="ns-nombre" type="text" [(ngModel)]="formNuevoServicio.nombre" name="nsNombre"
+            maxlength="120" required autocomplete="off" placeholder="Ej: Lavado de edredón king" />
+
+          <div class="ns-row">
+            <div>
+              <label for="ns-precio">Precio *</label>
+              <div class="money-input"><span>S/</span>
+                <input id="ns-precio" type="number" inputmode="decimal" step="0.01" min="0.01" max="10000"
+                  required [(ngModel)]="formNuevoServicio.precio" name="nsPrecio" placeholder="0.00" />
+              </div>
+            </div>
+            <div>
+              <label for="ns-unidad">Unidad *</label>
+              <select id="ns-unidad" [(ngModel)]="formNuevoServicio.unidad" name="nsUnidad" required>
+                @for (u of unidadesServicio; track u) { <option [value]="u">{{ u }}</option> }
+              </select>
+            </div>
+          </div>
+
+          <p class="hint">Se guarda en tu catálogo para próximos pedidos. Luego puedes asignarle categoría en Ajustes → Servicios y precios.</p>
+
+          @if (errorNuevoServicio()) {
+            <div class="modal__error" role="alert">{{ errorNuevoServicio() }}</div>
+          }
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--ghost" (click)="cerrarNuevoServicio()">Cancelar</button>
+          <button type="submit" class="btn btn--primario" [disabled]="guardandoNuevoServicio()">
+            {{ guardandoNuevoServicio() ? 'Creando…' : 'Crear y agregar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

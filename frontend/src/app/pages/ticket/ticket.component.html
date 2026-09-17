@@ -1,0 +1,227 @@
+<!-- Barra de acciones (solo pantalla, se oculta al imprimir) -->
+<div class="acciones-print">
+  <div class="acciones-print__inner">
+    <button class="btn btn--primario" (click)="imprimir()"><app-icon name="printer" [size]="16"></app-icon> Imprimir ticket</button>
+
+    <div class="whatsapp-envio">
+      <button class="whatsapp-envio__boton" (click)="enviarWhatsapp()" [disabled]="!celularEnvio().trim()" title="Enviar mensaje de WhatsApp">
+        <app-icon name="whatsapp" [size]="20"></app-icon>
+      </button>
+      <label class="whatsapp-envio__campo">
+        <span>Número Celular:</span>
+        <input
+          type="text"
+          [value]="celularEnvio()"
+          (input)="celularEnvio.set($any($event.target).value)"
+          placeholder="Sin celular"
+        />
+      </label>
+    </div>
+
+    <button class="btn btn--descargar" (click)="descargarImagen()" [disabled]="generandoImagen()">
+      <app-icon name="download" [size]="16"></app-icon> {{ generandoImagen() ? 'Generando…' : 'Descargar Imagen' }}
+    </button>
+
+    <button class="btn btn--pdf" (click)="compartirPdfWhatsapp()" [disabled]="generandoPdf() || !celularEnvio().trim()">
+      <app-icon name="download" [size]="16"></app-icon> {{ generandoPdf() ? 'Generando PDF…' : 'Compartir PDF' }}
+    </button>
+
+    <button class="btn btn--ghost" (click)="cerrar()">Cerrar</button>
+
+    <div class="toggle-grupo">
+      <span class="toggle-grupo__label">Tipo Ticket:</span>
+      <div class="toggle-grupo__botones">
+        <button type="button" [class.is-active]="tipoTicket()==='CLIENTE'" (click)="tipoTicket.set('CLIENTE')">Cliente</button>
+        <button type="button" [class.is-active]="tipoTicket()==='PRODUCCION'" (click)="tipoTicket.set('PRODUCCION')">Producción</button>
+      </div>
+    </div>
+
+    <div class="toggle-grupo">
+      <span class="toggle-grupo__label">Descripción:</span>
+      <div class="toggle-grupo__botones">
+        <button type="button" [class.is-active]="!mostrarDescripcion()" (click)="mostrarDescripcion.set(false)">Ocultar</button>
+        <button type="button" [class.is-active]="mostrarDescripcion()" (click)="mostrarDescripcion.set(true)">Mostrar</button>
+      </div>
+    </div>
+
+    <p class="acciones-print__hint">
+      Si tu ticketera está lista, elige "{{ negocio().nombreNegocio }}" o tu impresora térmica en el diálogo.
+      Ancho configurado: <strong>{{ negocio().anchoTicketMm }}mm</strong>.
+    </p>
+  </div>
+</div>
+
+<!-- El ticket en si -->
+<div class="ticket-wrap">
+  @if (cargando()) {
+    <p class="msg">Cargando pedido…</p>
+  } @else if (error()) {
+    <p class="msg error">{{ error() }}</p>
+  } @else if (pedido()) {
+    @if (pedido(); as p) {
+    <div class="ticket" [attr.data-ancho]="negocio().anchoTicketMm">
+      @if (tipoTicket() === 'CLIENTE') {
+        <!-- Encabezado del negocio -->
+        <header class="ticket__header">
+          @if (logoImpresion()) {
+            <img [src]="logoImpresion()" [alt]="negocio().nombreNegocio" class="ticket__logo" />
+          }
+          <h1>{{ negocio().nombreNegocio }}</h1>
+          @if (negocio().direccion) { <p>{{ direccionTicket() }}</p> }
+          @if (negocio().telefono) { <p>Tel: {{ negocio().telefono }}</p> }
+          @if (negocio().ruc) { <p>RUC: {{ negocio().ruc }}</p> }
+          @if (negocio().horarioAtencion) { <p class="ticket__horario">{{ negocio().horarioAtencion }}</p> }
+        </header>
+
+        <div class="ticket__divider">- - - - - - - - - - - - - - - - - - -</div>
+      }
+
+      <!-- Número de orden gigante -->
+      <div class="ticket__numero">
+        <span class="ticket__label">ORDEN DE SERVICIO</span>
+        <span class="ticket__numero-valor">N° {{ p.numero }}</span>
+      </div>
+
+      <div class="ticket__divider"></div>
+
+      <!-- Fechas (estilo de referencia: texto largo) -->
+      <div class="ticket__fechas">
+        <div class="ticket__fecha"><strong>Ingreso :</strong> {{ fechaLarga(p.fechaIngreso) }}</div>
+        @if (p.fechaEntregaEst) {
+          <div class="ticket__fecha"><strong>{{ p.modalidad === 'Delivery' ? 'Entrega (delivery) :' : 'Entrega :' }}</strong> {{ fechaLarga(p.fechaEntregaEst) }}</div>
+        }
+        <div class="ticket__fecha"><strong>Modalidad :</strong> {{ p.modalidad }}</div>
+      </div>
+
+      <div class="ticket__divider">- - - - - - - - - - - - - - - - - - -</div>
+
+      <!-- Cliente (estilo de referencia: nombre centrado) -->
+      <div class="ticket__cliente">
+        <div class="ticket__cliente-label">NOMBRES DEL CLIENTE</div>
+        <div class="ticket__cliente-nombre">{{ p.clienteNombre }}</div>
+        @if (p.clienteCelular) { <div class="ticket__cliente-dato"><strong>Teléfono :</strong> {{ p.clienteCelular }}</div> }
+        @if (p.usuarioNombre) { <div class="ticket__cliente-dato"><strong>Atendido por :</strong> {{ p.usuarioNombre }}</div> }
+        @if (tipoTicket() === 'CLIENTE' && p.clientePuntos != null) {
+          <div class="ticket__cliente-dato">Puntos acumulados: {{ p.clientePuntos }}</div>
+        }
+      </div>
+
+      @if (p.modalidad === 'Delivery' && p.direccionEntrega) {
+        <div class="ticket__destino">
+          <strong>DESTINO DE ENTREGA</strong>
+          <p>{{ p.direccionEntrega }}</p>
+          @if (p.distritoEntrega) { <p>{{ p.distritoEntrega }}</p> }
+          @if (p.referenciaEntrega) { <p>Ref.: {{ p.referenciaEntrega }}</p> }
+          @if (p.latitudEntrega != null && p.longitudEntrega != null) {
+            <p>GPS: {{ p.latitudEntrega }}, {{ p.longitudEntrega }}</p>
+          }
+        </div>
+      }
+
+      <div class="ticket__divider">- - - - - - - - - - - - - - - - - - -</div>
+
+      <!-- Items (tabla estilo de referencia) -->
+      <table class="ticket__tabla">
+        <thead>
+          <tr><th>ITEM</th><th class="c">CANT.</th><th class="r">TOTAL</th></tr>
+        </thead>
+        <tbody>
+          @for (it of p.items; track it.id) {
+            <tr>
+              <td>
+                <span class="ticket__tabla-item">{{ it.servicioNombre }}</span>
+                @if (it.descripcion && (mostrarDescripcion() || tipoTicket() === 'PRODUCCION')) {
+                  <span class="ticket__item-desc">{{ it.descripcion }}</span>
+                }
+              </td>
+              <td class="c">{{ it.cantidad | number:'1.0-2' }}</td>
+              <td class="r">{{ it.total | number:'1.2-2' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <div class="ticket__divider">- - - - - - - - - - - - - - - - - - -</div>
+
+      <!-- Totales (estilo de referencia) -->
+      <div class="ticket__totales">
+        <div class="ticket__total-row"><span>Subtotal :</span><span>{{ p.subtotal | number:'1.2-2' }}</span></div>
+        @if (p.descuento > 0) {
+          <div class="ticket__total-row"><span>Descuento :</span><span>- {{ p.descuento | number:'1.2-2' }}</span></div>
+        }
+        <div class="ticket__total-row"><span>Redondeo :</span><span>{{ (p.redondeo || 0) | number:'1.2-2' }}</span></div>
+        <div class="ticket__total-row ticket__total-row--fuerte"><span>Total a pagar :</span><span>{{ p.total | number:'1.2-2' }}</span></div>
+        <div class="ticket__total-row"><span>A cuenta :</span><span>{{ p.montoPagado | number:'1.2-2' }}</span></div>
+      </div>
+
+      <div class="ticket__divider">- - - - - - - - - - - - - - - - - - -</div>
+
+      <div class="ticket__pago-estado" [class.ticket__pago-estado--ok]="saldo() <= 0.01">
+        <strong>{{ saldo() > 0.01 ? 'PAGO PENDIENTE' : 'PAGO COMPLETO' }}</strong>
+        <span>{{ saldo() > 0.01 ? ('S/ ' + (saldo() | number:'1.2-2')) : 'S/ 0.00' }}</span>
+      </div>
+
+      <div class="ticket__divider">- - - - - - - - - - - - - - - - - - -</div>
+
+      <!-- Estado -->
+      <div class="ticket__estado">
+        <strong>Estado:</strong> {{ p.estadoProceso === 'PENDIENTE' ? 'INGRESADO' : p.estadoProceso.replace('_', ' ') }}
+        @if (p.areaActualNombre) {
+          <br /><small>Área actual: {{ p.areaActualNombre }}</small>
+        }
+      </div>
+
+      @if (tipoTicket() === 'CLIENTE') {
+        <div class="ticket__divider">- - - - - - - - - - - - - - - - - - -</div>
+
+        <!-- Observaciones del pedido (nota al operario/cliente si existen) -->
+        @if (p.observaciones) {
+          <div class="ticket__observaciones">
+            <strong>OBSERVACIONES</strong>
+            <p>{{ p.observaciones }}</p>
+          </div>
+          <div class="ticket__divider">- - - - - - - - - - - - - - - - - - -</div>
+        }
+
+        <!-- Mensaje pie -->
+        @if (negocio().mensajePieTicket) {
+          <p class="ticket__pie">{{ negocio().mensajePieTicket }}</p>
+        }
+
+        <p class="ticket__aviso">Presente este ticket al recoger su pedido.</p>
+        <p class="ticket__aviso-recojo">Este ticket físico autoriza el recojo. Puede recogerlo cualquier persona que lo presente.</p>
+
+        @if (condicionesLista().length > 0) {
+          <div class="ticket__divider">- - - - - - - - - - - - - - - - - - -</div>
+          <div class="ticket__condiciones">
+            <strong>CONDICIONES DEL SERVICIO - {{ marcaCorta() }}</strong>
+            <p class="ticket__condiciones-intro">Su confianza es nuestro compromiso. Le invitamos a conocer las siguientes condiciones que garantizan un servicio seguro y transparente para usted.</p>
+            <ol>
+              @for (c of condicionesLista(); track $index) {
+                <li>{{ c }}</li>
+              }
+            </ol>
+            <p class="ticket__condiciones-cierre">Al recibir este comprobante, usted declara conocer y aceptar íntegramente las presentes condiciones de servicio. Gracias por confiar en {{ marcaCorta() }}.</p>
+          </div>
+        }
+      } @else {
+        <!-- Producción: notas al operario -->
+        @if (p.observaciones || negocio().notasProduccion) {
+          <div class="ticket__divider">- - - - - - - - - - - - - - - - - - -</div>
+          <div class="ticket__notas-produccion">
+            <strong>NOTAS PARA PRODUCCIÓN</strong>
+            @if (p.observaciones) {
+              <p><em>Observaciones de este pedido:</em> {{ p.observaciones }}</p>
+            }
+            @if (negocio().notasProduccion) {
+              <p>{{ negocio().notasProduccion }}</p>
+            }
+          </div>
+        }
+      }
+
+      <div class="ticket__espacio-final"></div>
+    </div>
+    }
+  }
+</div>

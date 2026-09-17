@@ -1,0 +1,95 @@
+<div class="page">
+  <app-page-header icono="chart" color="naranja" titulo="Consolidado de sedes" subtitulo="Todas tus sucursales en una sola vista." volverTexto="Reportes" (volver)="volver()"></app-page-header>
+
+  @if (cargando()) {
+    <div class="estado">Cargando…</div>
+  } @else if (error()) {
+    <div class="estado estado--error" role="alert">{{ error() }}</div>
+  } @else {
+    <!-- Totales del negocio -->
+    <div class="kpis">
+      <div class="kpi">
+        <span class="kpi__valor">S/ {{ totales().ventasHoy | number:'1.2-2' }}</span>
+        <span class="kpi__label">Ventas de hoy (todas las sedes)</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__valor">S/ {{ totales().ventasMes | number:'1.2-2' }}</span>
+        <span class="kpi__label">Ventas del mes</span>
+      </div>
+      <div class="kpi" [class.kpi--alerta]="totales().saldoPorCobrar > 0">
+        <span class="kpi__valor">S/ {{ totales().saldoPorCobrar | number:'1.2-2' }}</span>
+        <span class="kpi__label">Saldo por cobrar</span>
+      </div>
+      <div class="kpi">
+        <span class="kpi__valor">{{ totales().pedidosActivos }}</span>
+        <span class="kpi__label">Pedidos activos</span>
+      </div>
+    </div>
+
+    @if (ventasPorSede().length) {
+      <div class="tendencias-grid">
+        <app-mini-barras titulo="Ventas del mes por sede" subtitulo="Comparativo entre sucursales" color="azul" [datos]="ventasPorSede()"></app-mini-barras>
+        <app-mini-barras titulo="Saldo por cobrar por sede" subtitulo="Deuda pendiente" color="ambar" [datos]="saldoPorSede()"></app-mini-barras>
+      </div>
+    }
+
+    <div class="card tabla-wrap">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Sede</th>
+            <th class="num">Ventas hoy</th>
+            <th class="num">Ventas mes</th>
+            <th class="num">Por cobrar</th>
+            <th class="num">Activos</th>
+            <th class="num">Listos</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of sedes(); track s.sedeId) {
+            <tr>
+              <td class="sede">{{ s.sedeNombre }}</td>
+              <td class="num">S/ {{ s.ventasHoy | number:'1.2-2' }}</td>
+              <td class="num">S/ {{ s.ventasMes | number:'1.2-2' }}</td>
+              <td class="num" [class.txt-deuda]="s.saldoPorCobrar > 0">S/ {{ s.saldoPorCobrar | number:'1.2-2' }}</td>
+              <td class="num">{{ s.pedidosActivos }}</td>
+              <td class="num">{{ s.pedidosListos }}</td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>Total</td>
+            <td class="num">S/ {{ totales().ventasHoy | number:'1.2-2' }}</td>
+            <td class="num">S/ {{ totales().ventasMes | number:'1.2-2' }}</td>
+            <td class="num" [class.txt-deuda]="totales().saldoPorCobrar > 0">S/ {{ totales().saldoPorCobrar | number:'1.2-2' }}</td>
+            <td class="num">{{ totales().pedidosActivos }}</td>
+            <td class="num">{{ totales().pedidosListos }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Vista de tarjetas (solo móvil) -->
+    <div class="cards-rep">
+      @for (s of sedes(); track s.sedeId) {
+        <div class="rep-card">
+          <div class="rep-card__titulo">{{ s.sedeNombre }}</div>
+          <div class="rep-card__row"><span>Ventas hoy</span><strong>S/ {{ s.ventasHoy | number:'1.2-2' }}</strong></div>
+          <div class="rep-card__row"><span>Ventas mes</span><strong>S/ {{ s.ventasMes | number:'1.2-2' }}</strong></div>
+          <div class="rep-card__row"><span>Por cobrar</span><strong [class.txt-deuda]="s.saldoPorCobrar > 0">S/ {{ s.saldoPorCobrar | number:'1.2-2' }}</strong></div>
+          <div class="rep-card__row"><span>Activos</span><strong>{{ s.pedidosActivos }}</strong></div>
+          <div class="rep-card__row"><span>Listos</span><strong>{{ s.pedidosListos }}</strong></div>
+        </div>
+      }
+      <div class="rep-card rep-card--total">
+        <div class="rep-card__titulo">Total</div>
+        <div class="rep-card__row"><span>Ventas hoy</span><strong>S/ {{ totales().ventasHoy | number:'1.2-2' }}</strong></div>
+        <div class="rep-card__row"><span>Ventas mes</span><strong>S/ {{ totales().ventasMes | number:'1.2-2' }}</strong></div>
+        <div class="rep-card__row"><span>Por cobrar</span><strong [class.txt-deuda]="totales().saldoPorCobrar > 0">S/ {{ totales().saldoPorCobrar | number:'1.2-2' }}</strong></div>
+        <div class="rep-card__row"><span>Activos</span><strong>{{ totales().pedidosActivos }}</strong></div>
+        <div class="rep-card__row"><span>Listos</span><strong>{{ totales().pedidosListos }}</strong></div>
+      </div>
+    </div>
+  }
+</div>

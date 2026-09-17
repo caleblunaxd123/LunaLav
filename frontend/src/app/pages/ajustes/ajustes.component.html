@@ -1,0 +1,29 @@
+<div class="page">
+  <app-page-header icono="settings" color="azul" titulo="Ajustes"
+    subtitulo="Configura el negocio, las sedes, el equipo y las reglas de operación."></app-page-header>
+
+  <div class="grid">
+    @for (a of ajustes; track a.nombre) {
+      @if (a.ruta) {
+        <a class="tarjeta card" [routerLink]="a.ruta">
+          <div class="tarjeta__icono" [innerHTML]="a.icono"></div>
+          <div class="tarjeta__body">
+            <strong>{{ a.nombre }}</strong>
+            <p>{{ a.descripcion }}</p>
+          </div>
+        </a>
+      } @else {
+        <div class="tarjeta card tarjeta--disabled" title="Próximamente">
+          <div class="tarjeta__icono" [innerHTML]="a.icono"></div>
+          <div class="tarjeta__body">
+            <strong>
+              {{ a.nombre }}
+              @if (a.proximamente) { <span class="pill">Próximamente</span> }
+            </strong>
+            <p>{{ a.descripcion }}</p>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>

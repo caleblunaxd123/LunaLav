@@ -1,0 +1,140 @@
+:host {
+  --marca: #053465;
+  display: block;
+  min-height: 100vh;
+  background: #f4f6fb;
+  color: #1a2233;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.estado-carga {
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+  padding: 24px;
+  text-align: center;
+  color: #64748b;
+  &--error { color: #b91c1c; }
+}
+
+.rep {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0 14px 120px;
+}
+
+.rep__header {
+  padding: 18px 4px 12px;
+  text-align: center;
+  &  .rep__marca { font-weight: 800; font-size: 1.15rem; color: var(--marca); }
+  &  .rep__pedido { font-size: .8rem; color: #64748b; margin-top: 2px; }
+}
+
+.hero {
+  border-radius: 18px;
+  padding: 22px 18px;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(135deg, var(--marca), color-mix(in srgb, var(--marca) 68%, #000));
+  box-shadow: 0 10px 26px -12px rgba(11, 87, 208, .55);
+  &__emoji { font-size: 2.4rem; display: block; line-height: 1; }
+  &__t { font-size: 1.35rem; font-weight: 800; margin-top: 8px; }
+  &__s { font-size: .9rem; opacity: .92; margin-top: 5px; }
+
+  &--sin_ruta { background: linear-gradient(135deg, #475569, #1e293b); box-shadow: none; }
+  &--cerca { background: linear-gradient(135deg, #d97706, #b45309); box-shadow: 0 10px 26px -12px rgba(217, 119, 6, .55); }
+  &--llego { background: linear-gradient(135deg, #7c3aed, #5b21b6); }
+  &--entregado { background: linear-gradient(135deg, #16a34a, #15803d); }
+}
+
+.mapa {
+  position: relative;
+  margin-top: 14px;
+  height: 300px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px -10px rgba(0, 0, 0, .35);
+  &__vivo {
+    position: absolute;
+    left: 10px; bottom: 10px; z-index: 500;
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(255, 255, 255, .95);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: .78rem; font-weight: 700; color: #0f172a;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+    .punto {
+      width: 9px; height: 9px; border-radius: 50%; background: #16a34a;
+      box-shadow: 0 0 0 0 rgba(22, 163, 74, .6); animation: latido 1.4s infinite;
+    }
+  }
+}
+@keyframes latido { 0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, .6); } 100% { box-shadow: 0 0 0 10px rgba(22, 163, 74, 0); } }
+
+.aviso {
+  margin-top: 12px;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: .85rem;
+  &--gps { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+  &--error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+}
+
+.tarjeta {
+  margin-top: 12px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 2px 10px -6px rgba(0, 0, 0, .18);
+  h3 { margin: 0 0 6px; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; }
+  .dir { margin: 0; font-size: 1.05rem; font-weight: 700; }
+  .sub { margin: 2px 0 0; color: #475569; }
+  .ref { margin: 6px 0 0; font-size: .85rem; color: #64748b; }
+  &__acciones { display: flex; gap: 8px; margin-top: 12px; }
+  .cobro { margin-top: 8px; background: #ecfdf5; color: #065f46; border-radius: 10px; padding: 8px 12px; font-size: .9rem; }
+}
+
+.tarjeta--yape {
+  text-align: center;
+  .yape-qr { width: 230px; max-width: 82%; height: auto; margin: 6px auto 8px; display: block; border-radius: 10px; }
+  .yape-num { margin: 2px 0 0; font-size: 1.15rem; letter-spacing: .5px; }
+  .yape-hint { margin: 8px 0 0; font-size: .82rem; color: #64748b; }
+}
+
+.btn-sec {
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  border-radius: 10px;
+  padding: 11px;
+  font-size: .9rem; font-weight: 600; color: #0f172a;
+  cursor: pointer;
+  transition: background .15s;
+  &:active { background: #f1f5f9; }
+}
+
+.barra {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, #f4f6fb 70%, rgba(244, 246, 251, 0));
+  max-width: 560px; margin: 0 auto;
+}
+
+.btn-cta {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 16px;
+  font-size: 1.05rem; font-weight: 800; color: #fff;
+  background: var(--marca);
+  box-shadow: 0 10px 24px -10px rgba(11, 87, 208, .7);
+  cursor: pointer;
+  &:disabled { opacity: .6; }
+  &--ok { background: #16a34a; box-shadow: 0 10px 24px -10px rgba(22, 163, 74, .7); }
+}
+
+.entregado-final {
+  text-align: center; font-weight: 800; color: #16a34a; padding: 14px;
+  background: #f0fdf4; border-radius: 14px;
+}

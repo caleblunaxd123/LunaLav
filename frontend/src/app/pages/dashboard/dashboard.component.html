@@ -1,0 +1,331 @@
+<main class="page">
+  <header class="command-bar">
+    <div class="command-bar__copy">
+      <div class="command-bar__meta">
+        <span class="command-bar__date"><app-icon name="calendar" [size]="14"></app-icon>{{ fechaHoy() }}</span>
+        <span class="hero-live"><span></span>Operación en vivo</span>
+      </div>
+      <h1>{{ saludo() }}@if (nombreCorto()) {, {{ nombreCorto() }}}</h1>
+      <p>
+        Tu operación en {{ nombreNegocio() }}, clara y al día.
+        @if (data()?.actualizadoEn) {
+          <span class="actualizado">Actualizado {{ actualizadoTexto(data()!.actualizadoEn) }}</span>
+        }
+      </p>
+    </div>
+    <div class="command-bar__right">
+      @if (data(); as resumen) {
+        <div class="delivery-summary" aria-label="Pedidos entregados exitosamente">
+          <span class="delivery-summary__icon">
+            <app-icon name="package" [size]="22"></app-icon>
+            <span><app-icon name="check" [size]="10"></app-icon></span>
+          </span>
+          <div class="delivery-summary__copy">
+            <span>Pedidos entregados hoy</span>
+            <strong>{{ resumen.pedidosEntregadosHoy }}</strong>
+            <small>{{ resumen.pedidosEntregadosSemana }} esta semana · {{ resumen.pedidosEntregadosMes }} este mes</small>
+          </div>
+          <div class="delivery-summary__channels">
+            <span><app-icon name="pin" [size]="13"></app-icon><strong>{{ resumen.pedidosEntregadosTiendaHoy }}</strong> en tienda</span>
+            <span><app-icon name="package" [size]="13"></app-icon><strong>{{ resumen.pedidosEntregadosDomicilioHoy }}</strong> a domicilio</span>
+          </div>
+        </div>
+      }
+      <div class="command-bar__actions">
+        <button type="button" class="icon-btn" (click)="iniciarTour()"
+                title="¿Cómo funciona esta pantalla?" aria-label="Ver tutorial">
+          <app-icon name="info" [size]="18"></app-icon>
+        </button>
+        <button type="button" class="icon-btn" (click)="cargar(true)" [disabled]="actualizando()"
+                title="Actualizar resumen" aria-label="Actualizar resumen">
+          <app-icon name="refresh" [size]="18"></app-icon>
+        </button>
+        @if (tieneModulo('REGISTRAR')) {
+          <a routerLink="/registrar" class="primary-action"><app-icon name="plus" [size]="17"></app-icon>Nuevo pedido</a>
+        }
+      </div>
+    </div>
+  </header>
+
+  @if (mostrarOnboarding()) {
+    <section class="onboarding" aria-labelledby="onboarding-title">
+      <div class="onboarding__header">
+        <div>
+      <span class="section-kicker">Configuración inicial</span>
+          <h2 id="onboarding-title">Deja tu espacio listo para operar</h2>
+        </div>
+        <button type="button" class="icon-btn icon-btn--subtle" (click)="cerrarOnboarding()"
+                title="Ocultar configuración inicial" aria-label="Ocultar configuración inicial">
+          <app-icon name="close" [size]="16"></app-icon>
+        </button>
+      </div>
+      <ul class="onboarding__steps">
+        @for (paso of pasosOnboarding(); track paso.clave) {
+          <li [class.is-complete]="paso.hecho">
+            <span class="step-check">@if (paso.hecho) { <app-icon name="check" [size]="13"></app-icon> }</span>
+            @if (paso.hecho) { <span>{{ paso.titulo }}</span> }
+            @else { <a [routerLink]="paso.ruta">{{ paso.titulo }}</a> }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (cargando() && !data()) {
+    <section class="kpis kpis--loading" aria-label="Cargando indicadores">
+      @for (item of [1, 2, 3, 4]; track item) {
+        <div class="kpi"><app-skeleton variant="lines" [rows]="3"></app-skeleton></div>
+      }
+    </section>
+  } @else if (data(); as d) {
+    <section class="stat-cards" data-tour="inicio-kpis" aria-label="Indicadores del día">
+      <div class="stat-card">
+        <div class="stat-card__body">
+          <span class="stat-card__label">Órdenes hoy</span>
+          <strong class="stat-card__value">{{ d.ordenesHoy }}</strong>
+          @if (deltaOrdenes() !== null) {
+            <span class="stat-card__delta" [class.up]="deltaOrdenes()! >= 0" [class.down]="deltaOrdenes()! < 0">
+              {{ deltaOrdenes()! >= 0 ? '↑' : '↓' }} {{ deltaOrdenes()! >= 0 ? '+' : '' }}{{ deltaOrdenes() }}% vs ayer
+            </span>
+          } @else { <span class="stat-card__delta neutral">Sin dato de ayer</span> }
+        </div>
+        <span class="stat-card__icon stat-card__icon--cyan"><app-icon name="basket" [size]="22"></app-icon></span>
+      </div>
+
+      @if (puedeVerFinanzas()) {
+        <div class="stat-card">
+          <div class="stat-card__body">
+            <span class="stat-card__label">Ventas hoy</span>
+            <strong class="stat-card__value">S/ {{ d.ventasDelDia | number:'1.2-2' }}</strong>
+            @if (deltaVentas() !== null) {
+              <span class="stat-card__delta" [class.up]="deltaVentas()! >= 0" [class.down]="deltaVentas()! < 0">
+                {{ deltaVentas()! >= 0 ? '↑' : '↓' }} {{ deltaVentas()! >= 0 ? '+' : '' }}{{ deltaVentas() }}% vs ayer
+              </span>
+            } @else { <span class="stat-card__delta neutral">Sin dato de ayer</span> }
+          </div>
+          <span class="stat-card__icon stat-card__icon--cyan"><app-icon name="cash" [size]="22"></app-icon></span>
+        </div>
+      }
+
+      @if (tieneModulo('CLIENTES')) {
+        <a routerLink="/clientes" class="stat-card">
+          <div class="stat-card__body">
+            <span class="stat-card__label">Clientes</span>
+            <strong class="stat-card__value">{{ d.totalClientes }}</strong>
+            @if (deltaClientes() !== null) {
+              <span class="stat-card__delta" [class.up]="deltaClientes()! >= 0" [class.down]="deltaClientes()! < 0">
+                {{ deltaClientes()! >= 0 ? '↑' : '↓' }} {{ deltaClientes()! >= 0 ? '+' : '' }}{{ deltaClientes() }}% vs mes pasado
+              </span>
+            } @else { <span class="stat-card__delta neutral">{{ d.clientesNuevosMes }} nuevos este mes</span> }
+          </div>
+          <span class="stat-card__icon stat-card__icon--navy"><app-icon name="users" [size]="22"></app-icon></span>
+        </a>
+      }
+
+      <a [routerLink]="tieneModulo('PEDIDOS') ? '/pedidos' : null" class="stat-card">
+        <div class="stat-card__body">
+          <span class="stat-card__label">Pendientes</span>
+          <strong class="stat-card__value">{{ d.totalPendientes }}</strong>
+          <span class="stat-card__delta neutral">{{ d.totalEnProceso }} en proceso · {{ d.totalListos }} listos</span>
+        </div>
+        <span class="stat-card__icon stat-card__icon--cyan"><app-icon name="calendar" [size]="22"></app-icon></span>
+      </a>
+    </section>
+
+    <div class="board-grid">
+      <section class="panel recent" aria-labelledby="recent-title">
+        <div class="panel__header">
+          <div><span class="section-kicker">Actividad</span><h2 id="recent-title">Órdenes recientes</h2></div>
+          @if (tieneModulo('PEDIDOS')) { <a routerLink="/pedidos" class="panel__link">Ver todas</a> }
+        </div>
+        @if (d.ordenesRecientes.length === 0) {
+          <div class="empty-state">Aún no hay órdenes registradas.</div>
+        } @else {
+          <div class="recent-table">
+            <div class="recent-table__head">
+              <span>Orden</span><span>Cliente</span><span>Servicio</span><span>Estado</span><span class="ta-r">Total</span>
+            </div>
+            @for (o of d.ordenesRecientes; track o.numero) {
+              <div class="recent-table__row">
+                <span class="mono">#{{ o.numero }}</span>
+                <span class="tw">{{ o.clienteNombre }}</span>
+                <span class="tw muted">{{ o.servicioPrincipal }}</span>
+                <span><em class="badge" [class]="'badge badge--' + estadoBadge(o.estadoProceso).clase">{{ estadoBadge(o.estadoProceso).label }}</em></span>
+                <span class="ta-r strong">S/ {{ o.total | number:'1.2-2' }}</span>
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+      @if (puedeVerFinanzas()) {
+        <section class="panel chart" aria-labelledby="week-title">
+          <div class="panel__header">
+            <div><span class="section-kicker">Tendencia</span><h2 id="week-title">Ventas</h2></div>
+            <div class="rango-ventas" role="group" aria-label="Rango de la tendencia de ventas">
+              @for (r of rangosVentas; track r.dias) {
+                <button type="button" class="rango-ventas__btn" [class.is-active]="rangoVentas() === r.dias"
+                  (click)="cambiarRangoVentas(r.dias)">{{ r.etiqueta }}</button>
+              }
+            </div>
+          </div>
+          @if (!semana().hayVentas) {
+            <div class="empty-state">Sin ventas registradas en este periodo.</div>
+          } @else {
+            <svg class="area-chart" [attr.viewBox]="'0 0 ' + semana().W + ' ' + semana().H" preserveAspectRatio="none"
+                 role="img" aria-label="Curva de ventas del periodo">
+              <path [attr.d]="semana().areaPath" class="area-chart__fill" />
+              <path [attr.d]="semana().linePath" class="area-chart__line" />
+              @if (semana().mostrarPuntos) {
+                @for (p of semana().puntos; track p.fecha) {
+                  <circle [attr.cx]="p.x" [attr.cy]="p.y" r="3" class="area-chart__dot" />
+                }
+              }
+            </svg>
+            <div class="area-chart__labels">
+              @for (l of semana().labels; track $index) { <span>{{ l }}</span> }
+            </div>
+          }
+        </section>
+      }
+    </div>
+
+    <div class="board-grid">
+      <section class="panel donut-panel" aria-labelledby="serv-title">
+        <div class="panel__header"><div><span class="section-kicker">Distribución</span><h2 id="serv-title">Servicios más solicitados</h2></div></div>
+        @if (dona().total <= 0) {
+          <div class="empty-state">Aún no hay ventas de servicios este mes.</div>
+        } @else {
+          <div class="donut-wrap">
+            <svg class="donut" viewBox="0 0 140 140" role="img" aria-label="Distribución de servicios">
+              <circle cx="70" cy="70" r="54" class="donut__bg" />
+              @for (s of dona().segmentos; track s.nombre) {
+                <circle cx="70" cy="70" r="54" fill="none" [attr.stroke]="s.color" stroke-width="18"
+                  [attr.stroke-dasharray]="s.dash" [attr.stroke-dashoffset]="s.offset"
+                  transform="rotate(-90 70 70)" />
+              }
+            </svg>
+            <ul class="donut-legend">
+              @for (s of dona().segmentos; track s.nombre) {
+                <li><span class="dot" [style.background]="s.color"></span>{{ s.nombre }}<strong>{{ s.pctTexto }}%</strong></li>
+              }
+            </ul>
+          </div>
+        }
+      </section>
+
+      <section class="panel summary" aria-labelledby="summary-title">
+        <div class="panel__header"><div><span class="section-kicker">Hoy</span><h2 id="summary-title">Resumen del día</h2></div></div>
+        <ul class="summary-list">
+          <li><span class="summary-ic ok"><app-icon name="check" [size]="16"></app-icon></span>Órdenes completadas<strong>{{ d.pedidosEntregadosHoy }}</strong></li>
+          <li><span class="summary-ic proc"><app-icon name="refresh" [size]="16"></app-icon></span>Órdenes en proceso<strong>{{ d.totalEnProceso }}</strong></li>
+          <li><span class="summary-ic pend"><app-icon name="warning" [size]="16"></app-icon></span>Órdenes pendientes<strong>{{ d.totalPendientes }}</strong></li>
+          @if (puedeVerFinanzas()) {
+            <li><span class="summary-ic cash"><app-icon name="cash" [size]="16"></app-icon></span>Ventas del día<strong>S/ {{ d.ventasDelDia | number:'1.2-2' }}</strong></li>
+          }
+        </ul>
+      </section>
+    </div>
+
+    <div class="dashboard-layout">
+      <div class="dashboard-main">
+        <section class="panel attention" aria-labelledby="attention-title">
+          <div class="panel__header">
+            <div>
+              <span class="section-kicker">Prioridades</span>
+              <h2 id="attention-title">Atención hoy</h2>
+            </div>
+            @if (alertas().length > 0) { <span class="count-badge">{{ alertas().length }}</span> }
+          </div>
+
+          @if (alertas().length === 0) {
+            <div class="all-clear">
+              <span class="all-clear__icon"><app-icon name="check" [size]="22"></app-icon></span>
+              <div><strong>Todo bajo control</strong><p>No hay alertas operativas que requieran acción inmediata.</p></div>
+            </div>
+          } @else {
+            <div class="alert-list">
+              @for (alerta of alertas(); track alerta.clave) {
+                <a [routerLink]="alerta.ruta" [queryParams]="alerta.queryParams ?? null" class="alert-item" [class]="'alert-item alert-item--' + alerta.nivel">
+                  <span class="alert-item__icon"><app-icon [name]="alerta.icono" [size]="18"></app-icon></span>
+                  <span class="alert-item__copy"><strong>{{ alerta.titulo }}</strong><small>{{ alerta.detalle }}</small></span>
+                  <span class="alert-item__action">{{ alerta.accion }}<app-icon name="chevron-right" [size]="16"></app-icon></span>
+                </a>
+              }
+            </div>
+          }
+        </section>
+
+        <section class="panel flow" data-tour="inicio-areas" aria-labelledby="flow-title">
+          <div class="panel__header">
+            <div>
+              <span class="section-kicker">Produccion</span>
+              <h2 id="flow-title">Flujo por áreas</h2>
+            </div>
+            <span class="live-status"><span></span>En vivo</span>
+          </div>
+
+          @if (d.pedidosPorArea.length === 0) {
+            <div class="empty-state">Configura las áreas del proceso para visualizar el flujo.</div>
+          } @else {
+            <div class="area-list">
+              @for (area of d.pedidosPorArea; track area.areaId) {
+                <div class="area-row" [attr.data-state]="estadoArea(area.areaId)">
+                  <div class="area-row__top">
+                    <div><strong>{{ area.areaNombre }}</strong><span>{{ area.cantidad }} {{ area.cantidad === 1 ? 'pedido' : 'pedidos' }}</span></div>
+                    <span class="sla-label">{{ textoSla(area.areaId) }}</span>
+                  </div>
+                  <div class="load-track" aria-hidden="true"><span [style.width.%]="anchoCarga(area.cantidad)"></span></div>
+                </div>
+              }
+            </div>
+          }
+        </section>
+      </div>
+
+      <aside class="dashboard-side">
+        @if (d.metaMensual > 0) {
+          <section class="panel goal" aria-labelledby="goal-title">
+            <div class="panel__header">
+              <div><span class="section-kicker">Objetivo mensual</span><h2 id="goal-title">Meta de pedidos</h2></div>
+              <strong class="goal__percent">{{ progresoMeta() }}%</strong>
+            </div>
+            <div class="goal__numbers"><strong>{{ d.pedidosDelMes }}</strong><span>de {{ d.metaMensual | number:'1.0-0' }} pedidos</span></div>
+            <div class="goal__track"><span [style.width.%]="progresoMeta()"></span></div>
+            <small>@if (progresoMeta() >= 100) { Meta alcanzada. } @else { Faltan {{ d.metaMensual - d.pedidosDelMes | number:'1.0-0' }} pedidos. }</small>
+          </section>
+        } @else if (usuario()?.rol === 'ADMIN' && tieneModulo('AJUSTES')) {
+          <a routerLink="/ajustes/metas" class="configure-goal">
+            <span><app-icon name="chart" [size]="20"></app-icon></span>
+            <div><strong>Define una meta mensual</strong><small>Mide el avance del equipo desde Inicio.</small></div>
+            <app-icon name="chevron-right" [size]="16"></app-icon>
+          </a>
+        }
+
+        <section class="panel shortcuts" data-tour="inicio-atajos" aria-labelledby="shortcuts-title">
+          <div class="panel__header"><div><span class="section-kicker">Acciones</span><h2 id="shortcuts-title">Accesos rápidos</h2></div></div>
+          <div class="shortcut-grid">
+            @if (tieneModulo('REGISTRAR')) {
+              <a routerLink="/registrar"><span><app-icon name="plus" [size]="19"></app-icon></span><strong>Nuevo pedido</strong></a>
+            }
+            @if (tieneModulo('PEDIDOS')) {
+              <a routerLink="/pedidos"><span><app-icon name="clipboard" [size]="19"></app-icon></span><strong>Pedidos</strong></a>
+            }
+            @if (tieneModulo('CLIENTES')) {
+              <a routerLink="/clientes"><span><app-icon name="users" [size]="19"></app-icon></span><strong>Clientes</strong></a>
+            }
+            @if (tieneModulo('CAJA')) {
+              <a routerLink="/cuadre-caja"><span><app-icon name="cash" [size]="19"></app-icon></span><strong>Cuadre</strong></a>
+            }
+          </div>
+        </section>
+      </aside>
+    </div>
+  } @else {
+    <div class="load-error">
+      <app-icon name="warning" [size]="24"></app-icon>
+      <strong>No pudimos cargar el resumen</strong>
+      <button type="button" (click)="cargar()">Reintentar</button>
+    </div>
+  }
+</main>

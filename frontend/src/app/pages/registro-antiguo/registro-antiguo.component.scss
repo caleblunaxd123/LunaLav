@@ -1,0 +1,252 @@
+.page {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px clamp(18px, 2vw, 32px) 32px;
+}
+
+.modalidad {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--gris-borde);
+  width: fit-content;
+
+  &__btn {
+    border: none;
+    background: #fff;
+    padding: 8px 18px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+
+    &.is-active {
+      background: var(--verde);
+      color: #fff;
+    }
+  }
+}
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 700;
+
+  &--primario {
+    background: var(--naranja);
+    color: var(--texto-sobre-acento, #fff);
+
+    &:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+    }
+  }
+
+  &--secundario {
+    background: var(--azul-oscuro);
+    color: #fff;
+  }
+}
+
+.cliente-encontrado {
+  color: #147a45;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 4px 0 8px;
+  padding: 6px 10px;
+  background: #e6f9ee;
+  border-radius: 6px;
+}
+
+.pasos {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.paso {
+  padding: 18px;
+
+  h4 {
+    margin: 0 0 14px;
+    font-size: 14px;
+    color: #1a202c;
+    font-weight: 700;
+  }
+
+  label {
+    display: block;
+    font-size: 11.5px;
+    color: #64748b;
+    margin: 10px 0 4px;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--gris-borde);
+    border-radius: 6px;
+    font-size: 13px;
+  }
+}
+
+.row-agregar {
+  display: flex;
+  gap: 8px;
+
+  select { flex: 1; }
+}
+
+.tabla-items {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+  font-size: 12px;
+
+  th {
+    background: var(--azul-oscuro);
+    color: #fff;
+    text-align: left;
+    padding: 8px;
+    font-size: 11px;
+  }
+
+  td {
+    padding: 8px;
+    border-bottom: 1px solid var(--gris-borde);
+  }
+
+  .vacio {
+    text-align: center;
+    color: #ef4444;
+    font-style: italic;
+    padding: 16px;
+  }
+}
+
+.input-cantidad {
+  width: 50px !important;
+  padding: 4px !important;
+}
+
+.btn-quitar {
+  border: none;
+  background: #fee2e2;
+  color: #ef4444;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 11px;
+}
+
+.totales {
+  margin-top: 14px;
+  text-align: right;
+  font-size: 13px;
+
+  div { margin-bottom: 4px; }
+  span { color: #64748b; margin-right: 8px; }
+
+  .total-neto {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--azul-oscuro);
+  }
+}
+
+.hint {
+  font-size: 12px;
+  color: #475569;
+  margin-top: 12px;
+}
+
+.buscador-cliente {
+  display: flex;
+  gap: 8px;
+
+  select {
+    width: auto;
+    min-width: 90px;
+  }
+}
+
+.resultados-cliente {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  border: 1px solid var(--gris-borde);
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+
+  li {
+    padding: 8px 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid var(--gris-borde);
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: #eaf1ff; }
+
+    strong { font-size: 13px; }
+    span { font-size: 11.5px; color: #64748b; }
+  }
+}
+
+.cliente-seleccionado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #e6f9ee;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+
+    strong { font-size: 13px; color: #147a45; }
+    span { font-size: 11.5px; color: #147a45; opacity: .8; }
+  }
+}
+
+.btn-quitar-cliente {
+  border: none;
+  background: rgba(20,122,69,.12);
+  color: #147a45;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 12px;
+  flex-shrink: 0;
+
+  &:hover { background: rgba(20,122,69,.22); }
+}
+
+// ---------- Responsive ----------
+@media (max-width: 1100px) {
+  .pasos { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 720px) {
+  .page { padding: 14px; }
+
+  .header-action { width: 100%; }
+
+  .pasos { grid-template-columns: 1fr; gap: 12px; }
+
+  .paso { padding: 14px; }
+
+  .tabla-items {
+    font-size: 11px;
+    th, td { padding: 6px; }
+  }
+}
