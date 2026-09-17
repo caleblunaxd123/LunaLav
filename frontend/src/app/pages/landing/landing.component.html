@@ -12,6 +12,7 @@
     <nav id="menu-principal" class="site-nav" [class.site-nav--open]="menuAbierto" aria-label="Navegación principal">
       <a href="#funciones" (click)="cerrarMenu()">Funciones</a>
       <a href="#como-funciona" (click)="cerrarMenu()">Cómo funciona</a>
+      <a href="#precios" (click)="cerrarMenu()">Precios</a>
       <a href="#preguntas" (click)="cerrarMenu()">Preguntas</a>
       <a class="nav-login" href="https://app.lunalav.pe/login">Ingresar</a>
       <a class="nav-cta" [href]="demoUrl">Probar demo</a>
@@ -129,6 +130,67 @@
       </div>
     </section>
 
+    <section id="precios" class="section pricing">
+      <div class="section-heading">
+        <span class="section-kicker">Planes de lanzamiento</span>
+        <h2>Empieza con lo necesario y crece sin cambiar de sistema</h2>
+        <p>Prueba LunaLav durante 14 días con acompañamiento. Sin tarjeta y sin comprar servidores.</p>
+      </div>
+
+      <div class="pricing__grid">
+        <article class="price-card">
+          <span class="price-card__eyebrow">Esencial</span>
+          <h3>Para ordenar una sede</h3>
+          <p class="price"><small>S/</small>79 <span>/ mes</span></p>
+          <p class="price-card__summary">Todo lo básico para dejar el cuaderno y controlar el día a día.</p>
+          <ul>
+            <li>1 sede y hasta 3 usuarios</li>
+            <li>Hasta 500 pedidos al mes</li>
+            <li>Pedidos, clientes y caja</li>
+            <li>Comprobantes y avisos por WhatsApp</li>
+            <li>Soporte por correo y WhatsApp</li>
+          </ul>
+          <a class="button button--price" [href]="demoUrl">Probar 14 días</a>
+        </article>
+
+        <article class="price-card price-card--featured">
+          <span class="price-card__badge">Más elegido</span>
+          <span class="price-card__eyebrow">Negocio</span>
+          <h3>Para crecer con control</h3>
+          <p class="price"><small>S/</small>129 <span>/ mes</span></p>
+          <p class="price-card__summary">Más capacidad y herramientas para una operación completa.</p>
+          <ul>
+            <li>1 sede y hasta 8 usuarios</li>
+            <li>Hasta 1,500 pedidos al mes</li>
+            <li>Todo lo del plan Esencial</li>
+            <li>Inventario, gastos y delivery</li>
+            <li>Reportes gerenciales y fidelización</li>
+          </ul>
+          <a class="button button--price button--price-featured" href="mailto:hola@lunalav.pe?subject=Quiero el plan Negocio de LunaLav">Elegir Negocio</a>
+        </article>
+
+        <article class="price-card">
+          <span class="price-card__eyebrow">Multisede</span>
+          <h3>Para centralizar locales</h3>
+          <p class="price"><small>Desde S/</small>199 <span>/ mes</span></p>
+          <p class="price-card__summary">Una vista consolidada para administrar más de una sede.</p>
+          <ul>
+            <li>2 sedes incluidas</li>
+            <li>Usuarios y capacidad a medida</li>
+            <li>Todo lo del plan Negocio</li>
+            <li>Panel consolidado por sede</li>
+            <li>Implementación y soporte prioritario</li>
+          </ul>
+          <a class="button button--price" href="mailto:hola@lunalav.pe?subject=Quiero cotizar LunaLav Multisede">Solicitar cotización</a>
+        </article>
+      </div>
+
+      <div class="pricing__note">
+        <strong>Precio fundador:</strong> configuración inicial y capacitación incluidas para los primeros clientes.
+        Puedes cancelar cuando quieras. Servicios externos de facturación electrónica no están incluidos.
+      </div>
+    </section>
+
     <section id="como-funciona" class="section steps">
       <div class="steps__intro">
         <span class="section-kicker section-kicker--light">Empezar es sencillo</span>
@@ -168,6 +230,8 @@
         <details><summary>¿Puedo usar el nombre y logo de mi lavandería?</summary><p>Sí. Tu espacio se configura con el nombre, colores, logotipo y datos propios de tu negocio.</p></details>
         <details><summary>¿Sirve si tengo más de una sede?</summary><p>Sí. Puedes separar la operación por sede y mantener una vista consolidada para la administración.</p></details>
         <details><summary>¿Me ayudan a aprender a usarlo?</summary><p>Sí. La implementación incluye acompañamiento inicial para configurar el sistema y capacitar a tu equipo.</p></details>
+        <details><summary>¿Hay contrato de permanencia?</summary><p>No. Los planes son mensuales y puedes cancelar cuando quieras. Antes de pagar, puedes probar el sistema durante 14 días.</p></details>
+        <details><summary>¿El precio incluye un servidor?</summary><p>Sí. El acceso al sistema y su alojamiento están incluidos en la mensualidad; no necesitas comprar equipos especiales.</p></details>
       </div>
     </section>
 
@@ -185,7 +249,35 @@
 
   <footer class="site-footer">
     <div><img src="lunalav-logo-white.svg" alt="LunaLav" /><p>Tu lavandería, clara y en movimiento.</p></div>
-    <div class="site-footer__links"><a href="#funciones">Funciones</a><a [href]="demoUrl">Demo</a><a href="mailto:hola@lunalav.pe">hola@lunalav.pe</a></div>
+    <div class="site-footer__links"><a href="#funciones">Funciones</a><a href="#precios">Precios</a><a [href]="demoUrl">Demo</a><a href="mailto:hola@lunalav.pe">hola@lunalav.pe</a></div>
     <p class="site-footer__copy">© {{ anio }} LunaLav · Un producto de LunaIT Solution</p>
   </footer>
+
+  <aside class="sales-chat" [class.sales-chat--open]="chatAbierto">
+    <section class="sales-chat__panel" role="dialog" aria-label="Asistente comercial de LunaLav" aria-live="polite">
+      <header>
+        <span class="sales-chat__avatar">L</span>
+        <div><strong>Asistente LunaLav</strong><small>Orientación inmediata</small></div>
+        <button type="button" (click)="alternarChat()" aria-label="Cerrar asistente">×</button>
+      </header>
+      <div class="sales-chat__body">
+        <p class="sales-chat__message">{{ chatRespuesta }}</p>
+        @if (chatAccionTexto) {
+          <a class="sales-chat__action" [href]="chatAccionUrl">{{ chatAccionTexto }} <span>→</span></a>
+        }
+        <span class="sales-chat__prompt">Elige una opción:</span>
+        <div class="sales-chat__options">
+          <button type="button" (click)="responderChat('precios')">Ver precios</button>
+          <button type="button" (click)="responderChat('demo')">Probar demo</button>
+          <button type="button" (click)="responderChat('plan')">¿Qué plan necesito?</button>
+          <button type="button" (click)="responderChat('persona')">Hablar con una persona</button>
+        </div>
+      </div>
+      <footer>Sin bots de pago · Sin guardar tus datos</footer>
+    </section>
+    <button class="sales-chat__trigger" type="button" (click)="alternarChat()" [attr.aria-expanded]="chatAbierto" aria-label="Abrir asistente comercial">
+      <span class="sales-chat__bubble">{{ chatAbierto ? '×' : '✦' }}</span>
+      <span class="sales-chat__label">¿Te ayudo a elegir?</span>
+    </button>
+  </aside>
 </div>
