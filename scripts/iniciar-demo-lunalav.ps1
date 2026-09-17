@@ -150,29 +150,15 @@ if (Test-Path -LiteralPath $publishDir) {
 & dotnet publish $apiProject -c Release -o $publishDir --nologo
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish falló." }
 
-Write-Host "[4/5] Iniciando demo aislada..." -ForegroundColor Cyan
-New-Item -ItemType Directory -Path $localState -Force | Out-Null
-$env:ASPNETCORE_ENVIRONMENT = "Production"
-$env:ASPNETCORE_URLS = "http://127.0.0.1:$Port"
-$env:ConnectionStrings__Sql = "Server=$SqlServer;Database=LunaLav;Trusted_Connection=True;TrustServerCertificate=True;"
-$env:Jwt__SecretKey = Get-OrCreateSecret "jwt-secret.txt" 64
-$env:SeedAdmin__Password = Get-OrCreateSecret "demo-admin.txt" 24
-$env:SeedAdmin__NombreNegocio = "Lavandería Demo LunaLav"
-$env:SeedAdmin__Slug = "demo"
-$env:SeedPropietario__Password = Get-OrCreateSecret "propietario.txt" 32
-$env:DataProtection__KeysPath = Join-Path $localState "keys"
-$env:Fotos__Directorio = Join-Path $localState "fotos"
-
-New-Item -ItemType Directory -Path $buildRoot -Force | Out-Null
-Remove-Item -LiteralPath $apiOut, $apiErr -Force -ErrorAction SilentlyContinue
-$apiDll = Join-Path $publishDir "Lavanderia.Api.dll"
-$process = Start-Process -FilePath "dotnet" -ArgumentList @($apiDll) -WorkingDirectory $publishDir `
-    -RedirectStandardOutput $apiOut -RedirectStandardError $apiErr -WindowStyle Hidden -PassThru
-Wait-Ready "http://127.0.0.1:$Port/health/ready"
+Write-Host "[4/5] Iniciando web, aplicación y demo..." -ForegroundColor Cyan
+$runtimeScript = Join-Path $root "scripts\iniciar-runtime-lunalav.ps1"
+& $runtimeScript -SqlServer $SqlServer -Ports @($Port, 5004)
+if ($LASTEXITCODE -ne 0) { throw "No se pudieron iniciar los servicios de LunaLav." }
 
 Write-Host "[5/5] Demo lista" -ForegroundColor Green
+Write-Host "Web:    http://127.0.0.1:$Port/"
+Write-Host "App:    http://127.0.0.1:5004/login"
 Write-Host "Local:  http://127.0.0.1:$Port/demo/login"
 Write-Host "Pública: https://demo.lunalav.pe/demo/login (cuando DNS esté activo)"
 Write-Host "Usuario: admin"
 Write-Host "Clave:   guardada localmente en $(Join-Path $localState 'demo-admin.txt')"
-Write-Host "PID:     $($process.Id)"

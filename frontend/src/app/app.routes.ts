@@ -13,6 +13,16 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent)
   },
   {
+    path: 'privacidad',
+    loadComponent: () => import('./pages/legal/legal.component').then(m => m.LegalComponent),
+    data: { tipo: 'privacidad' }
+  },
+  {
+    path: 'terminos',
+    loadComponent: () => import('./pages/legal/legal.component').then(m => m.LegalComponent),
+    data: { tipo: 'terminos' }
+  },
+  {
     path: 'plataforma',
     canActivate: [authGuard, rolGuard(['PROPIETARIO'])],
     children: [
