@@ -175,7 +175,19 @@ public class FacturacionElectronicaController : TenantAwareControllerBase
         if (pedido is null) return NotFound();
         if (pedido.Anulado) return Bad("No se puede emitir para un pedido anulado.");
         if (pedido.EstadoPago != "PAGADO") return Bad("El pedido debe estar pagado por completo.");
+        var esVisitanteDemo = User.HasClaim("visitanteDemo", "true");
         var config = await _repo.ObtenerConfigAsync(NegocioId, ct);
+        // La demo no tiene credenciales ni debe hablar con SUNAT. Aun así permite recorrer
+        // la emisión completa y devuelve un documento SIMULADO, sin validez tributaria.
+        if (esVisitanteDemo && (config is null || !config.Activo))
+        {
+            config = new ConfiguracionFacturacion
+            {
+                NegocioId = NegocioId, Activo = true, Proveedor = "SUNAT_DIRECTO",
+                Ambiente = "BETA", SerieBoleta = "B001", SerieFactura = "F001",
+                RazonSocial = "Lavandería Demo LunaLav"
+            };
+        }
         if (config is null || !config.Activo) return Bad("Configura y activa la facturacion electronica primero.");
         if (tipo == "FACTURA" && config.SoloBoletas)
             return Bad("Este negocio está en régimen RUS/NRUS: solo puede emitir Boletas. La Factura no está disponible.");
@@ -230,11 +242,19 @@ public class FacturacionElectronicaController : TenantAwareControllerBase
             Proveedor = provider.Codigo, Ambiente = config.Ambiente, RucEmisor = config.RucEmisor,
             RazonSocialEmisor = config.RazonSocial, DireccionFiscalEmisor = config.DireccionFiscal,
             UbigeoEmisor = config.Ubigeo, CodigoEstablecimientoEmisor = config.CodigoEstablecimiento,
-            IgvPorcentaje = igvPct, Detalles = detalles
+            IgvPorcentaje = igvPct, EsSimulado = esVisitanteDemo, Detalles = detalles
         };
         var reservado = await _repo.CrearPendienteAtomicoAsync(c, detalles, ct);
         if (!reservado.Creado)
             return Conflict(new { mensaje = $"El pedido ya tiene {reservado.Comprobante.Serie}-{reservado.Comprobante.Correlativo:D8}." });
+
+        if (esVisitanteDemo)
+        {
+            await _repo.ActualizarResultadoCompletoAsync(c.Id, c.SedeId, "SIMULADO", "0",
+                "Comprobante de demostración. No fue enviado a SUNAT y no tiene validez tributaria.",
+                null, null, null, null, DateTime.Now, DateTime.Now, ct);
+            return Ok(Map((await CargarCompleto(c.Id, ct))!));
+        }
 
         var resultado = await EjecutarSeguro(() => provider.EmitirAsync(
             new SolicitudEmision(c, [], Credenciales(config), ConfigSnapshot(c)), ct), c.Id, "EMITIR", ct);

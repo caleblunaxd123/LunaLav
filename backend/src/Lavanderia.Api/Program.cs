@@ -430,10 +430,11 @@ app.Use(async (context, next) =>
     if (context.User.HasClaim("visitanteDemo", "true") && context.Request.Path.StartsWithSegments("/api"))
     {
         var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
+        var esLectura = HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method) || HttpMethods.IsOptions(context.Request.Method);
         var bloqueado = HttpMethods.IsDelete(context.Request.Method)
             || path.StartsWith("/api/configuracion") || path.StartsWith("/api/usuarios")
             || path.StartsWith("/api/sedes") || path.StartsWith("/api/permisos")
-            || path.StartsWith("/api/facturacion") || path.StartsWith("/api/pagos");
+            || (!esLectura && path.StartsWith("/api/facturacion")) || path.StartsWith("/api/pagos");
         if (bloqueado)
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;

@@ -3,6 +3,7 @@ import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Comprobante, FacturacionService, GuiaRemisionPayload, KpiComprobantesMes } from '../../core/services/facturacion.service';
+import { DemoPreviewService } from '../../core/services/demo-preview.service';
 import { ToastService } from '../../core/services/toast.service';
 import { fechaLocalIso } from '../../core/util/fecha-local';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
@@ -21,7 +22,9 @@ export class ComprobantesListComponent implements OnInit, OnDestroy {
   private readonly svc = inject(FacturacionService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly demoPreview = inject(DemoPreviewService);
   private poll?: Subscription;
+  readonly esDemoPublica = this.demoPreview.esDemoPublica();
 
   readonly comprobantes = signal<Comprobante[]>([]);
   readonly total = signal(0);
@@ -98,7 +101,7 @@ export class ComprobantesListComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.cargar();
-    this.cargarRespaldoInfo();
+    if (!this.esDemoPublica) this.cargarRespaldoInfo();
     this.svc.kpiMensual(6).subscribe({ next: k => this.kpi.set(k), error: () => {} });
     this.poll = interval(15_000).subscribe(() => {
       const pendientes = this.comprobantes().filter(c => c.estado === 'PENDIENTE' && !c.esSimulado).slice(0, 5);

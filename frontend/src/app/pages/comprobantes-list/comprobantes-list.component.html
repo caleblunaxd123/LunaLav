@@ -1,9 +1,19 @@
 <div class="page">
   <app-page-header icono="note" color="azul" titulo="Comprobantes emitidos"
-    subtitulo="Boletas y facturas electrónicas emitidas ante SUNAT."
+    [subtitulo]="esDemoPublica ? 'Vista del plan Factura: documentos de prueba sin envío a SUNAT.' : 'Boletas y facturas electrónicas emitidas ante SUNAT.'"
     volverTexto="Pedidos" (volver)="volver()"></app-page-header>
 
+  @if (esDemoPublica) {
+    <section class="card respaldo-fe">
+      <div class="respaldo-fe__info">
+        <strong>Modo demostración · LunaLav Factura</strong>
+        <p>Estos comprobantes son ficticios. Puedes emitir una boleta de prueba desde un pedido pagado; nunca se enviará a SUNAT ni tendrá validez tributaria.</p>
+      </div>
+    </section>
+  }
+
   <!-- Respaldo local obligatorio (SUNAT): XML+CDR+PDF se guardan en disco al aceptar cada comprobante. -->
+  @if (!esDemoPublica) {
   <section class="card respaldo-fe">
     <div class="respaldo-fe__info">
       <strong>Respaldo local (SUNAT)</strong>
@@ -15,6 +25,7 @@
       {{ respaldando() ? 'Respaldando…' : 'Respaldar todos ahora' }}
     </button>
   </section>
+  }
 
   <section class="card filtros-fe">
     <input type="search" placeholder="Comprobante, pedido, cliente o documento" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" (keyup.enter)="aplicarFiltros()" />
@@ -27,7 +38,7 @@
   </section>
 
   <!-- KPI mensual de boletas y facturas -->
-  @if (mesActual(); as m) {
+  @if (!esDemoPublica && mesActual(); as m) {
     <section class="kpi-comprobantes card">
       <div class="kpi-comprobantes__head">
         <h3>Boletas y facturas · {{ nombreMes(m.mes) }} {{ m.anio }}</h3>
