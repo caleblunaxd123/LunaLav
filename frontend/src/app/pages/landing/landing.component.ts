@@ -47,7 +47,7 @@ export class LandingComponent {
       persona: {
         texto: 'Cuéntanos cómo trabaja tu lavandería y te orientaremos sin compromiso.',
         accion: 'Escribir a LunaLav',
-        url: 'mailto:hola@lunalav.pe?subject=Quiero conversar sobre LunaLav'
+        url: 'mailto:contacto@lunalav.pe?subject=Quiero conversar sobre LunaLav'
       }
     }[tema];
 
