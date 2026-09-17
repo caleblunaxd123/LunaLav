@@ -30,7 +30,8 @@
       <h1>Bienvenido a {{ nombre.trim() }}.</h1>
       <p class="summary">Explorarás <strong>LunaLav {{ plan() === 'BASICO' ? 'Básico' : plan() === 'FACTURA' ? 'Factura' : 'Multisede' }}</strong>: {{ textoPlan() }}</p>
       <div class="notice"><strong>Importante:</strong> estás entrando a una demo compartida con datos ficticios. No emite comprobantes reales, no envía WhatsApp ni registra pagos reales.</div>
-      <div class="actions"><button type="button" class="secondary" (click)="anterior()">Cambiar plan</button><button type="button" class="primary" (click)="entrar()">Entrar a la demo</button></div>
+      @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+      <div class="actions"><button type="button" class="secondary" (click)="anterior()" [disabled]="entrando()">Cambiar plan</button><button type="button" class="primary" (click)="entrar()" [disabled]="entrando()">{{ entrando() ? 'Abriendo demo…' : 'Entrar a la demo' }}</button></div>
     }
     <a class="contact" href="mailto:contacto@lunalav.pe?subject=Quiero mi espacio LunaLav">Prefiero que configuren mi espacio real</a>
   </section>

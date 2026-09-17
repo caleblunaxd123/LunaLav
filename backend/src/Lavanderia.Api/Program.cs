@@ -391,6 +391,18 @@ app.UseStaticFiles();
 app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
+app.Use(async (context, next) =>
+{
+    if (context.User.HasClaim("visitanteDemo", "true") && context.Request.Path.StartsWithSegments("/api") &&
+        !HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method) && !HttpMethods.IsOptions(context.Request.Method))
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new { mensaje = "La demo es de solo lectura. Solicita tu prueba gratuita para registrar datos propios." });
+        return;
+    }
+    await next();
+});
 app.UseAuthorization();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "ok", componente = "api" }))

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 import { DemoPlan, DemoPreviewService } from '../../core/services/demo-preview.service';
 
 @Component({
@@ -12,11 +13,14 @@ import { DemoPlan, DemoPreviewService } from '../../core/services/demo-preview.s
 })
 export class DemoBienvenidaComponent {
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
   private readonly preview = inject(DemoPreviewService);
   paso = signal(1);
   nombre = this.preview.perfil()?.nombre ?? '';
   plan = signal<DemoPlan>(this.preview.perfil()?.plan ?? 'BASICO');
   logoUrl = signal<string | undefined>(this.preview.perfil()?.logoUrl);
+  entrando = signal(false);
+  error = signal<string | null>(null);
 
   siguiente(): void {
     if (this.paso() === 1 && !this.nombre.trim()) return;
@@ -36,7 +40,12 @@ export class DemoBienvenidaComponent {
 
   entrar(): void {
     this.preview.guardar({ nombre: this.nombre, plan: this.plan(), logoUrl: this.logoUrl() });
-    this.router.navigate(['/login']);
+    this.entrando.set(true);
+    this.error.set(null);
+    this.auth.accederDemo().subscribe({
+      next: () => this.router.navigate(['/inicio']),
+      error: () => { this.entrando.set(false); this.error.set('No pudimos abrir la demo. Intenta nuevamente en unos segundos.'); }
+    });
   }
 
   textoPlan(): string {

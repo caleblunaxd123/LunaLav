@@ -37,6 +37,13 @@ export class AuthService {
     );
   }
 
+  /** Sesión pública efímera para la demo: no usa ni revela contraseñas. */
+  accederDemo() {
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/demo-acceso`, {}).pipe(
+      tap(res => this.guardar(res))
+    );
+  }
+
   /** Cambia la sede activa de la sesión (re-emite el JWT con el nuevo SedeId). */
   cambiarSede(sedeId: number) {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/seleccionar-sede`, {

@@ -13,12 +13,14 @@ namespace Lavanderia.Api.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    private static readonly string[] ModulosVisitanteDemo = ["INICIO", "PEDIDOS", "CLIENTES", "REPORTES", "INVENTARIO"];
     private readonly IUsuarioRepository _usuarios;
     private readonly IRolPermisoRepository _permisos;
     private readonly ISedeRepository _sedes;
     private readonly INegocioRepository _negocios;
     private readonly ITokenService _tokens;
     private readonly IRefreshTokenRepository _refreshTokens;
+    private readonly IConfiguration _config;
     private readonly int _refreshTokenDias;
     private readonly string _celularPlataforma;
 
@@ -34,6 +36,7 @@ public class AuthController : ControllerBase
         _tokens = tokens;
         _refreshTokens = refreshTokens;
         _refreshTokenDias = jwtOpts.Value.RefreshTokenDays;
+        _config = config;
         _celularPlataforma = config["Plataforma:CelularContacto"] ?? "";
     }
 
@@ -103,6 +106,30 @@ public class AuthController : ControllerBase
             new UsuarioDto(usuario.Id, usuario.UsuarioLogin, usuario.NombreCompleto, usuario.RolCodigo, modulos,
                 usuario.NegocioId, usuario.SedeId, usuario.SedeNombre)
         ));
+    }
+
+    /// <summary>Acceso efímero de solo lectura a la demostración pública; no crea cuentas.</summary>
+    [HttpPost("demo-acceso")]
+    [AllowAnonymous]
+    [EnableRateLimiting("login")]
+    public async Task<ActionResult<LoginResponse>> AccesoDemo(CancellationToken ct)
+    {
+        var slug = _config.GetValue<string>("SeedAdmin:Slug") ?? "demo";
+        var loginAdmin = _config.GetValue<string>("SeedAdmin:Usuario") ?? "admin";
+        var negocio = await _negocios.ObtenerPorSlugIncluyendoInactivoAsync(slug, ct);
+        var admin = negocio is null ? null : await _usuarios.BuscarPorUsuarioAsync(loginAdmin, negocio.Id, ct);
+        if (negocio is null || admin is null || !admin.Activo || !NegocioAccessRules.PuedeOperar(negocio))
+            return NotFound(new { mensaje = "La demostración no está disponible en este momento." });
+
+        var visitante = new Usuario
+        {
+            Id = admin.Id, UsuarioLogin = "visitante-demo", NombreCompleto = "Visitante demo", RolCodigo = "DEMO",
+            NegocioId = negocio.Id, SedeId = admin.SedeId, SedeNombre = admin.SedeNombre
+        };
+        var (token, expira) = _tokens.GenerarAccessToken(visitante, ModulosVisitanteDemo, visitanteDemo: true);
+        return Ok(new LoginResponse(token, expira, "", new UsuarioDto(
+            visitante.Id, visitante.UsuarioLogin, visitante.NombreCompleto, visitante.RolCodigo,
+            ModulosVisitanteDemo.ToList(), visitante.NegocioId, visitante.SedeId, visitante.SedeNombre)));
     }
 
     /// <summary>
