@@ -289,6 +289,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private readonly tour = inject(TourService);
   iniciarTour() { this.tour.iniciar(TOURS['inicio']); }
+  private readonly claveTourDemoVisto = 'lunalav.demo.tour.inicio.v1';
+
+  /**
+   * La demo pública no tiene una cuenta propia por visitante. Guardamos este estado en el
+   * navegador para que la bienvenida aparezca al primer ingreso, pero nunca interrumpa
+   * cada regreso al dashboard. El botón "Ver tutorial" siempre permite repetirla.
+   */
+  private debeMostrarTourDemo(): boolean {
+    try {
+      return localStorage.getItem(this.claveTourDemoVisto) !== '1';
+    } catch {
+      // Si el navegador bloquea el almacenamiento, priorizamos mostrar la ayuda.
+      return true;
+    }
+  }
+
+  private marcarTourDemoVisto() {
+    try { localStorage.setItem(this.claveTourDemoVisto, '1'); } catch { /* almacenamiento no disponible */ }
+  }
 
   readonly saludo = computed(() => {
     const hora = new Date().getHours();
@@ -321,8 +340,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.cargar();
     this.cargarOnboarding();
-    // Un visitante de la demo no conoce el sistema: el recorrido inicia solo al entrar.
-    if (this.usuario()?.rol === 'DEMO') queueMicrotask(() => this.iniciarTour());
+    // Un visitante ve la bienvenida solo la primera vez en este navegador.
+    if (this.usuario()?.rol === 'DEMO' && this.debeMostrarTourDemo()) {
+      this.marcarTourDemoVisto();
+      queueMicrotask(() => this.iniciarTour());
+    }
     if (this.tieneModulo('CLIENTES')) {
       this.clientesSvc.cumpleanosProximos(7).subscribe({
         next: cs => this.cumpleanos.set(
