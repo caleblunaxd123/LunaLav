@@ -30,7 +30,7 @@ export class LandingComponent {
   responderChat(tema: 'precios' | 'demo' | 'plan' | 'persona'): void {
     const respuestas = {
       precios: {
-        texto: 'Los planes empiezan en S/79 al mes. Todos incluyen pedidos, clientes, caja y acompañamiento inicial.',
+        texto: 'LunaLav Básico cuesta S/20 al mes. Si necesitas emitir comprobantes electrónicos, LunaLav Factura cuesta S/50 al mes.',
         accion: 'Ver planes',
         url: '#precios'
       },
@@ -40,7 +40,7 @@ export class LandingComponent {
         url: this.demoUrl
       },
       plan: {
-        texto: 'Para una sede recomendamos Esencial si estás comenzando y Negocio si necesitas inventario, delivery y reportes avanzados.',
+        texto: 'Elige Básico para administrar pedidos y caja. Elige LunaLav Factura si también necesitas emitir boletas y facturas electrónicas.',
         accion: 'Comparar planes',
         url: '#precios'
       },
