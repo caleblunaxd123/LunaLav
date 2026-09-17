@@ -13,7 +13,9 @@ namespace Lavanderia.Api.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private static readonly string[] ModulosVisitanteDemo = ["INICIO", "PEDIDOS", "CLIENTES", "REPORTES", "INVENTARIO"];
+    // La demo permite recorrer el flujo operativo completo con datos ficticios.
+    // Los ajustes de negocio/usuarios y la facturación real se bloquean en middleware.
+    private static readonly string[] ModulosVisitanteDemo = ["INICIO", "PEDIDOS", "REGISTRAR", "CAJA", "CLIENTES", "PROMOCIONES", "REPORTES", "INVENTARIO"];
     private readonly IUsuarioRepository _usuarios;
     private readonly IRolPermisoRepository _permisos;
     private readonly ISedeRepository _sedes;

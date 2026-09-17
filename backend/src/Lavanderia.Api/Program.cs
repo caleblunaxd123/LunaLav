@@ -319,6 +319,40 @@ foreach (var configuredProxy in builder.Configuration.GetSection("ReverseProxy:K
 }
 app.UseForwardedHeaders(forwardedHeaders);
 
+var rutasOperativasDemo = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+{
+    "inicio", "pedidos", "registrar", "clientes", "cuadre-caja", "promociones",
+    "reportes", "inventario", "facturacion", "ajustes", "seleccionar-sede"
+};
+
+// Evita que enlaces antiguos, pestañas móviles o rutas sin el slug lleven al login genérico.
+// La entrada pública del host demo conserva siempre el tenant /demo y su asistente guiado.
+app.Use(async (context, next) =>
+{
+    if (!string.Equals(context.Request.Host.Host, "demo.lunalav.pe", StringComparison.OrdinalIgnoreCase))
+    {
+        await next();
+        return;
+    }
+
+    var path = context.Request.Path.Value ?? "/";
+    if (path == "/" || path.Equals("/login", StringComparison.OrdinalIgnoreCase) ||
+        path.Equals("/demo/login", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.Redirect("/demo", permanent: false);
+        return;
+    }
+
+    var primerSegmento = path.Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+    if (primerSegmento is not null && rutasOperativasDemo.Contains(primerSegmento))
+    {
+        context.Response.Redirect($"/demo{path}{context.Request.QueryString}", permanent: false);
+        return;
+    }
+
+    await next();
+});
+
 if (app.Environment.IsProduction()) app.UseHsts();
 
 app.Use(async (context, next) =>
@@ -393,13 +427,20 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.Use(async (context, next) =>
 {
-    if (context.User.HasClaim("visitanteDemo", "true") && context.Request.Path.StartsWithSegments("/api") &&
-        !HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method) && !HttpMethods.IsOptions(context.Request.Method))
+    if (context.User.HasClaim("visitanteDemo", "true") && context.Request.Path.StartsWithSegments("/api"))
     {
-        context.Response.StatusCode = StatusCodes.Status403Forbidden;
-        context.Response.ContentType = "application/json";
-        await context.Response.WriteAsJsonAsync(new { mensaje = "La demo es de solo lectura. Solicita tu prueba gratuita para registrar datos propios." });
-        return;
+        var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
+        var bloqueado = HttpMethods.IsDelete(context.Request.Method)
+            || path.StartsWith("/api/configuracion") || path.StartsWith("/api/usuarios")
+            || path.StartsWith("/api/sedes") || path.StartsWith("/api/permisos")
+            || path.StartsWith("/api/facturacion") || path.StartsWith("/api/pagos");
+        if (bloqueado)
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new { mensaje = "Esta acción está protegida en la demo. En tu prueba personalizada tendrás un espacio propio." });
+            return;
+        }
     }
     await next();
 });
