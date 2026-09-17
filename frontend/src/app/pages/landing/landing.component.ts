@@ -1,14 +1,19 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { DemoPreviewService } from '../../core/services/demo-preview.service';
+import { DemoBienvenidaComponent } from '../demo-bienvenida/demo-bienvenida.component';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
+  imports: [DemoBienvenidaComponent],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss'
 })
 export class LandingComponent {
+  private readonly demo = inject(DemoPreviewService);
   readonly anio = new Date().getFullYear();
-  readonly demoUrl = 'https://demo.lunalav.pe/demo/login';
+  readonly demoUrl = 'https://demo.lunalav.pe/demo';
+  readonly esDemo = this.demo.esDemoPublica();
   menuAbierto = false;
   chatAbierto = false;
   chatRespuesta = '¡Hola! Soy el asistente de LunaLav. ¿Qué te gustaría conocer?';

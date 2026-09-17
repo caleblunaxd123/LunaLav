@@ -1,0 +1,37 @@
+<main class="demo-welcome">
+  <section class="demo-welcome__card">
+    <div class="demo-welcome__brand"><img src="lunalav-logo-color.svg" alt="LunaLav" /></div>
+    <div class="demo-welcome__progress" aria-label="Progreso"><span [class.active]="paso() >= 1"></span><span [class.active]="paso() >= 2"></span><span [class.active]="paso() >= 3"></span></div>
+
+    @if (paso() === 1) {
+      <span class="eyebrow">Demo guiada · sin tarjeta</span>
+      <h1>Así podría verse <em>tu lavandería</em> con LunaLav.</h1>
+      <p>Personaliza esta vista de prueba. No crearemos una empresa real ni guardaremos esta información como cliente.</p>
+      <label>Nombre de tu lavandería<input [(ngModel)]="nombre" maxlength="80" placeholder="Ej.: Lavandería San José" autocomplete="organization" /></label>
+      <label>Logo <small>(opcional, solo para esta demo)</small><input type="file" accept="image/*" (change)="cargarLogo($event)" /></label>
+      @if (logoUrl()) { <img class="demo-welcome__logo-preview" [src]="logoUrl()" alt="Vista previa del logo" /> }
+      <button type="button" class="primary" (click)="siguiente()" [disabled]="!nombre.trim()">Continuar</button>
+    }
+
+    @if (paso() === 2) {
+      <span class="eyebrow">Paso 2 de 3</span>
+      <h1>¿Qué plan quieres explorar?</h1>
+      <p>La demo te mostrará claramente el alcance de cada alternativa antes de contratar.</p>
+      <div class="plans">
+        <button type="button" [class.selected]="plan() === 'BASICO'" (click)="elegirPlan('BASICO')"><strong>Básico <b>S/20</b></strong><span>1 sede · hasta 3 usuarios</span></button>
+        <button type="button" [class.selected]="plan() === 'FACTURA'" (click)="elegirPlan('FACTURA')"><strong>Factura <b>S/50</b></strong><span>1 sede · comprobantes demo</span></button>
+        <button type="button" [class.selected]="plan() === 'MULTISEDE'" (click)="elegirPlan('MULTISEDE')"><strong>Multisede <b>desde S/80</b></strong><span>2 sedes · visión consolidada</span></button>
+      </div>
+      <div class="actions"><button type="button" class="secondary" (click)="anterior()">Atrás</button><button type="button" class="primary" (click)="siguiente()">Ver mi demo</button></div>
+    }
+
+    @if (paso() === 3) {
+      <span class="eyebrow">Tu recorrido está listo</span>
+      <h1>Bienvenido a {{ nombre.trim() }}.</h1>
+      <p class="summary">Explorarás <strong>LunaLav {{ plan() === 'BASICO' ? 'Básico' : plan() === 'FACTURA' ? 'Factura' : 'Multisede' }}</strong>: {{ textoPlan() }}</p>
+      <div class="notice"><strong>Importante:</strong> estás entrando a una demo compartida con datos ficticios. No emite comprobantes reales, no envía WhatsApp ni registra pagos reales.</div>
+      <div class="actions"><button type="button" class="secondary" (click)="anterior()">Cambiar plan</button><button type="button" class="primary" (click)="entrar()">Entrar a la demo</button></div>
+    }
+    <a class="contact" href="mailto:contacto@lunalav.pe?subject=Quiero mi espacio LunaLav">Prefiero que configuren mi espacio real</a>
+  </section>
+</main>
