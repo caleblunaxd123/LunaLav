@@ -321,6 +321,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.cargar();
     this.cargarOnboarding();
+    // Un visitante de la demo no conoce el sistema: el recorrido inicia solo al entrar.
+    if (this.usuario()?.rol === 'DEMO') queueMicrotask(() => this.iniciarTour());
     if (this.tieneModulo('CLIENTES')) {
       this.clientesSvc.cumpleanosProximos(7).subscribe({
         next: cs => this.cumpleanos.set(

@@ -41,6 +41,10 @@ export const routes: Routes = [
       {
         path: 'ajustes',
         loadComponent: () => import('./pages/plataforma-ajustes/plataforma-ajustes.component').then(m => m.PlataformaAjustesComponent)
+      },
+      {
+        path: 'interesados',
+        loadComponent: () => import('./pages/plataforma-interesados/plataforma-interesados.component').then(m => m.PlataformaInteresadosComponent)
       }
     ]
   },

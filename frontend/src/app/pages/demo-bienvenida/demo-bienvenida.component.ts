@@ -3,6 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { InteresadosDemoService } from '../../core/services/interesados-demo.service';
 import { DemoPlan, DemoPreviewService } from '../../core/services/demo-preview.service';
 
 @Component({
@@ -14,6 +15,7 @@ import { DemoPlan, DemoPreviewService } from '../../core/services/demo-preview.s
 export class DemoBienvenidaComponent {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly interesados = inject(InteresadosDemoService);
   private readonly preview = inject(DemoPreviewService);
   paso = signal(1);
   nombre = this.preview.perfil()?.nombre ?? '';
@@ -21,6 +23,12 @@ export class DemoBienvenidaComponent {
   logoUrl = signal<string | undefined>(this.preview.perfil()?.logoUrl);
   entrando = signal(false);
   error = signal<string | null>(null);
+  mostrarSolicitud = signal(false);
+  celular = '';
+  email = '';
+  consentimiento = false;
+  enviandoSolicitud = signal(false);
+  solicitudExitosa = signal<string | null>(null);
 
   siguiente(): void {
     if (this.paso() === 1 && !this.nombre.trim()) return;
@@ -45,6 +53,15 @@ export class DemoBienvenidaComponent {
     this.auth.accederDemo().subscribe({
       next: () => this.router.navigate(['/inicio']),
       error: () => { this.entrando.set(false); this.error.set('No pudimos abrir la demo. Intenta nuevamente en unos segundos.'); }
+    });
+  }
+
+  solicitarPrueba(): void {
+    if (!this.nombre.trim() || !this.celular.trim() || !this.consentimiento) return;
+    this.enviandoSolicitud.set(true);
+    this.interesados.crear({ nombre: this.nombre, negocio: this.nombre, celular: this.celular, email: this.email || undefined, planInteres: this.plan(), consentimiento: true }).subscribe({
+      next: r => { this.solicitudExitosa.set(r.mensaje); this.enviandoSolicitud.set(false); },
+      error: () => { this.error.set('No pudimos registrar tu solicitud. Escríbenos a contacto@lunalav.pe.'); this.enviandoSolicitud.set(false); }
     });
   }
 

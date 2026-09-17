@@ -1,6 +1,7 @@
 using Lavanderia.Api.Domain;
 using Lavanderia.Api.Dtos;
 using Lavanderia.Api.Repositories;
+using Lavanderia.Api.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +17,20 @@ namespace Lavanderia.Api.Controllers;
 public class PlataformaController : ControllerBase
 {
     private readonly IConfiguracionPlataformaRepository _cfg;
-    public PlataformaController(IConfiguracionPlataformaRepository cfg) => _cfg = cfg;
+    private readonly ISqlConnectionFactory _db;
+    public PlataformaController(IConfiguracionPlataformaRepository cfg, ISqlConnectionFactory db) { _cfg = cfg; _db = db; }
+
+    [HttpGet("interesados")]
+    public async Task<ActionResult<List<InteresadoDemoDto>>> Interesados(CancellationToken ct)
+    {
+        var lista = new List<InteresadoDemoDto>();
+        await using var conn = _db.Create(); await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT TOP 200 Id,Nombre,Negocio,Celular,Email,PlanInteres,FechaCreacion FROM dbo.InteresadoDemo ORDER BY FechaCreacion DESC";
+        await using var rd = await cmd.ExecuteReaderAsync(ct);
+        while (await rd.ReadAsync(ct)) lista.Add(new(rd.GetInt32(0), rd.GetString(1), rd.GetString(2), rd.GetString(3), rd.IsDBNull(4) ? null : rd.GetString(4), rd.GetString(5), rd.GetDateTime(6)));
+        return Ok(lista);
+    }
 
     [HttpGet("configuracion")]
     public async Task<ActionResult<ConfiguracionPlataformaDto>> Obtener(CancellationToken ct)

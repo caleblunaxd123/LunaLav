@@ -32,6 +32,7 @@ export class PlataformaSidebarComponent {
     { label: 'Nueva empresa', path: '/plataforma/nueva', icono: 'plus' },
   ];
   readonly administracion: NavLink[] = [
+    { label: 'Interesados', path: '/plataforma/interesados', icono: 'users' },
     { label: 'Ajustes de plataforma', path: '/plataforma/ajustes', icono: 'settings' },
   ];
 

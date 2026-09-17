@@ -32,6 +32,17 @@
       <div class="notice"><strong>Importante:</strong> estás entrando a una demo compartida con datos ficticios. No emite comprobantes reales, no envía WhatsApp ni registra pagos reales.</div>
       @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
       <div class="actions"><button type="button" class="secondary" (click)="anterior()" [disabled]="entrando()">Cambiar plan</button><button type="button" class="primary" (click)="entrar()" [disabled]="entrando()">{{ entrando() ? 'Abriendo demo…' : 'Entrar a la demo' }}</button></div>
+      @if (!solicitudExitosa()) {
+        <button type="button" class="trial-link" (click)="mostrarSolicitud.set(!mostrarSolicitud())">Quiero mi prueba personalizada de 7 días</button>
+        @if (mostrarSolicitud()) {
+          <form class="trial-form" (ngSubmit)="solicitarPrueba()">
+            <label>WhatsApp<input [(ngModel)]="celular" name="celular" inputmode="tel" placeholder="999 999 999" required /></label>
+            <label>Correo <small>(opcional)</small><input [(ngModel)]="email" name="email" type="email" placeholder="tu@correo.com" /></label>
+            <label class="consent"><input [(ngModel)]="consentimiento" name="consentimiento" type="checkbox" required /> Autorizo a LunaLav a contactarme sobre mi prueba.</label>
+            <button class="primary" type="submit" [disabled]="!celular.trim() || !consentimiento || enviandoSolicitud()">{{ enviandoSolicitud() ? 'Enviando…' : 'Solicitar prueba' }}</button>
+          </form>
+        }
+      } @else { <p class="success">{{ solicitudExitosa() }}</p> }
     }
     <a class="contact" href="mailto:contacto@lunalav.pe?subject=Quiero mi espacio LunaLav">Prefiero que configuren mi espacio real</a>
   </section>

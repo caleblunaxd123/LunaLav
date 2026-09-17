@@ -18,6 +18,18 @@ public record SeleccionarSedeRequest([Required] int SedeId, string? RefreshToken
 
 public record RefreshTokenRequest([Required] string RefreshToken);
 
+// ---------- Interesados de la demo pública ----------
+public class CrearInteresadoDemoRequest
+{
+    [Required, StringLength(120, MinimumLength = 2)] public string Nombre { get; set; } = "";
+    [Required, StringLength(120, MinimumLength = 2)] public string Negocio { get; set; } = "";
+    [Required, StringLength(25, MinimumLength = 7)] public string Celular { get; set; } = "";
+    [EmailAddress, StringLength(150)] public string? Email { get; set; }
+    [Required, StringLength(20)] public string PlanInteres { get; set; } = "BASICO";
+    [Required] public bool Consentimiento { get; set; }
+}
+public record InteresadoDemoDto(int Id, string Nombre, string Negocio, string Celular, string? Email, string PlanInteres, DateTime FechaCreacion);
+
 // ---------- Sedes ----------
 public class SedeDto
 {

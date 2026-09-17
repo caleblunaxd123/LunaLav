@@ -1,0 +1,4 @@
+<app-page-header title="Interesados de la demo" subtitle="Solicitudes de prueba personalizada recibidas desde demo.lunalav.pe." />
+@if (cargando()) { <p class="state">Cargando interesados…</p> }
+@else if (!items().length) { <p class="state">Aún no hay solicitudes. La demo sigue disponible para explorar sin dejar datos.</p> }
+@else { <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Contacto</th><th>Plan</th></tr></thead><tbody>@for (i of items(); track i.id) { <tr><td>{{ fecha(i.fechaCreacion) }}</td><td><strong>{{ i.negocio }}</strong><br><small>{{ i.nombre }}</small></td><td><a [href]="'https://wa.me/51' + i.celular.replaceAll(' ', '')" target="_blank">{{ i.celular }}</a>@if(i.email){<br><a [href]="'mailto:' + i.email">{{ i.email }}</a>}</td><td><span>{{ i.planInteres }}</span></td></tr> }</tbody></table></div> }
