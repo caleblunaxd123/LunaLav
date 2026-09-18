@@ -92,7 +92,11 @@
 .pub-form label.chk input{accent-color:#168dea;width:16px;height:16px}
 .pv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .pv-head b{font-size:14px;color:#173c6a}
+.pv-head-btns{display:flex;gap:6px}
 .pv-head button{border:1px solid #cbe9ff;background:#fff;color:#178ae7;border-radius:8px;padding:7px 11px;font-size:11px;font-weight:800;cursor:pointer}
+.pv-head button.ia{border:0;background:linear-gradient(90deg,#7b5ce6,#a855f7);color:#fff}
+.pv-head button.ia:disabled{opacity:.7;cursor:default}
+.ia-msg{margin:0 0 8px;font-size:11px;color:#6b52c9;font-weight:700}
 .pub-preview textarea{width:100%;box-sizing:border-box;border:1px solid #dcebf7;border-radius:10px;padding:13px;font:inherit;font-size:13px;line-height:1.55;color:#2c4d70;resize:vertical;background:#f8fbff}
 .pub-preview textarea:focus{outline:0;border-color:#8cc7f5;box-shadow:0 0 0 3px #8cc7f533}
 .pv-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}

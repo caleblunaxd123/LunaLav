@@ -22,10 +22,11 @@
         <label class="chk"><input type="checkbox" [(ngModel)]="pub.emojis" name="pem" (ngModelChange)="generarPost()"> Incluir emojis</label>
       </form>
       <div class="pub-preview">
-        <div class="pv-head"><b>Vista previa</b><button type="button" (click)="generarPost()">↻ Regenerar</button></div>
+        <div class="pv-head"><b>Vista previa</b><div class="pv-head-btns"><button type="button" class="ia" (click)="generarIA()" [disabled]="iaLoading()">{{iaLoading()?'✨ Generando…':'✨ Generar con IA'}}</button><button type="button" (click)="generarPost()">↻ Plantilla</button></div></div>
+        @if(iaMsg()){<p class="ia-msg">{{iaMsg()}}</p>}
         <textarea [(ngModel)]="postText" name="ptext" rows="9" aria-label="Texto de la publicación"></textarea>
         <div class="pv-actions"><button type="button" class="primary" (click)="copiarPost()">{{copiado()?'✓ Copiado':'⧉ Copiar texto'}}</button><button type="button" class="save" (click)="guardarHistorial()">💾 Guardar</button><a class="share wa" [href]="waShare()" target="_blank" rel="noopener">WhatsApp</a><a class="share fb" [href]="fbShare()" target="_blank" rel="noopener">Facebook</a><a class="share tw" [href]="twShare()" target="_blank" rel="noopener">X</a></div>
-        <p class="pv-note">📸 Instagram no permite pre-cargar texto: pulsa "Copiar texto" y pégalo en tu publicación o historia. 🤖 Los textos se arman con plantillas inteligentes (sin costo); aún no usan un modelo de IA generativa.</p>
+        <p class="pv-note">📸 Instagram no permite pre-cargar texto: pulsa "Copiar texto" y pégalo en tu publicación o historia. 🤖 "Generar con IA" usa un modelo local (Ollama), gratis y sin costo por uso; "Plantilla" arma el texto al instante sin IA.</p>
       </div>
     </div>
     @if(historial().length){<section class="pub-hist"><div class="ph-head"><h2>Historial de publicaciones ({{historial().length}})</h2><small>Guardado en este navegador</small></div>@for(x of historial();track x.fecha){<article><div class="ph-txt"><p>{{x.texto}}</p><small>{{x.fecha|date:'dd MMM, HH:mm'}}</small></div><div class="ph-actions"><button (click)="usarHistorial(x)">Usar</button><button class="del" (click)="borrarHistorial($index)" title="Eliminar">✕</button></div></article>}</section>}

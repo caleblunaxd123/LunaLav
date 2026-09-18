@@ -139,6 +139,7 @@ builder.Services.AddTransient<SecretProtector>();
 builder.Services.AddHttpClient<GeocodificacionService>();
 builder.Services.AddHttpClient<GooglePlacesService>(client => client.Timeout = TimeSpan.FromSeconds(20));
 builder.Services.AddHttpClient<OpenStreetMapPlacesService>(client => client.Timeout = TimeSpan.FromSeconds(35));
+builder.Services.AddHttpClient<OllamaService>(client => client.Timeout = TimeSpan.FromSeconds(120));
 builder.Services.AddHttpClient<GmailOAuthService>(client => client.Timeout = TimeSpan.FromSeconds(20));
 // Proveedor de facturación electrónica seleccionable por configuración:
 //   SUNAT_DIRECTO (default) → firma local + SOAP de SUNAT.
