@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 
 namespace Lavanderia.Api.Services;
@@ -74,7 +75,7 @@ out center {max};";
                         continue;
                     }
                     if (!resp.IsSuccessStatusCode) break;
-                    return await resp.Content.ReadAsStringAsync(ct);
+                    return Encoding.UTF8.GetString(await resp.Content.ReadAsByteArrayAsync(ct));
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
@@ -99,7 +100,7 @@ out center {max};";
             using var resp = await http.SendAsync(req, ct);
             if (resp.IsSuccessStatusCode)
             {
-                using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(ct));
+                using var doc = JsonDocument.Parse(Encoding.UTF8.GetString(await resp.Content.ReadAsByteArrayAsync(ct)));
                 foreach (var first in doc.RootElement.EnumerateArray())
                 {
                     if (first.TryGetProperty("lat", out var la) && first.TryGetProperty("lon", out var lo)
