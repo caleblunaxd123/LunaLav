@@ -22,6 +22,7 @@ export const routes: Routes = [
       { path: 'calendario', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'calendario'} },
       { path: 'reportes', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'reportes'} },
       { path: 'agentes', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'agentes'} },
+      { path: 'aprobaciones', loadComponent: () => import('./marketing/marketing-approvals.component').then(m => m.MarketingApprovalsComponent) },
       { path: 'configuracion', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'configuracion'} }
     ]
   },

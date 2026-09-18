@@ -5,4 +5,6 @@ export interface Prospect { id:number; nombreComercial:string; distrito?:string;
   campaigns(){return this.http.get<any[]>(`${this.url}/campaigns`);} createCampaign(body:any){return this.http.post(`${this.url}/campaigns`,body);} campaignStatus(id:number,estado:string){return this.http.patch(`${this.url}/campaigns/${id}/status`,{estado});}
   drafts(){return this.http.get<any[]>(`${this.url}/drafts`);} createDraft(body:any){return this.http.post(`${this.url}/drafts`,body);} draftStatus(id:number,estado:string){return this.http.patch(`${this.url}/drafts/${id}/status`,{estado});}
   agentSettings(){return this.http.get<any>(`${this.url}/agent-settings`);} saveAgentSettings(body:any){return this.http.put(`${this.url}/agent-settings`,body);}
+  automationRules(){return this.http.get<any[]>(`${this.url}/automation/rules`);} setAutomationRule(id:number,activa:boolean){return this.http.patch(`${this.url}/automation/rules/${id}`,activa);}
+  approvals(){return this.http.get<any[]>(`${this.url}/automation/approvals`);} decideApproval(id:number,estado:'APPROVED'|'REJECTED'){return this.http.patch(`${this.url}/automation/approvals/${id}`,{estado});} runAutomation(type:string){return this.http.post(`${this.url}/automation/jobs/${type}`,{});}
 }
