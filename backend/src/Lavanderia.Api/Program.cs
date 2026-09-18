@@ -339,6 +339,18 @@ var rutasOperativasDemo = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 // La entrada pública del host demo conserva siempre el tenant /demo y su asistente guiado.
 app.Use(async (context, next) =>
 {
+    // El subdominio comercial es una aplicación privada: su entrada nunca debe caer en la
+    // landing pública ni requerir que el equipo conozca la ruta interna /marketing.
+    if (string.Equals(context.Request.Host.Host, "marketing.lunalav.pe", StringComparison.OrdinalIgnoreCase))
+    {
+        var marketingPath = context.Request.Path.Value ?? "/";
+        if (marketingPath == "/" || marketingPath.Equals("/login", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Response.Redirect("/marketing/login", permanent: false);
+            return;
+        }
+    }
+
     if (!string.Equals(context.Request.Host.Host, "demo.lunalav.pe", StringComparison.OrdinalIgnoreCase))
     {
         await next();
