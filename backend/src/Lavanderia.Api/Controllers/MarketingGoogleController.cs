@@ -24,7 +24,7 @@ public class MarketingGoogleController(GooglePlacesService places, GmailOAuthSer
     { if(string.IsNullOrWhiteSpace(threadId))return BadRequest(new{mensaje="Falta el hilo."}); try{return Ok(await gmail.ThreadMessagesAsync(threadId.Trim(),ct));}catch(InvalidOperationException e){return StatusCode(503,new{mensaje=e.Message});} }
     [HttpPost("gmail/send")]
     public async Task<IActionResult> Send([FromBody] GmailSendRequest r,CancellationToken ct)
-    { try{ var (id,threadId)=await gmail.SendAsync(r.To,r.Subject,r.Body,null,null,null,ct); return Ok(new{id,threadId,enviado=true}); }catch(InvalidOperationException e){return StatusCode(503,new{mensaje=e.Message});} }
+    { try{ var (id,threadId)=await gmail.SendAsync(r.To,r.Subject,r.Body,null,null,null,r.Attachments,ct); return Ok(new{id,threadId,enviado=true}); }catch(InvalidOperationException e){return StatusCode(503,new{mensaje=e.Message});} }
     [HttpPost("gmail/reply")]
     public async Task<IActionResult> Reply([FromBody] GmailReplyRequest r,CancellationToken ct)
     { if(string.IsNullOrWhiteSpace(r.ThreadId))return BadRequest(new{mensaje="Falta el hilo."}); try{ var (id,threadId)=await gmail.ReplyAsync(r.ThreadId.Trim(),r.Body,ct); return Ok(new{id,threadId,enviado=true}); }catch(InvalidOperationException e){return StatusCode(503,new{mensaje=e.Message});} }
@@ -41,7 +41,7 @@ public class MarketingGoogleController(GooglePlacesService places, GmailOAuthSer
     }
 }
 
-public record GmailSendRequest(string To, string? Subject, string Body);
+public record GmailSendRequest(string To, string? Subject, string Body, List<GmailAttachment>? Attachments = null);
 public record GmailReplyRequest(string ThreadId, string Body);
 
 [ApiController, Route("api/marketing/google/gmail")]

@@ -9,6 +9,8 @@ using Lavanderia.Api.Services.Facturacion;
 
 namespace Lavanderia.Api.Services;
 
+public record GmailAttachment(string? Filename, string? MimeType, string? Base64Content);
+
 public sealed class GmailOAuthService(HttpClient http, IConfiguration config, ISqlConnectionFactory db, SecretProtector secrets)
 {
     private string? ClientId => config["Gmail:ClientId"];
@@ -93,7 +95,7 @@ IF @@ROWCOUNT=0 INSERT(Address,Provider,Status,DisplayName,EncryptedCredentials,
     { await using var c=db.Create();await c.OpenAsync(ct);await using var q=c.CreateCommand();q.CommandText="SELECT TOP 100 t.GmailThreadId,t.ProspectId,p.NombreComercial,t.ContactEmail,t.ContactName,t.Subject,t.LastSnippet,t.LastMessageAt,t.IsUnread,(SELECT TOP 1 m.Direction FROM communication.EmailMessage m WHERE m.GmailThreadId=t.GmailThreadId ORDER BY m.ReceivedAt DESC) LastDirection FROM communication.EmailThread t LEFT JOIN marketing.Prospect p ON p.Id=t.ProspectId ORDER BY t.LastMessageAt DESC";await using var r=await q.ExecuteReaderAsync(ct);var x=new List<object>();while(await r.ReadAsync(ct))x.Add(new{threadId=r.GetString(0),prospectId=r.IsDBNull(1)?(long?)null:r.GetInt64(1),prospect=r.IsDBNull(2)?null:r.GetString(2),email=r.IsDBNull(3)?null:r.GetString(3),name=r.IsDBNull(4)?null:r.GetString(4),subject=r.GetString(5),snippet=r.IsDBNull(6)?null:r.GetString(6),date=r.GetDateTime(7),unread=r.GetBoolean(8),lastDirection=r.IsDBNull(9)?"INBOUND":r.GetString(9)});return x; }
     private async Task<string> AccessTokenAsync(CancellationToken ct)
     { await using var c=db.Create();await c.OpenAsync(ct);await using var q=c.CreateCommand();q.CommandText="SELECT TOP 1 EncryptedCredentials FROM communication.Mailbox WHERE Provider=N'GMAIL' AND Status=N'CONNECTED' ORDER BY Id DESC";var enc=await q.ExecuteScalarAsync(ct) as string; if(string.IsNullOrWhiteSpace(enc)) throw new InvalidOperationException("No hay una cuenta Gmail conectada.");using var stored=JsonDocument.Parse(secrets.Desproteger(enc));var refresh=stored.RootElement.GetProperty("refreshToken").GetString();using var form=new FormUrlEncodedContent(new Dictionary<string,string>{{"client_id",ClientId!},{"client_secret",ClientSecret!},{"refresh_token",refresh!},{"grant_type","refresh_token"}});using var response=await http.PostAsync("https://oauth2.googleapis.com/token",form,ct);if(!response.IsSuccessStatusCode)throw new InvalidOperationException("Google rechazó el acceso. Reconecta Gmail.");using var token=JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));return token.RootElement.GetProperty("access_token").GetString()!; }
-    public async Task<(string id, string threadId)> SendAsync(string to, string? subject, string body, string? threadId, string? inReplyTo, string? references, CancellationToken ct)
+    public async Task<(string id, string threadId)> SendAsync(string to, string? subject, string body, string? threadId, string? inReplyTo, string? references, IReadOnlyList<GmailAttachment>? attachments, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(to)) throw new InvalidOperationException("Falta el destinatario.");
         if (string.IsNullOrWhiteSpace(body)) throw new InvalidOperationException("El mensaje está vacío.");
@@ -105,9 +107,34 @@ IF @@ROWCOUNT=0 INSERT(Address,Provider,Status,DisplayName,EncryptedCredentials,
         sb.Append("To: ").Append(to.Trim()).Append("\r\n");
         sb.Append("Subject: ").Append(EncodeHeader(subj)).Append("\r\n");
         if (!string.IsNullOrWhiteSpace(inReplyTo)) { sb.Append("In-Reply-To: ").Append(inReplyTo).Append("\r\n"); sb.Append("References: ").Append(string.IsNullOrWhiteSpace(references) ? inReplyTo : references).Append("\r\n"); }
-        sb.Append("MIME-Version: 1.0\r\n").Append("Content-Type: text/plain; charset=\"UTF-8\"\r\n").Append("Content-Transfer-Encoding: base64\r\n\r\n");
-        sb.Append(Convert.ToBase64String(Encoding.UTF8.GetBytes(body)));
-        object payload = string.IsNullOrWhiteSpace(threadId) ? new { raw = Base64Url(Encoding.UTF8.GetBytes(sb.ToString())) } : new { raw = Base64Url(Encoding.UTF8.GetBytes(sb.ToString())), threadId };
+        sb.Append("MIME-Version: 1.0\r\n");
+        var adjuntos = attachments?.Where(a => !string.IsNullOrWhiteSpace(a.Base64Content)).ToList() ?? [];
+        if (adjuntos.Count > 0)
+        {
+            var boundary = "lunalav_" + Guid.NewGuid().ToString("N");
+            sb.Append("Content-Type: multipart/mixed; boundary=\"").Append(boundary).Append("\"\r\n\r\n");
+            sb.Append("--").Append(boundary).Append("\r\n");
+            sb.Append("Content-Type: text/plain; charset=\"UTF-8\"\r\nContent-Transfer-Encoding: base64\r\n\r\n");
+            sb.Append(Convert.ToBase64String(Encoding.UTF8.GetBytes(body))).Append("\r\n");
+            foreach (var a in adjuntos)
+            {
+                var fn = string.IsNullOrWhiteSpace(a.Filename) ? "archivo" : a.Filename;
+                var mt = string.IsNullOrWhiteSpace(a.MimeType) ? "application/octet-stream" : a.MimeType;
+                sb.Append("--").Append(boundary).Append("\r\n");
+                sb.Append("Content-Type: ").Append(mt).Append("; name=\"").Append(fn).Append("\"\r\n");
+                sb.Append("Content-Disposition: attachment; filename=\"").Append(fn).Append("\"\r\n");
+                sb.Append("Content-Transfer-Encoding: base64\r\n\r\n");
+                sb.Append(a.Base64Content).Append("\r\n");
+            }
+            sb.Append("--").Append(boundary).Append("--");
+        }
+        else
+        {
+            sb.Append("Content-Type: text/plain; charset=\"UTF-8\"\r\nContent-Transfer-Encoding: base64\r\n\r\n");
+            sb.Append(Convert.ToBase64String(Encoding.UTF8.GetBytes(body)));
+        }
+        var rawStr = Base64Url(Encoding.UTF8.GetBytes(sb.ToString()));
+        object payload = string.IsNullOrWhiteSpace(threadId) ? new { raw = rawStr } : new { raw = rawStr, threadId };
         using var req = new HttpRequestMessage(HttpMethod.Post, "https://gmail.googleapis.com/gmail/v1/users/me/messages/send");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         req.Content = JsonContent.Create(payload);
@@ -117,7 +144,8 @@ IF @@ROWCOUNT=0 INSERT(Address,Provider,Status,DisplayName,EncryptedCredentials,
         using var doc = JsonDocument.Parse(respBody);
         var id = doc.RootElement.GetProperty("id").GetString()!;
         var tid = doc.RootElement.TryGetProperty("threadId", out var t) ? t.GetString()! : (threadId ?? id);
-        await SaveMessageAsync(id, tid, "OUTBOUND", from, to.Trim(), subj, body.Length > 300 ? body[..300] : body, DateTime.UtcNow, false, ct);
+        var resumen = adjuntos.Count > 0 ? $"{body} [{adjuntos.Count} adjunto(s)]" : body;
+        await SaveMessageAsync(id, tid, "OUTBOUND", from, to.Trim(), subj, resumen.Length > 300 ? resumen[..300] : resumen, DateTime.UtcNow, false, ct);
         return (id, tid);
     }
 
@@ -140,7 +168,7 @@ IF @@ROWCOUNT=0 INSERT(Address,Provider,Status,DisplayName,EncryptedCredentials,
         if (string.IsNullOrWhiteSpace(to)) throw new InvalidOperationException("No se encontró a quién responder en la conversación.");
         var subj = subject ?? "(sin asunto)";
         if (!subj.TrimStart().StartsWith("Re:", StringComparison.OrdinalIgnoreCase)) subj = "Re: " + subj;
-        return await SendAsync(to!, subj, body, threadId, msgId, msgId, ct);
+        return await SendAsync(to!, subj, body, threadId, msgId, msgId, null, ct);
     }
 
     public async Task<IReadOnlyList<object>> ThreadMessagesAsync(string threadId, CancellationToken ct)

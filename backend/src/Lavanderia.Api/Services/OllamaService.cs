@@ -14,10 +14,17 @@ public sealed class OllamaService(HttpClient http, IConfiguration config)
     private static readonly HashSet<string> Permitidos = new(StringComparer.OrdinalIgnoreCase)
     { "qwen3:8b", "llama3.2:latest", "llama3.1:8b", "gemma4:latest", "qwen2.5-coder:14b" };
 
-    public async Task<string> GenerarPublicacionAsync(PublicacionPrompt p, CancellationToken ct)
+    public Task<string> GenerarPublicacionAsync(PublicacionPrompt p, CancellationToken ct)
+        => GenerateRawAsync(ModeloValido(p.Modelo), ConstruirPrompt(p), ct);
+
+    public Task<string> GenerarRespuestaAsync(string contexto, string? instruccion, string? modelo, CancellationToken ct)
+        => GenerateRawAsync(ModeloValido(modelo), ConstruirRespuesta(contexto ?? "", instruccion), ct);
+
+    private string ModeloValido(string? m) => !string.IsNullOrWhiteSpace(m) && Permitidos.Contains(m!) ? m! : _model;
+
+    private async Task<string> GenerateRawAsync(string model, string prompt, CancellationToken ct)
     {
-        var model = !string.IsNullOrWhiteSpace(p.Modelo) && Permitidos.Contains(p.Modelo!) ? p.Modelo! : _model;
-        var body = new { model, prompt = ConstruirPrompt(p), stream = false, think = false, options = new { temperature = 0.85 } };
+        var body = new { model, prompt, stream = false, think = false, options = new { temperature = 0.8 } };
         HttpResponseMessage resp;
         try { resp = await http.PostAsJsonAsync($"{_base}/api/generate", body, ct); }
         catch (Exception e) when (e is not OperationCanceledException) { throw new InvalidOperationException("No se pudo contactar a Ollama. Verifica que el servicio esté corriendo."); }
@@ -27,6 +34,16 @@ public sealed class OllamaService(HttpClient http, IConfiguration config)
         var texto = json.TryGetProperty("response", out var r) ? r.GetString() : null;
         if (string.IsNullOrWhiteSpace(texto)) throw new InvalidOperationException("El modelo no devolvió texto.");
         return Limpiar(texto);
+    }
+
+    private static string ConstruirRespuesta(string contexto, string? instruccion)
+    {
+        var extra = string.IsNullOrWhiteSpace(instruccion) ? "" : $" Instrucción adicional: {instruccion}.";
+        var ctx = contexto.Length > 1500 ? contexto[..1500] : contexto;
+        return "Eres del equipo de ventas de LunaLav, un SISTEMA DE GESTIÓN (software) para lavanderías (no una lavandería). "
+             + "Redacta una respuesta breve, cordial y profesional en español al siguiente correo de un posible cliente (dueño de lavandería)."
+             + extra + " No inventes datos ni precios; si preguntan por precios, ofrece coordinar una llamada o demo. Termina firmando como 'Equipo LunaLav'.\n\n"
+             + "Correo recibido:\n\"\"\"\n" + ctx + "\n\"\"\"\n\nDevuelve solo el texto de la respuesta, sin asunto, sin comillas y sin explicaciones.";
     }
 
     // Modelos "thinking" (qwen3) pueden anteponer un bloque <think>...</think>: lo removemos.
