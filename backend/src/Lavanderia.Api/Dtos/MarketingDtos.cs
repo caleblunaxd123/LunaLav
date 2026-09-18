@@ -6,8 +6,9 @@ public record MarketingLoginRequest([Required, StringLength(80)] string Usuario,
 public record MarketingUserDto(int Id, string Usuario, string Nombre, string Rol, string? Email);
 public record MarketingLoginResponse(string AccessToken, DateTime Expira, string RefreshToken, MarketingUserDto Usuario);
 public record MarketingRefreshRequest([Required, StringLength(200)] string RefreshToken);
-public record MarketingDashboardDto(int ProspectosTotales, int Nuevos, int Contactados, int Interesados, int Demos, int Ganados, int SeguimientosPendientes, int SeguimientosVencidos, int TareasPendientes, IReadOnlyList<MarketingNextActionDto> Prioridades);
+public record MarketingDashboardDto(int ProspectosTotales, int Nuevos, int Contactados, int Interesados, int Demos, int Ganados, int SeguimientosPendientes, int SeguimientosVencidos, int TareasPendientes, IReadOnlyList<MarketingNextActionDto> Prioridades, IReadOnlyList<MarketingSeriePuntoDto> SerieSemanal);
 public record MarketingNextActionDto(long ProspectId, string Negocio, string Estado, int Score, string? Distrito, DateTime? ProximaAccion, string Motivo);
+public record MarketingSeriePuntoDto(DateTime Dia, int Total);
 public record MarketingTagDto(int Id, string Nombre, string Color);
 public record MarketingActivityDto(long Id, string Tipo, string? Canal, string Titulo, string? Detalle, DateTime Fecha, string? Usuario);
 public record MarketingFollowUpDto(long Id, long ProspectId, string Negocio, string Tipo, string Prioridad, string Descripcion, DateTime FechaProgramada, bool Completado);

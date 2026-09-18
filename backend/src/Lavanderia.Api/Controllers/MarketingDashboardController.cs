@@ -23,14 +23,20 @@ public class MarketingDashboardController : ControllerBase
           SUM(CASE WHEN Estado=N'GANADO' THEN 1 ELSE 0 END) Ganados
           FROM marketing.Prospect WHERE Activo=1;
           SELECT COUNT(*) Pendientes, SUM(CASE WHEN FechaProgramada<SYSUTCDATETIME() THEN 1 ELSE 0 END) Vencidos FROM marketing.FollowUp WHERE Completado=0;
-          SELECT COUNT(*) FROM marketing.Task WHERE Estado=N'PENDIENTE';";
+          SELECT COUNT(*) FROM marketing.Task WHERE Estado=N'PENDIENTE';
+          WITH dias AS (SELECT CAST(DATEADD(DAY,-n,CAST(SYSUTCDATETIME() AS date)) AS date) d FROM (VALUES(6),(5),(4),(3),(2),(1),(0)) v(n))
+          SELECT d.d Dia, COUNT(p.Id) Total FROM dias d
+          LEFT JOIN marketing.Prospect p ON CAST(p.FechaCreacion AS date)=d.d AND p.Activo=1
+          GROUP BY d.d ORDER BY d.d;";
         await using var reader = await cmd.ExecuteReaderAsync(ct);
         var total = 0; var nuevos = 0; var contactados = 0; var interesados = 0; var demos = 0; var ganados = 0; var pendientes = 0; var vencidos = 0; var tareas = 0;
         if (await reader.ReadAsync(ct)) { total = reader.GetInt32(0); nuevos = reader.IsDBNull(1) ? 0 : reader.GetInt32(1); contactados = reader.IsDBNull(2) ? 0 : reader.GetInt32(2); interesados = reader.IsDBNull(3) ? 0 : reader.GetInt32(3); demos = reader.IsDBNull(4) ? 0 : reader.GetInt32(4); ganados = reader.IsDBNull(5) ? 0 : reader.GetInt32(5); }
         if (await reader.NextResultAsync(ct) && await reader.ReadAsync(ct)) { pendientes = reader.GetInt32(0); vencidos = reader.IsDBNull(1) ? 0 : reader.GetInt32(1); }
         if (await reader.NextResultAsync(ct) && await reader.ReadAsync(ct)) tareas = reader.GetInt32(0);
+        var serie = new List<MarketingSeriePuntoDto>();
+        if (await reader.NextResultAsync(ct)) while (await reader.ReadAsync(ct)) serie.Add(new MarketingSeriePuntoDto(reader.GetDateTime(0), reader.GetInt32(1)));
         var next = await PrioridadesAsync(ct);
-        return Ok(new MarketingDashboardDto(total,nuevos,contactados,interesados,demos,ganados,pendientes,vencidos,tareas,next));
+        return Ok(new MarketingDashboardDto(total,nuevos,contactados,interesados,demos,ganados,pendientes,vencidos,tareas,next,serie));
     }
 
     private async Task<IReadOnlyList<MarketingNextActionDto>> PrioridadesAsync(CancellationToken ct)
