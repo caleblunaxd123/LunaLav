@@ -72,6 +72,23 @@ public class MarketingAuthController : ControllerBase
         return user is null ? NotFound() : Ok(user.Dto);
     }
 
+    [HttpPost("change-password"), Authorize(Policy = "Marketing")]
+    public async Task<IActionResult> ChangePassword([FromBody] MarketingChangePasswordRequest request, CancellationToken ct)
+    {
+        var id = int.Parse(User.FindFirst("marketingUserId")!.Value);
+        var user = await BuscarUsuarioAsync(id, ct);
+        if (user is null || !user.Activo) return Unauthorized();
+        if (!BCrypt.Net.BCrypt.Verify(request.ActualPassword, user.PasswordHash))
+            return BadRequest(new { mensaje = "La contraseña actual no es correcta." });
+        if (BCrypt.Net.BCrypt.Verify(request.NuevaPassword, user.PasswordHash))
+            return BadRequest(new { mensaje = "La nueva contraseña debe ser distinta de la actual." });
+        await using var conn = _db.Create(); await conn.OpenAsync(ct); await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE marketing.[User] SET PasswordHash=@h WHERE Id=@id";
+        cmd.AddParam("@h", BCrypt.Net.BCrypt.HashPassword(request.NuevaPassword)); cmd.AddParam("@id", id);
+        await cmd.ExecuteNonQueryAsync(ct);
+        return NoContent();
+    }
+
     private async Task<MarketingUser?> BuscarUsuarioAsync(string login, CancellationToken ct)
     {
         await using var conn = _db.Create(); await conn.OpenAsync(ct); await using var cmd = conn.CreateCommand();
@@ -96,3 +113,4 @@ public class MarketingAuthController : ControllerBase
 }
 
 public class MarketingBootstrapRequest { [Required, StringLength(80)] public string Usuario { get; set; } = ""; [Required, StringLength(160)] public string Nombre { get; set; } = ""; [EmailAddress, StringLength(180)] public string? Email { get; set; } [Required, StringLength(200), MinLength(12)] public string Password { get; set; } = ""; }
+public class MarketingChangePasswordRequest { [Required, StringLength(200)] public string ActualPassword { get; set; } = ""; [Required, StringLength(200), MinLength(8)] public string NuevaPassword { get; set; } = ""; }

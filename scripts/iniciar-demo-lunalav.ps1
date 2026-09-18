@@ -123,11 +123,14 @@ foreach ($sql in $migraciones | Where-Object Name -ne "001_schema.sql") {
 Write-Host "[2/5] Compilando LunaLav..." -ForegroundColor Cyan
 Push-Location $frontend
 try {
+    # npm escribe sus advertencias en stderr; bajo $ErrorActionPreference='Stop' PowerShell 5.1
+    # las convierte en error terminante y aborta el build por un simple warning. Ejecutar vía
+    # cmd.exe evita esa conversión y $LASTEXITCODE sigue detectando fallos reales.
     if (-not (Test-Path -LiteralPath (Join-Path $frontend "node_modules"))) {
-        & npm.cmd ci
+        & cmd.exe /c "npm.cmd ci"
         if ($LASTEXITCODE -ne 0) { throw "npm ci falló." }
     }
-    & npm.cmd run build
+    & cmd.exe /c "npm.cmd run build"
     if ($LASTEXITCODE -ne 0) { throw "La compilación de Angular falló." }
 } finally {
     Pop-Location
