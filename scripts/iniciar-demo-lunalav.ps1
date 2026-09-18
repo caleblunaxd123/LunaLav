@@ -150,6 +150,13 @@ if (Test-Path -LiteralPath $publishDir) {
 & dotnet publish $apiProject -c Release -o $publishDir --nologo
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish falló." }
 
+# Los secretos de integraciones viven fuera de Git. Al ejecutar desde la carpeta
+# publicada hay que copiarlos de forma explícita; no se incluyen en el artefacto.
+$localSecrets = Join-Path (Split-Path $apiProject -Parent) "appsettings.Local.json"
+if (Test-Path -LiteralPath $localSecrets) {
+    Copy-Item -LiteralPath $localSecrets -Destination (Join-Path $publishDir "appsettings.Local.json") -Force
+}
+
 Write-Host "[4/5] Iniciando web, aplicación y demo..." -ForegroundColor Cyan
 $runtimeScript = Join-Path $root "scripts\iniciar-runtime-lunalav.ps1"
 & $runtimeScript -SqlServer $SqlServer -Ports @($Port, 5004)
