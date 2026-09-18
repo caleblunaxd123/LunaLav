@@ -38,3 +38,5 @@ public record MarketingCampaignRequest([Required, StringLength(160)] string Nomb
 public record MarketingDraftDto(long Id, long? ProspectId, string? Prospecto, string Canal, string Destinatario, string? Asunto, string Cuerpo, string Estado, DateTime FechaCreacion);
 public record MarketingDraftRequest(long? ProspectId, [Required, StringLength(30)] string Canal, [Required, StringLength(200)] string Destinatario, [StringLength(200)] string? Asunto, [Required] string Cuerpo);
 public record MarketingAgentSettingDto(string Nombre, bool AnalizarProspectos, bool GenerarBorradores, bool CrearSeguimientos, bool PrimerContactoAutomatico, bool SeguimientosAutomaticos, int LimiteDiario);
+public record MarketingAutomationRuleDto(int Id,string Nombre,string JobType,int FrecuenciaMinutos,bool Activa,bool RequiereAprobacion,DateTime? UltimaEjecucion);
+public record MarketingApprovalDto(long Id,string ActionType,string Risk,string Status,string? Reason,DateTime RequestedAt,string? ReviewedBy,DateTime? ReviewedAt);

@@ -150,6 +150,7 @@ builder.Services.AddTransient<IFacturacionElectronicaProvider>(sp => sp.GetRequi
 builder.Services.AddTransient<ComprobantePdfGenerator>();
 builder.Services.AddScoped<IRespaldoComprobantes, RespaldoComprobantesLocal>();
 builder.Services.AddHostedService<FacturacionPendientesWorker>();
+builder.Services.AddHostedService<MarketingAutomationWorker>();
 
 // Limites defensivos para los puntos anonimos que pueden disparar trabajo costoso o
 // solicitudes hacia terceros. En produccion, el proxy debe preservar la IP remota real.
