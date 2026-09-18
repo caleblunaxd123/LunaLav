@@ -51,6 +51,22 @@ public class MarketingProspectsController : ControllerBase
     [HttpPatch("followups/{id:long}/complete")]
     public async Task<IActionResult> CompletarFollowup(long id,CancellationToken ct){await using var c=_db.Create();await c.OpenAsync(ct);await using var cmd=c.CreateCommand();cmd.CommandText="UPDATE marketing.FollowUp SET Completado=1,FechaCompletado=SYSUTCDATETIME() WHERE Id=@id";cmd.AddParam("@id",id);return await cmd.ExecuteNonQueryAsync(ct)==0?NotFound():NoContent();}
 
+    [HttpGet("tasks")]
+    public async Task<ActionResult<List<MarketingTaskDto>>> Tasks(CancellationToken ct)
+    {
+        await using var c=_db.Create();await c.OpenAsync(ct);await using var cmd=c.CreateCommand();
+        cmd.CommandText="SELECT t.Id,t.ProspectId,p.NombreComercial,t.Titulo,t.Prioridad,t.FechaVencimiento,t.Estado,t.Notas FROM marketing.Task t LEFT JOIN marketing.Prospect p ON p.Id=t.ProspectId ORDER BY CASE WHEN t.Estado=N'PENDIENTE' THEN 0 ELSE 1 END,t.FechaVencimiento";
+        return Ok(await cmd.ReadListAsync(r=>new MarketingTaskDto(r.GetInt64(0),r.IsDBNull(1)?null:r.GetInt64(1),r.GetNullableString("NombreComercial"),r.GetString(3),r.GetString(4),r.GetNullableDateTime("FechaVencimiento"),r.GetString(6),r.GetNullableString("Notas")),ct));
+    }
+    [HttpPost("tasks")]
+    public async Task<ActionResult> CrearTask(MarketingTaskRequest r,CancellationToken ct)
+    {
+        await using var c=_db.Create();await c.OpenAsync(ct);await using var cmd=c.CreateCommand();
+        cmd.CommandText="INSERT marketing.Task(ProspectId,ResponsableId,Titulo,Prioridad,FechaVencimiento,Notas) VALUES(@p,@u,@t,@prio,@f,@n)";cmd.AddParam("@p",r.ProspectId);cmd.AddParam("@u",UserId);cmd.AddParam("@t",r.Titulo.Trim());cmd.AddParam("@prio",r.Prioridad.Trim().ToUpperInvariant());cmd.AddParam("@f",r.FechaVencimiento);cmd.AddParam("@n",r.Notas);await cmd.ExecuteNonQueryAsync(ct);return NoContent();
+    }
+    [HttpPatch("tasks/{id:long}/complete")]
+    public async Task<IActionResult> CompletarTask(long id,CancellationToken ct){await using var c=_db.Create();await c.OpenAsync(ct);await using var cmd=c.CreateCommand();cmd.CommandText="UPDATE marketing.Task SET Estado=N'COMPLETADA',FechaCompletado=SYSUTCDATETIME() WHERE Id=@id AND Estado=N'PENDIENTE'";cmd.AddParam("@id",id);return await cmd.ExecuteNonQueryAsync(ct)==0?NotFound():NoContent();}
+
     private async Task<ActionResult<List<MarketingFollowUpDto>>> ListarSeguimientos(CancellationToken ct){await using var c=_db.Create();await c.OpenAsync(ct);await using var cmd=c.CreateCommand();cmd.CommandText="SELECT f.Id,f.ProspectId,p.NombreComercial,f.Tipo,f.Prioridad,f.Descripcion,f.FechaProgramada,f.Completado FROM marketing.FollowUp f JOIN marketing.Prospect p ON p.Id=f.ProspectId ORDER BY f.Completado,f.FechaProgramada";return Ok(await cmd.ReadListAsync(r=>new MarketingFollowUpDto(r.GetInt64(0),r.GetInt64(1),r.GetString(2),r.GetString(3),r.GetString(4),r.GetString(5),r.GetDateTime(6),r.GetBoolean(7)),ct));}
     private static string NormalizarEstado(string estado){var e=estado.Trim().ToUpperInvariant();var validos=new[]{"NUEVO","INVESTIGAR","LISTO_CONTACTAR","CONTACTADO","RESPONDIO","INTERESADO","DEMO_PROGRAMADA","DEMO_REALIZADA","NEGOCIACION","GANADO","PERDIDO","NO_INTERESADO","NO_RESPONDE","RECONTACTAR","DUPLICADO"};if(!validos.Contains(e))throw new ArgumentException("Estado comercial inválido.");return e;}
     private static int CalcularScore(MarketingProspectRequest r){var n=0;if(!string.IsNullOrWhiteSpace(r.Whatsapp))n+=10;if(!string.IsNullOrWhiteSpace(r.Instagram))n+=8;if(!string.IsNullOrWhiteSpace(r.SitioWeb))n+=5;if(r.NumeroSedesEstimado>1)n+=20;if(r.TieneDelivery)n+=10;if(r.NumeroResenas>=100)n+=10;if(r.Rating>4)n+=5;if(r.Estado is "RESPONDIO" or "INTERESADO")n+=10;if(r.Estado.StartsWith("DEMO",StringComparison.OrdinalIgnoreCase))n+=20;return Math.Min(100,n);}

@@ -13,7 +13,8 @@ export const routes: Routes = [
     children: [
       { path: '', loadComponent: () => import('./marketing/marketing-dashboard.component').then(m => m.MarketingDashboardComponent) },
       { path: 'prospectos', loadComponent: () => import('./marketing/marketing-prospects.component').then(m => m.MarketingProspectsComponent) },
-      { path: 'prospectos/nuevo', loadComponent: () => import('./marketing/marketing-prospect-new.component').then(m => m.MarketingProspectNewComponent) }
+      { path: 'prospectos/nuevo', loadComponent: () => import('./marketing/marketing-prospect-new.component').then(m => m.MarketingProspectNewComponent) },
+      { path: 'seguimientos', loadComponent: () => import('./marketing/marketing-work.component').then(m => m.MarketingWorkComponent) }
     ]
   },
   {
