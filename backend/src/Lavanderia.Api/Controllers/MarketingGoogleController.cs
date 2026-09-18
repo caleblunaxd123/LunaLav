@@ -19,6 +19,15 @@ public class MarketingGoogleController(GooglePlacesService places, GmailOAuthSer
     public async Task<IActionResult> Sync(CancellationToken ct){try{return Ok(new{synced=await gmail.SyncInboxAsync(ct)});}catch(InvalidOperationException e){return StatusCode(503,new{mensaje=e.Message});}}
     [HttpGet("gmail/inbox")]
     public async Task<IActionResult> Inbox(CancellationToken ct)=>Ok(await gmail.InboxAsync(ct));
+    [HttpGet("gmail/thread")]
+    public async Task<IActionResult> Thread([FromQuery] string threadId,CancellationToken ct)
+    { if(string.IsNullOrWhiteSpace(threadId))return BadRequest(new{mensaje="Falta el hilo."}); try{return Ok(await gmail.ThreadMessagesAsync(threadId.Trim(),ct));}catch(InvalidOperationException e){return StatusCode(503,new{mensaje=e.Message});} }
+    [HttpPost("gmail/send")]
+    public async Task<IActionResult> Send([FromBody] GmailSendRequest r,CancellationToken ct)
+    { try{ var (id,threadId)=await gmail.SendAsync(r.To,r.Subject,r.Body,null,null,null,ct); return Ok(new{id,threadId,enviado=true}); }catch(InvalidOperationException e){return StatusCode(503,new{mensaje=e.Message});} }
+    [HttpPost("gmail/reply")]
+    public async Task<IActionResult> Reply([FromBody] GmailReplyRequest r,CancellationToken ct)
+    { if(string.IsNullOrWhiteSpace(r.ThreadId))return BadRequest(new{mensaje="Falta el hilo."}); try{ var (id,threadId)=await gmail.ReplyAsync(r.ThreadId.Trim(),r.Body,ct); return Ok(new{id,threadId,enviado=true}); }catch(InvalidOperationException e){return StatusCode(503,new{mensaje=e.Message});} }
     [HttpGet("places/search")]
     public async Task<IActionResult> Search([FromQuery] string? q,[FromQuery] double? lat,[FromQuery] double? lng,[FromQuery] int max=10,CancellationToken ct=default)
     {
@@ -31,6 +40,9 @@ public class MarketingGoogleController(GooglePlacesService places, GmailOAuthSer
         catch(InvalidOperationException e){return StatusCode(503,new{mensaje=e.Message});}
     }
 }
+
+public record GmailSendRequest(string To, string? Subject, string Body);
+public record GmailReplyRequest(string ThreadId, string Body);
 
 [ApiController, Route("api/marketing/google/gmail")]
 public class MarketingGmailCallbackController(GmailOAuthService gmail) : ControllerBase
