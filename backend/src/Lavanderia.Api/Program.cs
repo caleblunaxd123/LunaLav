@@ -138,6 +138,7 @@ builder.Services.AddTransient<SecretProtector>();
   builder.Services.AddHttpClient<SunatSoapClient>(client => client.Timeout = TimeSpan.FromSeconds(45));
 builder.Services.AddHttpClient<GeocodificacionService>();
 builder.Services.AddHttpClient<GooglePlacesService>(client => client.Timeout = TimeSpan.FromSeconds(20));
+builder.Services.AddHttpClient<GmailOAuthService>(client => client.Timeout = TimeSpan.FromSeconds(20));
 // Proveedor de facturación electrónica seleccionable por configuración:
 //   SUNAT_DIRECTO (default) → firma local + SOAP de SUNAT.
 //   APISUNAT               → PSE en la nube (listo para activar cuando lleguen
