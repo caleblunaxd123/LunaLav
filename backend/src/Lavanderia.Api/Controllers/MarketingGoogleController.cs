@@ -5,10 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 namespace Lavanderia.Api.Controllers;
 
 [ApiController,Authorize(Policy="Marketing"),Route("api/marketing/google")]
-public class MarketingGoogleController(GooglePlacesService places, GmailOAuthService gmail) : ControllerBase
+public class MarketingGoogleController(GooglePlacesService places, GmailOAuthService gmail, OpenStreetMapPlacesService osm) : ControllerBase
 {
     [HttpGet("status")]
-    public async Task<IActionResult> Status(CancellationToken ct)=>Ok(new{placesConfigured=places.Configured,gmail=await gmail.StatusAsync(ct),gmailMessage="Gmail usa consentimiento OAuth; LunaLav no recibe ni almacena tu contraseña."});
+    public async Task<IActionResult> Status(CancellationToken ct)=>Ok(new{placesConfigured=places.Configured,descubrimientoGratis=true,proveedorDescubrimiento=places.Configured?"Google Places":"OpenStreetMap",gmail=await gmail.StatusAsync(ct),gmailMessage="Gmail usa consentimiento OAuth; LunaLav no recibe ni almacena tu contraseña."});
     [HttpPost("gmail/connect")]
     public async Task<IActionResult> ConnectGmail(CancellationToken ct)
     {
@@ -23,7 +23,7 @@ public class MarketingGoogleController(GooglePlacesService places, GmailOAuthSer
     public async Task<IActionResult> Search([FromQuery] string q,[FromQuery] int max=10,CancellationToken ct=default)
     {
         if(string.IsNullOrWhiteSpace(q))return BadRequest(new{mensaje="Indica una búsqueda."});
-        try{return Ok(await places.SearchTextAsync(q.Trim(),max,ct));}
+        try{return Ok(places.Configured ? await places.SearchTextAsync(q.Trim(),max,ct) : await osm.SearchLaundriesAsync(q.Trim(),max,ct));}
         catch(InvalidOperationException e){return StatusCode(503,new{mensaje=e.Message});}
     }
 }
