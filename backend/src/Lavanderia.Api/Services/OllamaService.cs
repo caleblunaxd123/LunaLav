@@ -3,27 +3,39 @@ using System.Text.Json;
 
 namespace Lavanderia.Api.Services;
 
-public record PublicacionPrompt(string? Tipo, string? Temporada, string? Negocio, string? Oferta, string? Zona, string? Contacto, bool Emojis = true);
+public record PublicacionPrompt(string? Tipo, string? Temporada, string? Negocio, string? Oferta, string? Zona, string? Contacto, bool Emojis = true, string? Modelo = null);
 
 /// <summary>Genera copys de marketing con un modelo local de Ollama. Gratis, sin API key ni facturación;
 /// requiere que el servicio Ollama esté corriendo en la máquina (http://localhost:11434).</summary>
 public sealed class OllamaService(HttpClient http, IConfiguration config)
 {
     private readonly string _base = (config["Ollama:BaseUrl"] ?? "http://localhost:11434").TrimEnd('/');
-    private readonly string _model = config["Ollama:Model"] ?? "llama3.2:latest";
+    private readonly string _model = config["Ollama:Model"] ?? "qwen3:8b";
+    private static readonly HashSet<string> Permitidos = new(StringComparer.OrdinalIgnoreCase)
+    { "qwen3:8b", "llama3.2:latest", "llama3.1:8b", "gemma4:latest", "qwen2.5-coder:14b" };
 
     public async Task<string> GenerarPublicacionAsync(PublicacionPrompt p, CancellationToken ct)
     {
-        var body = new { model = _model, prompt = ConstruirPrompt(p), stream = false, options = new { temperature = 0.85 } };
+        var model = !string.IsNullOrWhiteSpace(p.Modelo) && Permitidos.Contains(p.Modelo!) ? p.Modelo! : _model;
+        var body = new { model, prompt = ConstruirPrompt(p), stream = false, think = false, options = new { temperature = 0.85 } };
         HttpResponseMessage resp;
         try { resp = await http.PostAsJsonAsync($"{_base}/api/generate", body, ct); }
         catch (Exception e) when (e is not OperationCanceledException) { throw new InvalidOperationException("No se pudo contactar a Ollama. Verifica que el servicio esté corriendo."); }
         if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Ollama respondió {(int)resp.StatusCode}. Revisa que el modelo '{_model}' esté instalado (ollama pull {_model}).");
+            throw new InvalidOperationException($"Ollama respondió {(int)resp.StatusCode}. Revisa que el modelo '{model}' esté instalado (ollama pull {model}).");
         var json = await resp.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: ct);
         var texto = json.TryGetProperty("response", out var r) ? r.GetString() : null;
         if (string.IsNullOrWhiteSpace(texto)) throw new InvalidOperationException("El modelo no devolvió texto.");
-        return texto.Trim().Trim('"');
+        return Limpiar(texto);
+    }
+
+    // Modelos "thinking" (qwen3) pueden anteponer un bloque <think>...</think>: lo removemos.
+    private static string Limpiar(string texto)
+    {
+        var i = texto.LastIndexOf("</think>", StringComparison.OrdinalIgnoreCase);
+        if (i >= 0) texto = texto[(i + "</think>".Length)..];
+        texto = texto.Replace("**", "").Replace("__", "");
+        return texto.Trim().Trim('"').Trim();
     }
 
     private static string ConstruirPrompt(PublicacionPrompt p)

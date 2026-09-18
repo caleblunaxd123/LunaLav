@@ -22,7 +22,7 @@
         <label class="chk"><input type="checkbox" [(ngModel)]="pub.emojis" name="pem" (ngModelChange)="generarPost()"> Incluir emojis</label>
       </form>
       <div class="pub-preview">
-        <div class="pv-head"><b>Vista previa</b><div class="pv-head-btns"><button type="button" class="ia" (click)="generarIA()" [disabled]="iaLoading()">{{iaLoading()?'✨ Generando…':'✨ Generar con IA'}}</button><button type="button" (click)="generarPost()">↻ Plantilla</button></div></div>
+        <div class="pv-head"><b>Vista previa</b><div class="pv-head-btns"><select class="ia-model" [(ngModel)]="pub.modelo" name="pmodelo" title="Modelo de IA local">@for(md of modelos;track md.id){<option [value]="md.id">{{md.label}}</option>}</select><button type="button" class="ia" (click)="generarIA()" [disabled]="iaLoading()">{{iaLoading()?'✨ Generando…':'✨ Generar con IA'}}</button><button type="button" (click)="generarPost()">↻ Plantilla</button></div></div>
         @if(iaMsg()){<p class="ia-msg">{{iaMsg()}}</p>}
         <textarea [(ngModel)]="postText" name="ptext" rows="9" aria-label="Texto de la publicación"></textarea>
         <div class="pv-actions"><button type="button" class="primary" (click)="copiarPost()">{{copiado()?'✓ Copiado':'⧉ Copiar texto'}}</button><button type="button" class="save" (click)="guardarHistorial()">💾 Guardar</button><a class="share wa" [href]="waShare()" target="_blank" rel="noopener">WhatsApp</a><a class="share fb" [href]="fbShare()" target="_blank" rel="noopener">Facebook</a><a class="share tw" [href]="twShare()" target="_blank" rel="noopener">X</a></div>
