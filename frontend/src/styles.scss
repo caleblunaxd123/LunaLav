@@ -721,6 +721,72 @@ textarea.invalid:focus,
   letter-spacing: -1.1px;
 }
 .marketing-shell main :is(.head,.page-head) p { color: #6b87a4; }
+
+/* Encabezado editorial de cada módulo: comunica contexto y separa la zona de trabajo. */
+.marketing-shell main > :not(router-outlet) > :is(.head,.page-head) {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 22px;
+  min-height: 104px;
+  box-sizing: border-box;
+  margin: 0 0 18px !important;
+  padding: 22px 25px !important;
+  border: 1px solid rgba(121, 202, 250, .52);
+  border-radius: 18px;
+  background:
+    linear-gradient(112deg, rgba(255,255,255,.97) 0%, rgba(238,249,255,.96) 55%, rgba(216,243,255,.92) 100%);
+  box-shadow: 0 12px 34px rgba(25, 105, 164, .11);
+}
+.marketing-shell main > :not(router-outlet) > :is(.head,.page-head)::before,
+.marketing-shell main > :not(router-outlet) > :is(.head,.page-head)::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  border-radius: 999px;
+  pointer-events: none;
+}
+.marketing-shell main > :not(router-outlet) > :is(.head,.page-head)::before {
+  width: 190px;
+  height: 190px;
+  right: 4%;
+  top: -122px;
+  border: 28px solid rgba(67, 178, 241, .10);
+}
+.marketing-shell main > :not(router-outlet) > :is(.head,.page-head)::after {
+  width: 110px;
+  height: 110px;
+  right: 18%;
+  bottom: -82px;
+  background: rgba(83, 218, 207, .11);
+  box-shadow: -330px -58px 0 -43px rgba(33, 139, 234, .13);
+}
+.marketing-shell main > :not(router-outlet) > :is(.head,.page-head) h1 {
+  margin-top: 4px;
+  color: #123f70 !important;
+  font-size: clamp(25px, 2.4vw, 33px);
+  line-height: 1.08;
+}
+.marketing-shell main > :not(router-outlet) > :is(.head,.page-head) p {
+  max-width: 680px;
+  color: #5f7f9f !important;
+  line-height: 1.5;
+}
+.marketing-shell main > :not(router-outlet) > :is(.head,.page-head) > div:first-child > span {
+  color: #128ce1 !important;
+  text-shadow: 0 1px 0 #fff;
+}
+.marketing-shell main > :not(router-outlet) > :is(.head,.page-head) > :is(a,button),
+.marketing-shell main > :not(router-outlet) > :is(.head,.page-head) > div:last-child > :is(a,button) {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  border-radius: 11px;
+  box-shadow: 0 8px 20px rgba(20, 126, 215, .15);
+}
 .marketing-shell * { scrollbar-color: #b8daf1 transparent; scrollbar-width: thin; }
 .marketing-shell *::-webkit-scrollbar { width: 8px; height: 8px; }
 .marketing-shell *::-webkit-scrollbar-thumb { background: #b8daf1; border-radius: 20px; }
@@ -729,4 +795,11 @@ textarea.invalid:focus,
 @media (max-width: 700px) {
   .marketing-shell main { min-height: calc(100vh - 70px); }
   .marketing-shell main :is(input, select, textarea) { font-size: 16px; }
+  .marketing-shell main > :not(router-outlet) > :is(.head,.page-head) {
+    align-items: flex-start;
+    min-height: 0;
+    padding: 18px !important;
+    border-radius: 15px;
+  }
+  .marketing-shell main > :not(router-outlet) > :is(.head,.page-head) h1 { font-size: 26px; }
 }

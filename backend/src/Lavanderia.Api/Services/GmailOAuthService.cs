@@ -37,12 +37,23 @@ public sealed class GmailOAuthService(HttpClient http, IConfiguration config, IS
         using var doc = JsonDocument.Parse(raw); var root = doc.RootElement;
         var refresh = root.TryGetProperty("refresh_token", out var r) ? r.GetString() : null;
         if (string.IsNullOrWhiteSpace(refresh)) throw new InvalidOperationException("Google no entregó acceso permanente. Vuelve a conectar y acepta el permiso solicitado.");
-        var creds = JsonSerializer.Serialize(new { refreshToken = refresh, accessToken = root.GetProperty("access_token").GetString(), connectedAt = DateTime.UtcNow });
+        var accessToken = root.GetProperty("access_token").GetString()!;
+        var mailboxAddress = "contacto@lunalav.pe";
+        using (var profileResponse = await GoogleGetAsync("https://gmail.googleapis.com/gmail/v1/users/me/profile", accessToken, ct))
+        {
+            if (profileResponse.IsSuccessStatusCode)
+            {
+                using var profile = JsonDocument.Parse(await profileResponse.Content.ReadAsStringAsync(ct));
+                if (profile.RootElement.TryGetProperty("emailAddress", out var email) && !string.IsNullOrWhiteSpace(email.GetString()))
+                    mailboxAddress = email.GetString()!;
+            }
+        }
+        var creds = JsonSerializer.Serialize(new { refreshToken = refresh, accessToken, connectedAt = DateTime.UtcNow });
         await using var save = c.CreateCommand();
-        save.CommandText = @"MERGE communication.Mailbox AS target USING (SELECT N'contacto@lunalav.pe' Address) AS source ON target.Address=source.Address
-WHEN MATCHED THEN UPDATE SET Provider=N'GMAIL',Status=N'CONNECTED',DisplayName=N'LunaLav Ventas',EncryptedCredentials=@cred,LastSyncAt=SYSUTCDATETIME()
-WHEN NOT MATCHED THEN INSERT(Address,Provider,Status,DisplayName,EncryptedCredentials,LastSyncAt) VALUES(N'contacto@lunalav.pe',N'GMAIL',N'CONNECTED',N'LunaLav Ventas',@cred,SYSUTCDATETIME());";
-        save.AddParam("@cred", secrets.Proteger(creds)); await save.ExecuteNonQueryAsync(ct);
+        save.CommandText = @"UPDATE communication.Mailbox SET Address=@address,Provider=N'GMAIL',Status=N'CONNECTED',DisplayName=N'LunaLav Ventas',EncryptedCredentials=@cred,LastSyncAt=SYSUTCDATETIME()
+WHERE Id=(SELECT TOP 1 Id FROM communication.Mailbox WHERE Provider=N'GMAIL' ORDER BY Id DESC);
+IF @@ROWCOUNT=0 INSERT(Address,Provider,Status,DisplayName,EncryptedCredentials,LastSyncAt) VALUES(@address,N'GMAIL',N'CONNECTED',N'LunaLav Ventas',@cred,SYSUTCDATETIME());";
+        save.AddParam("@address", mailboxAddress); save.AddParam("@cred", secrets.Proteger(creds)); await save.ExecuteNonQueryAsync(ct);
     }
 
     public async Task<object> StatusAsync(CancellationToken ct)
