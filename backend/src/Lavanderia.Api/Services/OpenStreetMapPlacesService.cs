@@ -13,8 +13,16 @@ public sealed class OpenStreetMapPlacesService(HttpClient http, IConfiguration c
 
     public async Task<IReadOnlyList<GooglePlaceResult>> SearchLaundriesAsync(string query, int max, CancellationToken ct)
     {
-        max = Math.Clamp(max, 1, 40);
         var (lat, lon, radius) = await ResolveAreaAsync(query, ct);
+        return await QueryAroundAsync(lat, lon, radius, max, ct);
+    }
+
+    public Task<IReadOnlyList<GooglePlaceResult>> SearchAroundAsync(decimal lat, decimal lon, int max, CancellationToken ct)
+        => QueryAroundAsync(lat, lon, 4500, max, ct);
+
+    private async Task<IReadOnlyList<GooglePlaceResult>> QueryAroundAsync(decimal lat, decimal lon, int radius, int max, CancellationToken ct)
+    {
+        max = Math.Clamp(max, 1, 40);
         var c = CultureInfo.InvariantCulture;
         var overpassQuery = $@"[out:json][timeout:25];
 (

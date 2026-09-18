@@ -20,10 +20,14 @@ public class MarketingGoogleController(GooglePlacesService places, GmailOAuthSer
     [HttpGet("gmail/inbox")]
     public async Task<IActionResult> Inbox(CancellationToken ct)=>Ok(await gmail.InboxAsync(ct));
     [HttpGet("places/search")]
-    public async Task<IActionResult> Search([FromQuery] string q,[FromQuery] int max=10,CancellationToken ct=default)
+    public async Task<IActionResult> Search([FromQuery] string? q,[FromQuery] double? lat,[FromQuery] double? lng,[FromQuery] int max=10,CancellationToken ct=default)
     {
-        if(string.IsNullOrWhiteSpace(q))return BadRequest(new{mensaje="Indica una búsqueda."});
-        try{return Ok(places.Configured ? await places.SearchTextAsync(q.Trim(),max,ct) : await osm.SearchLaundriesAsync(q.Trim(),max,ct));}
+        try{
+            if(lat.HasValue && lng.HasValue)
+                return Ok(await osm.SearchAroundAsync((decimal)lat.Value,(decimal)lng.Value,max,ct));
+            if(string.IsNullOrWhiteSpace(q))return BadRequest(new{mensaje="Indica una búsqueda o comparte tu ubicación."});
+            return Ok(places.Configured ? await places.SearchTextAsync(q.Trim(),max,ct) : await osm.SearchLaundriesAsync(q.Trim(),max,ct));
+        }
         catch(InvalidOperationException e){return StatusCode(503,new{mensaje=e.Message});}
     }
 }

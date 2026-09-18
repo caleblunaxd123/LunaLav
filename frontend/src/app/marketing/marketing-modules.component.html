@@ -9,6 +9,25 @@
     @if(showForm()){<form class="form" (ngSubmit)="createCampaign()"><input [(ngModel)]="campaign.nombre" name="nombre" placeholder="Nombre de campaña" required><input [(ngModel)]="campaign.audiencia" name="audiencia" placeholder="Audiencia, por ejemplo: Lavanderías de San Miguel" required><select [(ngModel)]="campaign.canal" name="canal"><option>EMAIL</option><option>WHATSAPP</option></select><input [(ngModel)]="campaign.asunto" name="asunto" placeholder="Asunto (si aplica)"><textarea [(ngModel)]="campaign.mensaje" name="mensaje" placeholder="Mensaje de la campaña"></textarea><button>Guardar borrador</button></form>}
     <section class="table">@for(x of campaigns();track x.id){<article><div><b>{{x.nombre}}</b><small>{{x.audiencia}} · {{x.canal}}</small></div><i>{{x.estado.replaceAll('_',' ')}}</i>@if(x.estado==='BORRADOR'){<button (click)="campaignState(x.id,'PENDIENTE_APROBACION')">Solicitar aprobación</button>}@if(x.estado==='PENDIENTE_APROBACION'){<button (click)="campaignState(x.id,'APROBADA')">Aprobar</button>}</article>}@empty{<div class="empty">Crea tu primera campaña. Permanecerá en borrador hasta que la apruebes.</div>}</section>
   }
+  @case('publicaciones'){
+    <section class="head"><div><h1>Generador de publicaciones</h1><p>Crea textos listos para Instagram, Facebook y WhatsApp en segundos.</p></div></section>
+    <div class="pub-grid">
+      <form class="pub-form">
+        <label>Tipo de publicación<select [(ngModel)]="pub.tipo" name="ptipo" (ngModelChange)="generarPost()"><option value="promo">Promoción / descuento</option><option value="novedad">Novedad / apertura</option><option value="consejo">Consejo / tip útil</option><option value="testimonio">Testimonio de cliente</option></select></label>
+        <label>Nombre del negocio<input [(ngModel)]="pub.negocio" name="pneg" (ngModelChange)="generarPost()" placeholder="Ej. LunaLav"></label>
+        <label>Mensaje clave u oferta<input [(ngModel)]="pub.oferta" name="pof" (ngModelChange)="generarPost()" placeholder="Ej. 20% de descuento esta semana"></label>
+        <label>Ciudad o zona<input [(ngModel)]="pub.zona" name="pzo" (ngModelChange)="generarPost()" placeholder="Ej. San Miguel, Lima"></label>
+        <label>Teléfono o WhatsApp<input [(ngModel)]="pub.contacto" name="pco" (ngModelChange)="generarPost()" placeholder="Ej. 999 888 777"></label>
+        <label class="chk"><input type="checkbox" [(ngModel)]="pub.emojis" name="pem" (ngModelChange)="generarPost()"> Incluir emojis</label>
+      </form>
+      <div class="pub-preview">
+        <div class="pv-head"><b>Vista previa</b><button type="button" (click)="generarPost()">↻ Regenerar</button></div>
+        <textarea [(ngModel)]="postText" name="ptext" rows="9" aria-label="Texto de la publicación"></textarea>
+        <div class="pv-actions"><button type="button" class="primary" (click)="copiarPost()">{{copiado()?'✓ Copiado':'⧉ Copiar texto'}}</button><a class="share wa" [href]="waShare()" target="_blank" rel="noopener">WhatsApp</a><a class="share fb" [href]="fbShare()" target="_blank" rel="noopener">Facebook</a><a class="share tw" [href]="twShare()" target="_blank" rel="noopener">X</a></div>
+        <p class="pv-note">📸 Instagram no permite pre-cargar texto: pulsa "Copiar texto" y pégalo en tu publicación o historia.</p>
+      </div>
+    </div>
+  }
   @case('inbox'){
     <section class="head"><div><h1>Inbox</h1><p>Borradores preparados por el equipo. La conexión de correo aún no está configurada.</p></div><button (click)="showForm.set(!showForm())">✎ Redactar</button></section>
     <div class="notice">◉ Para recibir y enviar correos desde aquí falta conectar una cuenta saliente (Gmail API o SMTP). Mientras tanto puedes crear, revisar y aprobar borradores.</div>

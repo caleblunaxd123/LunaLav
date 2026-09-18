@@ -18,6 +18,7 @@ export const routes: Routes = [
       { path: 'seguimientos', loadComponent: () => import('./marketing/marketing-work.component').then(m => m.MarketingWorkComponent) },
       { path: 'explorar', loadComponent: () => import('./marketing/marketing-explore.component').then(m => m.MarketingExploreComponent) },
       { path: 'campanas', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'campanas'} },
+      { path: 'publicaciones', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'publicaciones'} },
       { path: 'inbox', loadComponent: () => import('./marketing/marketing-inbox.component').then(m => m.MarketingInboxComponent) },
       { path: 'calendario', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'calendario'} },
       { path: 'reportes', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'reportes'} },
