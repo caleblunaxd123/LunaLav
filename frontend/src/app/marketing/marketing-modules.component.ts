@@ -13,6 +13,8 @@ import { MarketingService } from './marketing.service';
 export class MarketingModulesComponent implements OnInit, OnDestroy {
   private route=inject(ActivatedRoute); private svc=inject(MarketingService); mode='';q='';district='';prospects=signal<any[]>([]);campaigns=signal<any[]>([]);drafts=signal<any[]>([]);followups=signal<any[]>([]);summary=signal<any>(null);agent=signal<any>(null);showForm=signal(false);
   campaign:any={nombre:'',audiencia:'',canal:'EMAIL',asunto:'',mensaje:''};draft:any={canal:'EMAIL',destinatario:'',asunto:'',cuerpo:''};google=signal<any>(null);exporting=signal(false);agentStatus=signal<any>(null);private timer:any;
+  descZona='';descMax=15;descLoading=signal(false);descResult=signal<any>(null);
+  descubrir(){if(this.descLoading())return;this.descLoading.set(true);this.descResult.set(null);this.svc.descubrirProspectos({zona:this.descZona,max:this.descMax}).subscribe({next:r=>{this.descLoading.set(false);this.descResult.set(r);},error:e=>{this.descLoading.set(false);this.descResult.set({error:e.error?.mensaje||'No se pudo buscar. Intenta de nuevo en unos segundos.'});}});}
   pub:any={tipo:'promo',temporada:'ninguna',negocio:'LunaLav',oferta:'',zona:'',contacto:'',emojis:true,modelo:'qwen3:8b'};postText='';
   readonly modelos:{id:string,label:string}[]=[{id:'qwen3:8b',label:'Qwen3 8B · mejor redacción'},{id:'llama3.2:latest',label:'Llama 3.2 · más rápido'},{id:'llama3.1:8b',label:'Llama 3.1 8B'},{id:'gemma4:latest',label:'Gemma'}];copiado=signal(false);historial=signal<any[]>([]);private histKey='lunalav.pub.historial';iaLoading=signal(false);iaMsg=signal('');imagenUrl=signal('');
   calView=signal<'mes'|'semana'|'dia'>('mes');calCursor=signal<Date>(new Date());calSelected=signal<Date>(new Date());

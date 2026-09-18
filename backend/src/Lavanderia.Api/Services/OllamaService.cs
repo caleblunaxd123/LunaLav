@@ -20,6 +20,9 @@ public sealed class OllamaService(HttpClient http, IConfiguration config)
     public Task<string> GenerarRespuestaAsync(string contexto, string? instruccion, string? modelo, CancellationToken ct)
         => GenerateRawAsync(ModeloValido(modelo), ConstruirRespuesta(contexto ?? "", instruccion), ct);
 
+    public Task<string> GenerarLibreAsync(string prompt, string? modelo, CancellationToken ct)
+        => GenerateRawAsync(ModeloValido(modelo), prompt, ct);
+
     private string ModeloValido(string? m) => !string.IsNullOrWhiteSpace(m) && Permitidos.Contains(m!) ? m! : _model;
 
     private async Task<string> GenerateRawAsync(string model, string prompt, CancellationToken ct)

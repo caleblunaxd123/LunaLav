@@ -1,13 +1,54 @@
 using Lavanderia.Api.Dtos;
 using Lavanderia.Api.Infrastructure;
+using Lavanderia.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Lavanderia.Api.Controllers;
 
+public record MarketingDiscoverRequest(string? Zona, int? Max);
+
 [ApiController,Authorize(Policy="Marketing"),Route("api/marketing/automation")]
-public class MarketingAutomationController(ISqlConnectionFactory db) : ControllerBase
+public class MarketingAutomationController(ISqlConnectionFactory db, OpenStreetMapPlacesService osm, OllamaService ollama) : ControllerBase
 {
+    [HttpPost("discover")]
+    public async Task<IActionResult> Discover([FromBody] MarketingDiscoverRequest r, CancellationToken ct)
+    {
+        var zona = string.IsNullOrWhiteSpace(r.Zona) ? "Lima" : r.Zona.Trim();
+        var max = Math.Clamp(r.Max ?? 15, 1, 25);
+        IReadOnlyList<GooglePlaceResult> found;
+        try { found = await osm.SearchLaundriesAsync($"lavanderías {zona}", max, ct); }
+        catch (InvalidOperationException e) { return StatusCode(503, new { mensaje = e.Message }); }
+        int? uid = int.TryParse(User.FindFirst("marketingUserId")?.Value, out var u) ? u : null;
+        var agregados = 0; var omitidos = 0; var nombres = new List<string>();
+        await using var c = db.Create(); await c.OpenAsync(ct);
+        foreach (var p in found)
+        {
+            if (string.IsNullOrWhiteSpace(p.Nombre)) continue;
+            await using (var dup = c.CreateCommand())
+            {
+                dup.CommandText = "SELECT COUNT(*) FROM marketing.Prospect WHERE NombreComercial=@n AND ISNULL(Distrito,N'')=@d AND Activo=1";
+                dup.AddParam("@n", p.Nombre); dup.AddParam("@d", zona);
+                if (Convert.ToInt32(await dup.ExecuteScalarAsync(ct)) > 0) { omitidos++; continue; }
+            }
+            await using var ins = c.CreateCommand();
+            ins.CommandText = @"INSERT marketing.Prospect(NombreComercial,Direccion,Distrito,Telefono,SitioWeb,Latitud,Longitud,Rating,NumeroResenas,Estado,Prioridad,Score,Fuente,FormaTrabajoActual,ResponsableId)
+                VALUES(@n,@dir,@d,@tel,@web,@lat,@lng,@rating,@res,N'NUEVO',N'MEDIA',0,N'OPENSTREETMAP',N'DESCONOCIDO',@uid)";
+            ins.AddParam("@n", p.Nombre); ins.AddParam("@dir", p.Direccion); ins.AddParam("@d", zona); ins.AddParam("@tel", p.Telefono);
+            ins.AddParam("@web", p.SitioWeb); ins.AddParam("@lat", p.Latitud); ins.AddParam("@lng", p.Longitud);
+            ins.AddParam("@rating", p.Rating); ins.AddParam("@res", p.Resenas); ins.AddParam("@uid", uid);
+            await ins.ExecuteNonQueryAsync(ct);
+            agregados++; if (nombres.Count < 8) nombres.Add(p.Nombre);
+        }
+        string? guion = null;
+        if (agregados > 0)
+        {
+            try { guion = await ollama.GenerarLibreAsync($"En máximo 2 frases y en español, redacta un primer mensaje breve y cordial para contactar por WhatsApp a una lavandería de {zona} y ofrecerle LunaLav, un sistema de gestión (software) para lavanderías. No inventes datos. Devuelve solo el mensaje, sin comillas.", "llama3.2:latest", ct); }
+            catch { /* la IA es opcional aquí */ }
+        }
+        return Ok(new { agregados, omitidos, encontrados = found.Count, zona, nombres, guion });
+    }
+
     [HttpGet("rules")]
     public async Task<ActionResult<List<MarketingAutomationRuleDto>>> Rules(CancellationToken ct){await using var c=db.Create();await c.OpenAsync(ct);await using var q=c.CreateCommand();q.CommandText="SELECT Id,Nombre,JobType,FrecuenciaMinutos,Activa,RequiereAprobacion,UltimaEjecucion FROM marketing.AutomationRule ORDER BY Id";return Ok(await q.ReadListAsync(r=>new MarketingAutomationRuleDto(r.GetInt32(0),r.GetString(1),r.GetString(2),r.GetInt32(3),r.GetBoolean(4),r.GetBoolean(5),r.GetNullableDateTime("UltimaEjecucion")),ct));}
     [HttpPatch("rules/{id:int}")]
