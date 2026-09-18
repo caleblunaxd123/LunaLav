@@ -24,6 +24,7 @@ public class MarketingProspectRequest
     [StringLength(300)] public string? Direccion { get; set; } [StringLength(100)] public string? Distrito { get; set; }
     [StringLength(80)] public string? TipoNegocio { get; set; } public int? NumeroSedesEstimado { get; set; } public bool TieneDelivery { get; set; }
     [Range(0, 5)] public decimal? Rating { get; set; } [Range(0, 10000000)] public int? NumeroResenas { get; set; }
+    [Range(-90, 90)] public decimal? Latitud { get; set; } [Range(-180, 180)] public decimal? Longitud { get; set; }
     [Required, StringLength(30)] public string Estado { get; set; } = "NUEVO"; [Required, StringLength(15)] public string Prioridad { get; set; } = "MEDIA";
     [Required, StringLength(80)] public string Fuente { get; set; } = "MANUAL"; [Required, StringLength(40)] public string FormaTrabajoActual { get; set; } = "DESCONOCIDO";
     [StringLength(120)] public string? SoftwareActual { get; set; } [StringLength(2000)] public string? Observaciones { get; set; }
@@ -41,3 +42,5 @@ public record MarketingDraftRequest(long? ProspectId, [Required, StringLength(30
 public record MarketingAgentSettingDto(string Nombre, bool AnalizarProspectos, bool GenerarBorradores, bool CrearSeguimientos, bool PrimerContactoAutomatico, bool SeguimientosAutomaticos, int LimiteDiario);
 public record MarketingAutomationRuleDto(int Id,string Nombre,string JobType,int FrecuenciaMinutos,bool Activa,bool RequiereAprobacion,DateTime? UltimaEjecucion);
 public record MarketingApprovalDto(long Id,string ActionType,string Risk,string Status,string? Reason,DateTime RequestedAt,string? ReviewedBy,DateTime? ReviewedAt);
+public record MarketingAgentStatusDto(int Pendientes, int Ejecutando, int Completados24h, int Fallidos, IReadOnlyList<MarketingAgentJobDto> Recientes);
+public record MarketingAgentJobDto(long Id, string JobType, string Status, DateTime CreatedAt, DateTime? CompletedAt, string? LastError);

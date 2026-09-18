@@ -42,6 +42,31 @@
 .bar.amber span{background:#eeaa21}
 .bar.green{background:#e1f7ec}
 .bar.green span{background:#16a06e}
+.agent-live{background:#fff;border:1px solid #dcecf8;border-radius:12px;box-shadow:0 5px 17px #2b6da00c;padding:18px;margin-bottom:16px;max-width:720px}
+.worker-head{display:flex;align-items:center;gap:12px}
+.worker-head .wh-txt{flex:1;display:grid;gap:2px}
+.worker-head b{font-size:14px;color:#173c6a}
+.worker-head small{font-size:11px;color:#7691ad}
+.worker-head .wh-refresh{border:1px solid #cbe9ff;background:#fff;color:#178ae7;border-radius:8px;width:34px;height:34px;font-size:15px;cursor:pointer}
+.pulse{width:11px;height:11px;border-radius:50%;background:#1ec27f;box-shadow:0 0 0 0 #1ec27f88;animation:pulse 1.8s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 #1ec27f88}70%{box-shadow:0 0 0 10px #1ec27f00}100%{box-shadow:0 0 0 0 #1ec27f00}}
+.worker-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.worker-kpis article{background:#f6fbff;border:1px solid #e4f0fa;border-radius:10px;padding:13px;display:grid;gap:2px;text-align:center}
+.worker-kpis b{font-size:22px;color:#1389e6}
+.worker-kpis span{font-size:10px;color:#6f8bab}
+.worker-kpis article.bad b{color:#d75061}
+.worker-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:14px}
+.worker-actions span{font-size:11px;color:#6f8bab;font-weight:700}
+.worker-actions button{border:1px solid #cde9ff;background:#eef9ff;color:#1488e5;border-radius:7px;padding:8px 11px;font-size:11px;font-weight:800;cursor:pointer}
+.jobs-title{display:block;font-size:12px;color:#345b80;margin-bottom:6px}
+.job{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #edf4fa}
+.job>div{flex:1;display:grid;gap:2px}
+.job b{font-size:12px;color:#2b4f78}
+.job small{font-size:10px;color:#7691ad}
+.job .st{width:9px;height:9px;border-radius:50%;background:#9aa9bc;flex:none}
+.job .st.completed{background:#1ec27f}.job .st.running{background:#2f9bff}.job .st.pending{background:#f5a623}.job .st.failed{background:#d75061}
+.job em{font-style:normal;font-size:9px;font-weight:800;color:#d75061;background:#ffe4e7;border-radius:99px;padding:3px 7px}
+.muted{color:#7490ad;font-size:12px}
 .agent{max-width:650px;padding:20px;display:grid;gap:13px}
 .agent-top{display:flex;gap:10px;align-items:center;border-bottom:1px solid #edf4fa;padding-bottom:15px}
 .agent-top i{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#e5f3ff;color:#198ce7;font-style:normal;font-size:21px}

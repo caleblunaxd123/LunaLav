@@ -16,6 +16,20 @@ public class MarketingAutomationController(ISqlConnectionFactory db) : Controlle
     public async Task<ActionResult<List<MarketingApprovalDto>>> Approvals(CancellationToken ct){await using var c=db.Create();await c.OpenAsync(ct);await using var q=c.CreateCommand();q.CommandText="SELECT Id,ActionType,Risk,Status,Reason,RequestedAt,ReviewedBy,ReviewedAt FROM agents.Approval ORDER BY CASE WHEN Status=N'PENDING' THEN 0 ELSE 1 END,RequestedAt DESC";return Ok(await q.ReadListAsync(r=>new MarketingApprovalDto(r.GetInt64(0),r.GetString(1),r.GetString(2),r.GetString(3),r.GetNullableString("Reason"),r.GetDateTime(5),r.GetNullableString("ReviewedBy"),r.GetNullableDateTime("ReviewedAt")),ct));}
     [HttpPatch("approvals/{id:long}")]
     public async Task<IActionResult> Decide(long id,[FromBody] MarketingStatusRequest r,CancellationToken ct){var s=r.Estado.Trim().ToUpperInvariant();if(s is not("APPROVED" or "REJECTED"))return BadRequest(new{mensaje="Decisión inválida."});await using var c=db.Create();await c.OpenAsync(ct);await using var q=c.CreateCommand();q.CommandText="UPDATE agents.Approval SET Status=@s,ReviewedBy=@u,ReviewedAt=SYSUTCDATETIME() WHERE Id=@id AND Status=N'PENDING'";q.AddParam("@s",s);q.AddParam("@u",User.Identity?.Name??"marketing");q.AddParam("@id",id);return await q.ExecuteNonQueryAsync(ct)==0?NotFound():NoContent();}
+    [HttpGet("status")]
+    public async Task<ActionResult<MarketingAgentStatusDto>> Status(CancellationToken ct)
+    {
+        await using var c=db.Create();await c.OpenAsync(ct);await using var q=c.CreateCommand();
+        q.CommandText=@"SELECT SUM(CASE WHEN Status=N'PENDING' THEN 1 ELSE 0 END),SUM(CASE WHEN Status=N'RUNNING' THEN 1 ELSE 0 END),SUM(CASE WHEN Status=N'COMPLETED' AND CompletedAt>=DATEADD(day,-1,SYSUTCDATETIME()) THEN 1 ELSE 0 END),SUM(CASE WHEN Status=N'FAILED' THEN 1 ELSE 0 END) FROM automation.Job;
+        SELECT TOP 8 Id,JobType,Status,CreatedAt,CompletedAt,LastError FROM automation.Job ORDER BY CreatedAt DESC;";
+        await using var rd=await q.ExecuteReaderAsync(ct);
+        int pend=0,run=0,comp=0,fail=0;
+        if(await rd.ReadAsync(ct)){pend=rd.IsDBNull(0)?0:rd.GetInt32(0);run=rd.IsDBNull(1)?0:rd.GetInt32(1);comp=rd.IsDBNull(2)?0:rd.GetInt32(2);fail=rd.IsDBNull(3)?0:rd.GetInt32(3);}
+        var recientes=new List<MarketingAgentJobDto>();
+        if(await rd.NextResultAsync(ct))while(await rd.ReadAsync(ct))recientes.Add(new MarketingAgentJobDto(rd.GetInt64(0),rd.GetString(1),rd.GetString(2),rd.GetDateTime(3),rd.IsDBNull(4)?null:rd.GetDateTime(4),rd.IsDBNull(5)?null:rd.GetString(5)));
+        return Ok(new MarketingAgentStatusDto(pend,run,comp,fail,recientes));
+    }
+
     [HttpPost("jobs/{type}")]
     public async Task<IActionResult> Run(string type,CancellationToken ct){var allowed=new[]{"MARKETING_SCORE_RECALCULATION","MARKETING_FOLLOWUP_REVIEW","MARKETING_PREPARE_OUTREACH"};if(!allowed.Contains(type,StringComparer.OrdinalIgnoreCase))return BadRequest(new{mensaje="Automatización no permitida."});await using var c=db.Create();await c.OpenAsync(ct);await using var q=c.CreateCommand();q.CommandText="INSERT automation.Job(JobType,Payload,IdempotencyKey) VALUES(@t,N'{}',CONCAT(@t,N':manual:',NEWID()))";q.AddParam("@t",type.ToUpperInvariant());await q.ExecuteNonQueryAsync(ct);return Accepted();}
 }
