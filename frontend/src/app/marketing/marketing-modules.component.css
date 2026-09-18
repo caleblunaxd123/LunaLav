@@ -94,6 +94,11 @@
 .pv-head b{font-size:14px;color:#173c6a}
 .pv-head-btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .ia-model{border:1px solid #ddd6f5;border-radius:8px;padding:7px 9px;font-size:11px;font-weight:700;color:#5b4bb5;background:#faf8ff;cursor:pointer}
+.img-field input[type=file]{font-size:11px;color:#5f7e9f;cursor:pointer}
+.pub-img{position:relative;margin-bottom:12px;border-radius:12px;overflow:hidden;border:1px solid #dcecf8;background:#f2f7fc}
+.pub-img img{width:100%;display:block;max-height:320px;object-fit:cover}
+.pub-img button{position:absolute;top:9px;right:9px;border:0;background:#0b1f38cc;color:#fff;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:800;cursor:pointer}
+.pub-img button:hover{background:#0b1f38}
 .pv-head button{border:1px solid #cbe9ff;background:#fff;color:#178ae7;border-radius:8px;padding:7px 11px;font-size:11px;font-weight:800;cursor:pointer}
 .pv-head button.ia{border:0;background:linear-gradient(90deg,#7b5ce6,#a855f7);color:#fff}
 .pv-head button.ia:disabled{opacity:.7;cursor:default}

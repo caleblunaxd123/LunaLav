@@ -20,12 +20,14 @@
         <label>Ciudad o zona<input [(ngModel)]="pub.zona" name="pzo" (ngModelChange)="generarPost()" placeholder="Ej. San Miguel, Lima"></label>
         <label>Teléfono o WhatsApp<input [(ngModel)]="pub.contacto" name="pco" (ngModelChange)="generarPost()" placeholder="Ej. 999 888 777"></label>
         <label class="chk"><input type="checkbox" [(ngModel)]="pub.emojis" name="pem" (ngModelChange)="generarPost()"> Incluir emojis</label>
+        <label class="img-field">Imagen de la publicación (opcional)<input type="file" accept="image/*" (change)="onImagen($event)"></label>
       </form>
       <div class="pub-preview">
         <div class="pv-head"><b>Vista previa</b><div class="pv-head-btns"><select class="ia-model" [(ngModel)]="pub.modelo" name="pmodelo" title="Modelo de IA local">@for(md of modelos;track md.id){<option [value]="md.id">{{md.label}}</option>}</select><button type="button" class="ia" (click)="generarIA()" [disabled]="iaLoading()">{{iaLoading()?'✨ Generando…':'✨ Generar con IA'}}</button><button type="button" (click)="generarPost()">↻ Plantilla</button></div></div>
         @if(iaMsg()){<p class="ia-msg">{{iaMsg()}}</p>}
+        @if(imagenUrl()){<div class="pub-img"><img [src]="imagenUrl()" alt="Imagen de la publicación"><button type="button" (click)="quitarImagen()">✕ Quitar</button></div>}
         <textarea [(ngModel)]="postText" name="ptext" rows="9" aria-label="Texto de la publicación"></textarea>
-        <div class="pv-actions"><button type="button" class="primary" (click)="copiarPost()">{{copiado()?'✓ Copiado':'⧉ Copiar texto'}}</button><button type="button" class="save" (click)="guardarHistorial()">💾 Guardar</button><a class="share wa" [href]="waShare()" target="_blank" rel="noopener">WhatsApp</a><a class="share fb" [href]="fbShare()" target="_blank" rel="noopener">Facebook</a><a class="share tw" [href]="twShare()" target="_blank" rel="noopener">X</a></div>
+        <div class="pv-actions"><button type="button" class="primary" (click)="copiarPost()">{{copiado()?'✓ Copiado':'⧉ Copiar texto'}}</button><button type="button" class="save" (click)="guardarHistorial()">💾 Guardar</button>@if(imagenUrl()){<button type="button" class="save" (click)="descargarImagen()">⬇ Descargar imagen</button>}<a class="share wa" [href]="waShare()" target="_blank" rel="noopener">WhatsApp</a><a class="share fb" [href]="fbShare()" target="_blank" rel="noopener">Facebook</a><a class="share tw" [href]="twShare()" target="_blank" rel="noopener">X</a></div>
         <p class="pv-note">📸 Instagram no permite pre-cargar texto: pulsa "Copiar texto" y pégalo en tu publicación o historia. 🤖 "Generar con IA" usa un modelo local (Ollama), gratis y sin costo por uso; "Plantilla" arma el texto al instante sin IA.</p>
       </div>
     </div>
