@@ -7,7 +7,7 @@ import { MarketingService } from './marketing.service';
 @Component({
   standalone:true,
   imports:[FormsModule,RouterLink,RouterLinkActive,RouterOutlet],
-  template:`<div class="shell">
+  template:`<div class="shell marketing-shell">
     <aside class="sidebar">
       <a class="brand" routerLink="/marketing"><img src="/lunalav-logo-color.svg" alt="LunaLav Marketing"><small>MARKETING</small></a>
       <nav aria-label="Navegación de Marketing">

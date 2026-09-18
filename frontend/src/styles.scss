@@ -655,3 +655,78 @@ textarea.invalid:focus,
     &:hover { background: #e2e8f0; color: #334155; }
   }
 }
+
+/* ============================================================
+   LunaLav Marketing — sistema visual compartido.
+   Scopeado para no modificar la aplicación operativa de clientes.
+   ============================================================ */
+.marketing-shell {
+  --m-blue: #148bea;
+  --m-blue-dark: #0b4f8a;
+  --m-navy: #123e70;
+  --m-cyan: #50c8f5;
+  --m-mint: #21be91;
+  --m-line: #dbeaf6;
+  --m-soft: #f4faff;
+  --m-shadow: 0 10px 30px rgba(24, 91, 145, .09);
+}
+
+.marketing-shell main {
+  background:
+    radial-gradient(circle at 95% 0, rgba(80, 200, 245, .12), transparent 28rem),
+    radial-gradient(circle at 5% 100%, rgba(110, 91, 226, .06), transparent 30rem),
+    #f2f9fe;
+  min-height: calc(100vh - 70px);
+}
+
+.marketing-shell main :is(input, select, textarea) {
+  min-height: 42px;
+  border: 1px solid var(--m-line) !important;
+  border-radius: 10px !important;
+  background-color: #fff;
+  color: #244d75;
+  font-family: inherit;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.marketing-shell main textarea { min-height: 105px; line-height: 1.55; }
+.marketing-shell main :is(input, select, textarea)::placeholder { color: #9aafc3; }
+.marketing-shell main :is(input, select, textarea):hover { border-color: #b7daf3 !important; }
+.marketing-shell main :is(input, select, textarea):focus {
+  outline: none;
+  border-color: #4eacf0 !important;
+  box-shadow: 0 0 0 4px rgba(20, 139, 234, .11) !important;
+  background: #fff;
+}
+.marketing-shell main select {
+  appearance: auto;
+  cursor: pointer;
+}
+.marketing-shell main button,
+.marketing-shell main a {
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+}
+.marketing-shell main button:not(:disabled):active,
+.marketing-shell main a:active { transform: translateY(1px); }
+.marketing-shell main button:disabled { cursor: not-allowed; }
+.marketing-shell main :is(.card,.table,.settings,.calendar,.agent,.report-card,.explore,.mail,.compose) {
+  border-color: var(--m-line) !important;
+  box-shadow: var(--m-shadow) !important;
+}
+.marketing-shell main :is(.card,.table,.settings,.calendar,.agent,.report-card,.compose) {
+  backdrop-filter: blur(8px);
+}
+.marketing-shell main :is(.head,.page-head) h1 {
+  color: var(--m-navy);
+  font-weight: 850;
+  letter-spacing: -1.1px;
+}
+.marketing-shell main :is(.head,.page-head) p { color: #6b87a4; }
+.marketing-shell * { scrollbar-color: #b8daf1 transparent; scrollbar-width: thin; }
+.marketing-shell *::-webkit-scrollbar { width: 8px; height: 8px; }
+.marketing-shell *::-webkit-scrollbar-thumb { background: #b8daf1; border-radius: 20px; }
+.marketing-shell *::-webkit-scrollbar-track { background: transparent; }
+
+@media (max-width: 700px) {
+  .marketing-shell main { min-height: calc(100vh - 70px); }
+  .marketing-shell main :is(input, select, textarea) { font-size: 16px; }
+}

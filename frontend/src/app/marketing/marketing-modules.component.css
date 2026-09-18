@@ -1,9 +1,9 @@
-.head{display:flex;justify-content:space-between;gap:20px;align-items:start;margin-bottom:18px}
+.head{display:flex;justify-content:space-between;gap:20px;align-items:start;margin-bottom:20px;padding:3px 0}
 .head h1{margin:0 0 4px;font-size:28px;letter-spacing:-1px}
 .head p{margin:0;color:#6d8aaa;font-size:14px}
 .head>a,.head>button,.form button,.agent>button{border:0;border-radius:8px;padding:11px 14px;background:#168dea;color:#fff;font-weight:800;text-decoration:none;font-size:12px}
 .searchline{display:flex;gap:10px;margin-bottom:15px}
-.searchline input,.searchline select,.form input,.form select,.form textarea,.agent input{box-sizing:border-box;border:1px solid #dcebf7;border-radius:8px;padding:11px;font:inherit;font-size:13px}
+.searchline input,.searchline select,.form input,.form select,.form textarea,.agent input{box-sizing:border-box;border:1px solid #dcebf7;border-radius:10px;padding:12px;font:inherit;font-size:13px;background:#fff}
 .searchline input{flex:1}
 .explore,.table,.calendar,.settings,.agent,.report-card{background:#fff;border:1px solid #dcecf8;border-radius:12px;box-shadow:0 5px 17px #2b6da00c;overflow:hidden}
 .explore a,.table article,.calendar article,.settings article{display:flex;align-items:center;gap:13px;padding:15px 18px;border-bottom:1px solid #edf4fa;text-decoration:none;color:#1d426f}
@@ -13,7 +13,7 @@
 .explore small,.table small,.calendar small,.settings small{color:#738fac;font-size:11px}
 .explore em,.table i,.calendar i{font-size:10px;font-style:normal;font-weight:800;background:#e2f7ed;color:#188f66;padding:5px 7px;border-radius:99px}
 .explore strong{font-size:11px;color:#168de9}
-.form{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:15px;margin-bottom:15px;background:#fff;border:1px solid #bfe7ff;border-radius:12px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:13px;padding:20px;margin-bottom:17px;background:linear-gradient(145deg,#fff,#f8fcff);border:1px solid #bfe7ff;border-radius:15px}
 .form textarea{grid-column:1/-1;min-height:95px;resize:vertical}
 .form button{justify-self:start}
 .table article p{margin:3px 0 0;color:#6480a0;font-size:11px;line-height:1.4}
@@ -23,7 +23,8 @@
 .calendar article time{width:58px;padding:8px;text-align:center;border-radius:8px;background:#e3f3ff;color:#1689e7;font-size:12px;font-weight:800}
 .calendar article div{flex:1;display:grid;gap:4px}
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-.metrics article{padding:20px;background:#fff;border:1px solid #dcecf8;border-radius:12px;display:grid;gap:4px}
+.metrics article{padding:22px;background:linear-gradient(145deg,#fff,#f7fbff);border:1px solid #dcecf8;border-radius:14px;display:grid;gap:5px;position:relative;overflow:hidden}
+.metrics article:after{content:'';position:absolute;width:70px;height:70px;border-radius:50%;right:-28px;top:-30px;background:#dff3ff}
 .metrics b{font-size:29px;color:#1389e6}
 .metrics span{color:#6f8bab;font-size:12px}
 .rates{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
