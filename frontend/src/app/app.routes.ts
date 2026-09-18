@@ -15,7 +15,14 @@ export const routes: Routes = [
       { path: 'prospectos', loadComponent: () => import('./marketing/marketing-prospects.component').then(m => m.MarketingProspectsComponent) },
       { path: 'prospectos/nuevo', loadComponent: () => import('./marketing/marketing-prospect-new.component').then(m => m.MarketingProspectNewComponent) },
       { path: 'prospectos/:id', loadComponent: () => import('./marketing/marketing-prospect-detail.component').then(m => m.MarketingProspectDetailComponent) },
-      { path: 'seguimientos', loadComponent: () => import('./marketing/marketing-work.component').then(m => m.MarketingWorkComponent) }
+      { path: 'seguimientos', loadComponent: () => import('./marketing/marketing-work.component').then(m => m.MarketingWorkComponent) },
+      { path: 'explorar', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'explorar'} },
+      { path: 'campanas', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'campanas'} },
+      { path: 'inbox', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'inbox'} },
+      { path: 'calendario', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'calendario'} },
+      { path: 'reportes', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'reportes'} },
+      { path: 'agentes', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'agentes'} },
+      { path: 'configuracion', loadComponent: () => import('./marketing/marketing-modules.component').then(m => m.MarketingModulesComponent), data:{mode:'configuracion'} }
     ]
   },
   {

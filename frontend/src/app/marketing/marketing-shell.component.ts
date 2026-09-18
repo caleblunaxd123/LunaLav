@@ -11,14 +11,14 @@ import { MarketingAuthService } from './marketing-auth.service';
       <nav aria-label="Navegación de Marketing">
         <a routerLink="/marketing" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}"><i>⌂</i> Inicio</a>
         <a routerLink="/marketing/prospectos" routerLinkActive="active"><i>♙</i> Prospectos</a>
-        <a class="future"><i>⌕</i> Explorar <em>Próximamente</em></a>
-        <a class="future"><i>⚑</i> Campañas <em>Próximamente</em></a>
-        <a class="future"><i>✉</i> Inbox <em>Próximamente</em></a>
+        <a routerLink="/marketing/explorar" routerLinkActive="active"><i>⌕</i> Explorar</a>
+        <a routerLink="/marketing/campanas" routerLinkActive="active"><i>⚑</i> Campañas</a>
+        <a routerLink="/marketing/inbox" routerLinkActive="active"><i>✉</i> Inbox</a>
         <a routerLink="/marketing/seguimientos" routerLinkActive="active"><i>☑</i> Tareas y seguimientos</a>
-        <a class="future"><i>▣</i> Calendario <em>Próximamente</em></a>
-        <a class="future"><i>▥</i> Reportes <em>Próximamente</em></a>
+        <a routerLink="/marketing/calendario" routerLinkActive="active"><i>▣</i> Calendario</a>
+        <a routerLink="/marketing/reportes" routerLinkActive="active"><i>▥</i> Reportes</a>
       </nav>
-      <div class="side-bottom"><a class="future"><i>✧</i> Agentes IA <em>Próximamente</em></a><a class="future"><i>⚙</i> Configuración <em>Próximamente</em></a></div>
+      <div class="side-bottom"><a routerLink="/marketing/agentes" routerLinkActive="active"><i>✧</i> Agentes IA</a><a routerLink="/marketing/configuracion" routerLinkActive="active"><i>⚙</i> Configuración</a></div>
       <div class="profile"><span class="avatar">{{inicial}}</span><div><b>{{auth.usuario()?.nombre || 'Equipo LunaLav'}}</b><small>{{auth.usuario()?.rol || 'Marketing'}}</small></div><button (click)="auth.logout()" title="Cerrar sesión">⋮</button></div>
     </aside>
     <section class="workspace"><header class="topbar"><label class="search"><i>⌕</i><input placeholder="Buscar en LunaLav…" aria-label="Buscar en LunaLav"></label><div class="top-actions"><button class="notification" title="Notificaciones">♧<sup>0</sup></button><span class="top-avatar">{{inicial}}</span><div class="hello"><b>Hola, {{primerNombre}}</b><small>Marketing</small></div><span class="chevron">⌄</span></div></header><main><router-outlet/></main></section>
