@@ -15,6 +15,10 @@ public class MarketingGoogleController(GooglePlacesService places, GmailOAuthSer
         try { return Ok(new { authorizationUrl = await gmail.StartAsync(User.Identity?.Name ?? "marketing", ct) }); }
         catch(InvalidOperationException e) { return StatusCode(503,new { mensaje=e.Message }); }
     }
+    [HttpPost("gmail/sync")]
+    public async Task<IActionResult> Sync(CancellationToken ct){try{return Ok(new{synced=await gmail.SyncInboxAsync(ct)});}catch(InvalidOperationException e){return StatusCode(503,new{mensaje=e.Message});}}
+    [HttpGet("gmail/inbox")]
+    public async Task<IActionResult> Inbox(CancellationToken ct)=>Ok(await gmail.InboxAsync(ct));
     [HttpGet("places/search")]
     public async Task<IActionResult> Search([FromQuery] string q,[FromQuery] int max=10,CancellationToken ct=default)
     {

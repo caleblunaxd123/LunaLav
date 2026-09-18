@@ -1,0 +1,12 @@
+USE LunaLav;
+GO
+IF OBJECT_ID(N'communication.EmailThread',N'U') IS NULL CREATE TABLE communication.EmailThread(
+ Id BIGINT IDENTITY PRIMARY KEY, GmailThreadId NVARCHAR(120) NOT NULL UNIQUE, ProspectId BIGINT NULL REFERENCES marketing.Prospect(Id),
+ ContactEmail NVARCHAR(240) NULL, ContactName NVARCHAR(200) NULL, Subject NVARCHAR(500) NULL,
+ LastMessageAt DATETIME2 NOT NULL, LastSnippet NVARCHAR(1000) NULL, IsUnread BIT NOT NULL DEFAULT 1, CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME());
+IF OBJECT_ID(N'communication.EmailMessage',N'U') IS NULL CREATE TABLE communication.EmailMessage(
+ Id BIGINT IDENTITY PRIMARY KEY, GmailMessageId NVARCHAR(120) NOT NULL UNIQUE, GmailThreadId NVARCHAR(120) NOT NULL,
+ Direction NVARCHAR(12) NOT NULL, Sender NVARCHAR(240) NULL, Recipient NVARCHAR(240) NULL, Subject NVARCHAR(500) NULL,
+ Snippet NVARCHAR(1000) NULL, ReceivedAt DATETIME2 NOT NULL, IsUnread BIT NOT NULL DEFAULT 1, SyncedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME());
+IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name=N'IX_CommunicationEmailThread_Last') CREATE INDEX IX_CommunicationEmailThread_Last ON communication.EmailThread(LastMessageAt DESC);
+GO
