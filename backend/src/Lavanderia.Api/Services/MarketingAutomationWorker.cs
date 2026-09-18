@@ -31,14 +31,19 @@ public sealed class MarketingAutomationWorker(ISqlConnectionFactory db, ILogger<
     private async Task ProcesarUnoAsync(CancellationToken ct)
     {
         await using var c=db.Create();await c.OpenAsync(ct);await using var tx=await c.BeginTransactionAsync(ct);
-        long id; string type;
+        long id=0; string type=string.Empty; bool found;
         await using (var claim=c.CreateCommand())
         {
             claim.Transaction=(SqlTransaction)tx;
             claim.CommandText=@";WITH nextJob AS(SELECT TOP(1)* FROM automation.Job WITH(UPDLOCK,READPAST,ROWLOCK) WHERE Status=N'PENDING' AND AvailableAt<=SYSUTCDATETIME() ORDER BY CreatedAt)
             UPDATE nextJob SET Status=N'RUNNING',Attempts=Attempts+1,LockedUntil=DATEADD(MINUTE,5,SYSUTCDATETIME()) OUTPUT inserted.Id,inserted.JobType;";
-            await using var r=await claim.ExecuteReaderAsync(ct);if(!await r.ReadAsync(ct)){await tx.CommitAsync(ct);return;}id=r.GetInt64(0);type=r.GetString(1);
+            await using var r=await claim.ExecuteReaderAsync(ct);
+            found=await r.ReadAsync(ct);
+            if(found){id=r.GetInt64(0);type=r.GetString(1);}
         }
+        // El reader debe estar cerrado antes de confirmar la transacción, incluso cuando
+        // no había trabajo. SQL Server rechaza Commit si el DataReader sigue abierto.
+        if(!found){await tx.CommitAsync(ct);return;}
         try
         {
             await EjecutarSeguroAsync(c,(SqlTransaction)tx,type,ct);
