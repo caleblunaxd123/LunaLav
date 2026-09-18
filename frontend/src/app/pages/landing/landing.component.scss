@@ -17,7 +17,7 @@
 
 .site-header {
   width: min(1180px, calc(100% - 40px));
-  height: 84px;
+  height: 100px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -26,7 +26,9 @@
   z-index: 20;
 }
 
-.brand img { width: 156px; display: block; }
+/* La marca es el principal identificador de una web comercial: se le da una
+   presencia clara sin sacrificar la navegación ni el CTA. */
+.brand img { width: 220px; display: block; }
 .site-nav { display: flex; align-items: center; gap: 30px; }
 .site-nav a { color: #36516a; text-decoration: none; font-weight: 650; font-size: 15px; }
 .site-nav a:hover { color: var(--blue); }
@@ -190,7 +192,7 @@
 .button--light:hover, .button--outline-light:hover { transform: translateY(-2px); }
 
 .site-footer { padding: 47px max(30px, calc((100vw - 1120px) / 2)); background: #071d34; color: #a8bdcb; display: grid; grid-template-columns: 1fr auto; gap: 30px; align-items: center; }
-.site-footer img { width: 145px; margin-bottom: 9px; }.site-footer p { font-size: 13px; }
+.site-footer img { width: 185px; margin-bottom: 11px; }.site-footer p { font-size: 13px; }
 .site-footer__links { display: flex; gap: 24px; }.site-footer__links a { color: #d9e6eb; text-decoration: none; font-size: 14px; }
 .site-footer__copy { grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,.09); padding-top: 22px; }
 
@@ -223,10 +225,10 @@
 }
 
 @media (max-width: 760px) {
-  .site-header { height: 72px; width: min(100% - 28px, 1180px); }
-  .brand img { width: 137px; }
+  .site-header { height: 82px; width: min(100% - 28px, 1180px); }
+  .brand img { width: 170px; }
   .menu-button { display: block; }
-  .site-nav { position: absolute; left: 0; right: 0; top: 66px; display: none; padding: 18px; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 40px rgba(16,35,63,.14); flex-direction: column; align-items: stretch; gap: 5px; }
+  .site-nav { position: absolute; left: 0; right: 0; top: 76px; display: none; padding: 18px; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 40px rgba(16,35,63,.14); flex-direction: column; align-items: stretch; gap: 5px; }
   .site-nav--open { display: flex; }.site-nav a { padding: 10px; }.site-nav .nav-login { margin-left: 0; }.site-nav .nav-cta { text-align: center; }
   .hero { width: 100%; padding: 55px 20px 65px; min-height: auto; }
   .hero h1 { font-size: clamp(39px, 12vw, 54px); }.hero__lead { font-size: 16px; }.hero__trust { gap: 9px 14px; }
