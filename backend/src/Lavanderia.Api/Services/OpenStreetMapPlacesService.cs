@@ -8,7 +8,7 @@ namespace Lavanderia.Api.Services;
 public sealed class OpenStreetMapPlacesService(HttpClient http, IConfiguration config)
 {
     private readonly string _nominatim = (config["Geocodificacion:BaseUrl"] ?? "https://nominatim.openstreetmap.org").TrimEnd('/');
-    private readonly string _overpass = config["OpenStreetMap:OverpassUrl"] ?? "https://overpass-api.de/api/interpreter";
+    private readonly string[] _overpassEndpoints = (config["OpenStreetMap:OverpassUrls"] ?? "https://overpass-api.de/api/interpreter;https://overpass.kumi.systems/api/interpreter;https://overpass.private.coffee/api/interpreter").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     private readonly string _userAgent = config["Geocodificacion:UserAgent"] ?? "LunaLav/1.0 (contacto@lunalav.pe)";
 
     public async Task<IReadOnlyList<GooglePlaceResult>> SearchLaundriesAsync(string query, int max, CancellationToken ct)
@@ -18,7 +18,7 @@ public sealed class OpenStreetMapPlacesService(HttpClient http, IConfiguration c
     }
 
     public Task<IReadOnlyList<GooglePlaceResult>> SearchAroundAsync(decimal lat, decimal lon, int max, CancellationToken ct)
-        => QueryAroundAsync(lat, lon, 4500, max, ct);
+        => QueryAroundAsync(lat, lon, 6000, max, ct);
 
     private async Task<IReadOnlyList<GooglePlaceResult>> QueryAroundAsync(decimal lat, decimal lon, int radius, int max, CancellationToken ct)
     {
@@ -30,11 +30,7 @@ public sealed class OpenStreetMapPlacesService(HttpClient http, IConfiguration c
   way[""shop""~""laundry|dry_cleaning""](around:{radius},{lat.ToString(c)},{lon.ToString(c)});
 );
 out center {max};";
-        using var req = new HttpRequestMessage(HttpMethod.Post, _overpass) { Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["data"] = overpassQuery }) };
-        req.Headers.UserAgent.ParseAdd(_userAgent);
-        using var resp = await http.SendAsync(req, ct);
-        var body = await resp.Content.ReadAsStringAsync(ct);
-        if (!resp.IsSuccessStatusCode) throw new InvalidOperationException($"OpenStreetMap (Overpass) respondió {(int)resp.StatusCode}. Intenta de nuevo en unos segundos.");
+        var body = await PostOverpassAsync(overpassQuery, ct);
         using var doc = JsonDocument.Parse(body);
         if (!doc.RootElement.TryGetProperty("elements", out var elements)) return [];
         var list = new List<GooglePlaceResult>();
@@ -58,6 +54,35 @@ out center {max};";
             if (list.Count >= max) break;
         }
         return list;
+    }
+
+    // Overpass público impone límites (429) y a veces cae; probamos varios espejos con reintento.
+    private async Task<string> PostOverpassAsync(string query, CancellationToken ct)
+    {
+        foreach (var endpoint in _overpassEndpoints)
+        {
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                try
+                {
+                    using var req = new HttpRequestMessage(HttpMethod.Post, endpoint) { Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["data"] = query }) };
+                    req.Headers.UserAgent.ParseAdd(_userAgent);
+                    using var resp = await http.SendAsync(req, ct);
+                    if ((int)resp.StatusCode == 429 || (int)resp.StatusCode >= 500)
+                    {
+                        await Task.Delay(700 * (attempt + 1), ct);
+                        continue;
+                    }
+                    if (!resp.IsSuccessStatusCode) break;
+                    return await resp.Content.ReadAsStringAsync(ct);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    await Task.Delay(500, ct);
+                }
+            }
+        }
+        throw new InvalidOperationException("El buscador de mapas está saturado en este momento. Espera unos segundos y vuelve a intentar.");
     }
 
     private async Task<(decimal lat, decimal lon, int radius)> ResolveAreaAsync(string query, CancellationToken ct)

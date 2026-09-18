@@ -14,6 +14,7 @@
     <div class="pub-grid">
       <form class="pub-form">
         <label>Tipo de publicación<select [(ngModel)]="pub.tipo" name="ptipo" (ngModelChange)="generarPost()"><option value="promo">Promoción / descuento</option><option value="novedad">Novedad / apertura</option><option value="consejo">Consejo / tip útil</option><option value="testimonio">Testimonio de cliente</option></select></label>
+        <label>Temporada / campaña<select [(ngModel)]="pub.temporada" name="ptemp" (ngModelChange)="generarPost()">@for(t of temporadas;track t.id){<option [value]="t.id">{{t.label}}</option>}</select></label>
         <label>Nombre del negocio<input [(ngModel)]="pub.negocio" name="pneg" (ngModelChange)="generarPost()" placeholder="Ej. LunaLav"></label>
         <label>Mensaje clave u oferta<input [(ngModel)]="pub.oferta" name="pof" (ngModelChange)="generarPost()" placeholder="Ej. 20% de descuento esta semana"></label>
         <label>Ciudad o zona<input [(ngModel)]="pub.zona" name="pzo" (ngModelChange)="generarPost()" placeholder="Ej. San Miguel, Lima"></label>
@@ -23,10 +24,11 @@
       <div class="pub-preview">
         <div class="pv-head"><b>Vista previa</b><button type="button" (click)="generarPost()">↻ Regenerar</button></div>
         <textarea [(ngModel)]="postText" name="ptext" rows="9" aria-label="Texto de la publicación"></textarea>
-        <div class="pv-actions"><button type="button" class="primary" (click)="copiarPost()">{{copiado()?'✓ Copiado':'⧉ Copiar texto'}}</button><a class="share wa" [href]="waShare()" target="_blank" rel="noopener">WhatsApp</a><a class="share fb" [href]="fbShare()" target="_blank" rel="noopener">Facebook</a><a class="share tw" [href]="twShare()" target="_blank" rel="noopener">X</a></div>
-        <p class="pv-note">📸 Instagram no permite pre-cargar texto: pulsa "Copiar texto" y pégalo en tu publicación o historia.</p>
+        <div class="pv-actions"><button type="button" class="primary" (click)="copiarPost()">{{copiado()?'✓ Copiado':'⧉ Copiar texto'}}</button><button type="button" class="save" (click)="guardarHistorial()">💾 Guardar</button><a class="share wa" [href]="waShare()" target="_blank" rel="noopener">WhatsApp</a><a class="share fb" [href]="fbShare()" target="_blank" rel="noopener">Facebook</a><a class="share tw" [href]="twShare()" target="_blank" rel="noopener">X</a></div>
+        <p class="pv-note">📸 Instagram no permite pre-cargar texto: pulsa "Copiar texto" y pégalo en tu publicación o historia. 🤖 Los textos se arman con plantillas inteligentes (sin costo); aún no usan un modelo de IA generativa.</p>
       </div>
     </div>
+    @if(historial().length){<section class="pub-hist"><div class="ph-head"><h2>Historial de publicaciones ({{historial().length}})</h2><small>Guardado en este navegador</small></div>@for(x of historial();track x.fecha){<article><div class="ph-txt"><p>{{x.texto}}</p><small>{{x.fecha|date:'dd MMM, HH:mm'}}</small></div><div class="ph-actions"><button (click)="usarHistorial(x)">Usar</button><button class="del" (click)="borrarHistorial($index)" title="Eliminar">✕</button></div></article>}</section>}
   }
   @case('inbox'){
     <section class="head"><div><h1>Inbox</h1><p>Borradores preparados por el equipo. La conexión de correo aún no está configurada.</p></div><button (click)="showForm.set(!showForm())">✎ Redactar</button></section>
