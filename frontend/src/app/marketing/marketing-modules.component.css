@@ -82,6 +82,33 @@
 .settings article b{font-size:13px}
 .settings em{background:#fff3d5;color:#c58d18;border-radius:99px;padding:5px 8px;font-size:10px;font-style:normal;font-weight:800}
 .settings em.ok{background:#e0f8ed;color:#178e67}
+.cal-wrap{background:#fff;border:1px solid #dcecf8;border-radius:14px;box-shadow:0 6px 20px #2b6da00e;overflow:hidden}
+.cal-top{display:flex;align-items:center;gap:16px;padding:15px 18px;border-bottom:1px solid #e9f1f8;flex-wrap:wrap}
+.cal-nav{display:flex;gap:6px;align-items:center}
+.cal-nav button{border:1px solid #d5e6f5;background:#fff;color:#2b6aa8;border-radius:8px;min-width:34px;height:34px;font-size:16px;font-weight:800;cursor:pointer}
+.cal-nav button:hover{background:#eef6fd}
+.cal-nav .cal-today{min-width:auto;padding:0 13px;font-size:12px}
+.cal-top h2{margin:0;font-size:18px;color:#173c6a;flex:1}
+.cal-legend{display:flex;gap:14px;font-size:11px;color:#6f8bab;flex-wrap:wrap}
+.cal-legend span{display:flex;align-items:center;gap:6px}
+.cal-legend i{width:11px;height:11px;border-radius:3px}
+.lg-seg{background:#3b82f6}.lg-tar{background:#f5a623}.lg-alta{background:#e0556a}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-head-row{background:#f6f9fd;border-bottom:1px solid #e9f1f8}
+.cal-dow{padding:9px;text-align:center;font-size:10px;font-weight:900;letter-spacing:.5px;color:#7590ac}
+.cal-cell{min-height:106px;border-right:1px solid #eef3f8;border-bottom:1px solid #eef3f8;padding:6px;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+.cal-cell:nth-child(7n){border-right:0}
+.cal-cell.out{background:#fafcfe}
+.cal-cell.out .cal-num{color:#bccadb}
+.cal-num{font-size:11px;font-weight:800;color:#4c6a8c;align-self:flex-start;padding:1px 4px}
+.cal-cell.today{background:#eef6ff}
+.cal-cell.today .cal-num{background:#168dea;color:#fff;border-radius:50%;width:22px;height:22px;display:grid;place-items:center;padding:0}
+.cal-ev{display:block;font-size:10px;font-weight:700;color:#fff;background:#3b82f6;border-radius:5px;padding:3px 6px;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.cal-ev:hover{filter:brightness(1.06)}
+.cal-ev.tarea{background:#f5a623}
+.cal-ev.alta{background:#e0556a}
+.cal-more{font-size:9px;color:#7590ac;padding-left:3px}
+@media(max-width:760px){.cal-cell{min-height:74px}.cal-ev{font-size:9px;padding:2px 4px}.cal-dow{font-size:9px}}
 .pub-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
 .pub-form,.pub-preview{background:#fff;border:1px solid #dcecf8;border-radius:12px;padding:18px;box-shadow:0 5px 17px #2b6da00c}
 .pub-form{display:grid;gap:13px}

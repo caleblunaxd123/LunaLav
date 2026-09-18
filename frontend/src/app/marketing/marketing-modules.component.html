@@ -40,8 +40,12 @@
     <section class="table">@for(x of drafts();track x.id){<article><div><b>{{x.asunto||'Mensaje sin asunto'}}</b><small>Para: {{x.destinatario}} · {{x.canal}}</small><p>{{x.cuerpo}}</p></div><i>{{x.estado.replaceAll('_',' ')}}</i>@if(x.estado==='BORRADOR'){<button (click)="draftState(x.id,'PENDIENTE_APROBACION')">Enviar a aprobación</button>}@if(x.estado==='PENDIENTE_APROBACION'){<button (click)="draftState(x.id,'APROBADO')">Aprobar</button>}</article>}@empty{<div class="empty">No hay borradores. Redacta una invitación personalizada y apruébala antes de enviarla.</div>}</section>
   }
   @case('calendario'){
-    <section class="head"><div><h1>Calendario</h1><p>Próximas acciones comerciales de tu equipo.</p></div><a routerLink="/marketing/seguimientos">Gestionar tareas</a></section>
-    <section class="calendar">@for(x of followups();track x.id){<article><time>{{x.fechaProgramada|date:'dd MMM'}}</time><div><b>{{x.negocio}}</b><small>{{x.descripcion}} · {{x.tipo}}</small></div><i>{{x.prioridad}}</i></article>}@empty{<div class="empty">No hay seguimientos programados.</div>}</section>
+    <section class="head"><div><h1>Calendario</h1><p>Agenda de seguimientos y tareas de tu equipo.</p></div><a routerLink="/marketing/seguimientos">Gestionar tareas</a></section>
+    <section class="cal-wrap">
+      <header class="cal-top"><div class="cal-nav"><button (click)="calMove(-1)" title="Mes anterior">‹</button><button class="cal-today" (click)="calHoy()">Hoy</button><button (click)="calMove(1)" title="Mes siguiente">›</button></div><h2>{{calLabel()}}</h2><div class="cal-legend"><span><i class="lg-seg"></i>Seguimiento</span><span><i class="lg-tar"></i>Tarea</span><span><i class="lg-alta"></i>Alta prioridad</span></div></header>
+      <div class="cal-grid cal-head-row">@for(d of diasSemana;track d){<div class="cal-dow">{{d}}</div>}</div>
+      <div class="cal-grid">@for(c of calGrid();track c.key){<div class="cal-cell" [class.out]="!c.inMonth" [class.today]="c.isToday"><span class="cal-num">{{c.day}}</span>@for(e of c.events.slice(0,3);track e.id){<a class="cal-ev" [class.tarea]="e.kind==='tarea'" [class.alta]="e.prioridad==='ALTA'" [routerLink]="e.prospectId?['/marketing/prospectos',e.prospectId]:null" [title]="e.title+' · '+e.sub">{{e.title}}</a>}@if(c.events.length>3){<small class="cal-more">+{{c.events.length-3}} más</small>}</div>}</div>
+    </section>
   }
   @case('reportes'){
     <section class="head"><div><h1>Reportes</h1><p>Indicadores construidos desde los datos reales de Marketing.</p></div><button (click)="exportCsv()" [disabled]="exporting()">⭳ {{exporting()?'Exportando…':'Exportar prospectos (CSV)'}}</button></section>
