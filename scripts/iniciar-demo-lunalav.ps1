@@ -124,13 +124,14 @@ Write-Host "[2/5] Compilando LunaLav..." -ForegroundColor Cyan
 Push-Location $frontend
 try {
     # npm escribe sus advertencias en stderr; bajo $ErrorActionPreference='Stop' PowerShell 5.1
-    # las convierte en error terminante y aborta el build por un simple warning. Ejecutar vía
-    # cmd.exe evita esa conversión y $LASTEXITCODE sigue detectando fallos reales.
+    # las convierte en error terminante y aborta el build por un simple warning. Fusionar stderr
+    # dentro de cmd.exe (2>&1) hace que PowerShell solo reciba stdout; $LASTEXITCODE sigue
+    # reflejando el código real de npm, así que un fallo verdadero sí aborta.
     if (-not (Test-Path -LiteralPath (Join-Path $frontend "node_modules"))) {
-        & cmd.exe /c "npm.cmd ci"
+        & cmd.exe /c "npm.cmd ci 2>&1"
         if ($LASTEXITCODE -ne 0) { throw "npm ci falló." }
     }
-    & cmd.exe /c "npm.cmd run build"
+    & cmd.exe /c "npm.cmd run build 2>&1"
     if ($LASTEXITCODE -ne 0) { throw "La compilación de Angular falló." }
 } finally {
     Pop-Location
