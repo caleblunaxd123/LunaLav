@@ -4,12 +4,12 @@
 
 :root {
   /* ---------- Paleta base — Identidad LunaLav ----------
-     Principal 01 #053465 (navy) · Secundario #06B0BD (cian) · Principal 02 #046086 (azul medio).
+     Principal 01 #053465 (navy) · Secundario #249FE6 (azul cielo) · Principal 02 #168DDD (azul medio).
      Es el tema POR DEFECTO del producto (login, panel de plataforma, tenants sin marca propia).
      Cada negocio puede sobrescribir estos 3 tokens desde Ajustes → Negocio (ver configuracion.service). */
   --azul-oscuro: #053465;  /* navy — chrome, sidebar, encabezados, botones primarios */
-  --azul-claro: #06B0BD;   /* cian — acentos, gradientes, enlaces */
-  --naranja: #046086;      /* azul medio — acento secundario (el token conserva su nombre histórico) */
+  --azul-claro: #249fe6;   /* azul cielo — acentos, gradientes, enlaces */
+  --naranja: #168ddd;      /* azul medio — acento secundario (el token conserva su nombre histórico) */
   --verde: #2ecc71;
   --rojo: #e74c3c;
   --gris-texto: #4a5568;

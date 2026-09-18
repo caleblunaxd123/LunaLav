@@ -1,12 +1,12 @@
 :host { display: block; }
 
 .landing {
-  --ink: #10233f;
-  --navy: #0a315a;
-  --blue: #075f86;
-  --cyan: #12b8c7;
-  --teal: #2dd4bf;
-  --violet: #8b5cf6;
+  --ink: #0b3d78;
+  --navy: #0b3d78;
+  --blue: #168ddd;
+  --cyan: #249fe6;
+  --teal: #55c8f6;
+  --violet: #b9e6fb;
   --mist: #f2f8fa;
   --line: #dbe8ed;
   color: var(--ink);
@@ -77,7 +77,7 @@
 .app-window__user { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--blue); font-size: 9px; }
 .app-window__body { display: grid; grid-template-columns: 58px 1fr; min-height: 350px; }
 .mock-sidebar { padding: 18px 0; background: var(--navy); display: flex; flex-direction: column; align-items: center; gap: 21px; }
-.mock-sidebar img { width: 30px; margin-bottom: 11px; filter: brightness(0) invert(1); }
+.mock-sidebar img { width: 30px; margin-bottom: 11px; }
 .mock-sidebar i { width: 22px; height: 7px; border-radius: 4px; background: rgba(255,255,255,.22); }
 .mock-sidebar i.active { background: var(--teal); }
 .mock-dashboard { background: #f5f9fb; padding: 24px; }
