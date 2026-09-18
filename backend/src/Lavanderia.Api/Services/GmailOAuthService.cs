@@ -22,7 +22,7 @@ public sealed class GmailOAuthService(HttpClient http, IConfiguration config, IS
         cmd.CommandText = "INSERT INTO communication.OAuthState(Provider,State,RequestedBy,ExpiresAt) VALUES(N'GMAIL',@s,@u,DATEADD(MINUTE,10,SYSUTCDATETIME()))";
         cmd.AddParam("@s", state); cmd.AddParam("@u", requestedBy); await cmd.ExecuteNonQueryAsync(ct);
         var scope = Uri.EscapeDataString("https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send");
-        return $"https://accounts.google.com/o/oauth2/v2/auth?client_id={Uri.EscapeDataString(ClientId!)}&redirect_uri={Uri.EscapeDataString(CallbackUrl)}&response_type=code&scope={scope}&access_type=offline&prompt=consent&state={state}";
+        return $"https://accounts.google.com/o/oauth2/v2/auth?client_id={Uri.EscapeDataString(ClientId!)}&redirect_uri={Uri.EscapeDataString(CallbackUrl)}&response_type=code&scope={scope}&access_type=offline&prompt=consent%20select_account&state={state}";
     }
 
     public async Task CompleteAsync(string code, string state, CancellationToken ct)

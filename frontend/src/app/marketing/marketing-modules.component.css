@@ -82,6 +82,7 @@
 .settings article b{font-size:13px}
 .settings em{background:#fff3d5;color:#c58d18;border-radius:99px;padding:5px 8px;font-size:10px;font-style:normal;font-weight:800}
 .settings em.ok{background:#e0f8ed;color:#178e67}
+.setting-actions{display:flex!important;align-items:center;justify-content:flex-end;gap:8px;flex:0 0 auto!important;flex-wrap:wrap}.setting-actions em{font-style:normal;font-size:9px;font-weight:900}.settings .connect.secondary{background:#fff;color:#168dea;border:1px solid #bfe4ff;box-shadow:none}
 @media(max-width:800px){
   .metrics{grid-template-columns:repeat(2,1fr)}
   .form{grid-template-columns:1fr}
