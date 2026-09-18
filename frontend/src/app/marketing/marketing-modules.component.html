@@ -41,11 +41,28 @@
   }
   @case('calendario'){
     <section class="head"><div><h1>Calendario</h1><p>Agenda de seguimientos y tareas de tu equipo.</p></div><a routerLink="/marketing/seguimientos">Gestionar tareas</a></section>
-    <section class="cal-wrap">
-      <header class="cal-top"><div class="cal-nav"><button (click)="calMove(-1)" title="Mes anterior">‹</button><button class="cal-today" (click)="calHoy()">Hoy</button><button (click)="calMove(1)" title="Mes siguiente">›</button></div><h2>{{calLabel()}}</h2><div class="cal-legend"><span><i class="lg-seg"></i>Seguimiento</span><span><i class="lg-tar"></i>Tarea</span><span><i class="lg-alta"></i>Alta prioridad</span></div></header>
-      <div class="cal-grid cal-head-row">@for(d of diasSemana;track d){<div class="cal-dow">{{d}}</div>}</div>
-      <div class="cal-grid">@for(c of calGrid();track c.key){<div class="cal-cell" [class.out]="!c.inMonth" [class.today]="c.isToday"><span class="cal-num">{{c.day}}</span>@for(e of c.events.slice(0,3);track e.id){<a class="cal-ev" [class.tarea]="e.kind==='tarea'" [class.alta]="e.prioridad==='ALTA'" [routerLink]="e.prospectId?['/marketing/prospectos',e.prospectId]:null" [title]="e.title+' · '+e.sub">{{e.title}}</a>}@if(c.events.length>3){<small class="cal-more">+{{c.events.length-3}} más</small>}</div>}</div>
-    </section>
+    <div class="cal-layout">
+      <section class="cal-wrap">
+        <header class="cal-top"><div class="cal-nav"><button (click)="calMove(-1)" title="Anterior">‹</button><button class="cal-today" (click)="calHoy()">Hoy</button><button (click)="calMove(1)" title="Siguiente">›</button></div><h2>{{calLabel()}}</h2><div class="cal-views"><button [class.active]="calView()==='mes'" (click)="setVista('mes')">Mes</button><button [class.active]="calView()==='semana'" (click)="setVista('semana')">Semana</button><button [class.active]="calView()==='dia'" (click)="setVista('dia')">Día</button></div></header>
+        @switch(calView()){
+          @case('mes'){
+            <div class="cal-grid cal-head-row">@for(d of diasSemana;track d){<div class="cal-dow">{{d}}</div>}</div>
+            <div class="cal-grid">@for(c of calGrid();track c.key){<div class="cal-cell" [class.out]="!c.inMonth" [class.today]="c.isToday" [class.sel]="c.key===selKey()" (click)="selDia(c.date)"><span class="cal-num">{{c.day}}</span>@for(e of c.events.slice(0,3);track e.id){<a class="cal-ev" [class.tarea]="e.kind==='tarea'" [class.alta]="e.prioridad==='ALTA'" [routerLink]="e.prospectId?['/marketing/prospectos',e.prospectId]:null" (click)="$event.stopPropagation()" [title]="e.title+' · '+e.sub">{{e.hora?e.hora+' ':''}}{{e.title}}</a>}@if(c.events.length>3){<small class="cal-more">+{{c.events.length-3}} más</small>}</div>}</div>
+          }
+          @case('semana'){
+            <div class="cal-week">@for(c of calWeek();track c.key){<div class="cal-wcol" [class.today]="c.isToday" [class.sel]="c.key===selKey()" (click)="selDia(c.date)"><div class="cal-whead"><small>{{c.dow}}</small><b>{{c.day}}</b></div><div class="cal-wbody">@for(e of c.events;track e.id){<a class="cal-ev" [class.tarea]="e.kind==='tarea'" [class.alta]="e.prioridad==='ALTA'" [routerLink]="e.prospectId?['/marketing/prospectos',e.prospectId]:null" (click)="$event.stopPropagation()" [title]="e.sub">{{e.hora?e.hora+' ':''}}{{e.title}}</a>}@empty{<span class="cal-wempty">—</span>}</div></div>}</div>
+          }
+          @case('dia'){
+            <div class="cal-day">@for(e of diaEventos();track e.id){<a class="cal-dayev" [class.tarea]="e.kind==='tarea'" [class.alta]="e.prioridad==='ALTA'" [routerLink]="e.prospectId?['/marketing/prospectos',e.prospectId]:null"><time>{{e.hora||'—'}}</time><div><b>{{e.title}}</b><small>{{e.sub}}</small></div><i>{{e.kind==='tarea'?'Tarea':'Seguimiento'}}</i></a>}@empty{<div class="empty">No hay nada agendado este día. Agéndalo en el panel derecho.</div>}</div>
+          }
+        }
+      </section>
+      <aside class="cal-side">
+        <div class="cs-head"><b>{{selLabel()}}</b><small>{{selEventos().length}} evento(s)</small></div>
+        <div class="cs-events">@for(e of selEventos();track e.id){<a class="cs-ev" [routerLink]="e.prospectId?['/marketing/prospectos',e.prospectId]:null"><span class="dot" [class.tarea]="e.kind==='tarea'" [class.alta]="e.prioridad==='ALTA'"></span><div><b>{{e.title}}</b><small>{{e.hora?e.hora+' · ':''}}{{e.sub}}</small></div></a>}@empty{<p class="cs-muted">Sin eventos este día.</p>}</div>
+        <form class="cs-form" (ngSubmit)="crearSeguimiento()"><b>＋ Nuevo seguimiento</b><select [(ngModel)]="nuevoSeg.prospectId" name="nsp" required><option [ngValue]="null" disabled>Elige un prospecto…</option>@for(p of calProspects();track p.id){<option [ngValue]="p.id">{{p.nombreComercial}}</option>}</select><div class="cs-row"><input type="time" [(ngModel)]="nuevoSeg.hora" name="nsh"><select [(ngModel)]="nuevoSeg.prioridad" name="nspr"><option value="ALTA">Alta</option><option value="MEDIA">Media</option><option value="BAJA">Baja</option></select></div><input [(ngModel)]="nuevoSeg.descripcion" name="nsd" placeholder="Descripción o acción…" required maxlength="500"><button class="cs-save" [disabled]="!nuevoSeg.prospectId||!nuevoSeg.descripcion||segSaving()">{{segSaving()?'Guardando…':'Agendar el '+selShort()}}</button>@if(segMsg()){<small class="cs-msg">{{segMsg()}}</small>}</form>
+      </aside>
+    </div>
   }
   @case('reportes'){
     <section class="head"><div><h1>Reportes</h1><p>Indicadores construidos desde los datos reales de Marketing.</p></div><button (click)="exportCsv()" [disabled]="exporting()">⭳ {{exporting()?'Exportando…':'Exportar prospectos (CSV)'}}</button></section>
