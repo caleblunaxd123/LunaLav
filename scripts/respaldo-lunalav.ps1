@@ -45,5 +45,26 @@ $rotationSql = "EXEC master.dbo.xp_delete_file 0, N'$sqlRoot', N'bak', N'$cutoff
 & sqlcmd -S $SqlServer -E -b -C -Q $rotationSql
 if ($LASTEXITCODE -ne 0) { throw "El respaldo se creó, pero no se pudo completar la rotación segura." }
 
+$stateRoot = Join-Path $env:LOCALAPPDATA "LunaLav\demo"
+$localBackupRoot = Join-Path $env:LOCALAPPDATA "LunaLav\respaldo"
+New-Item -ItemType Directory -Force -Path $localBackupRoot | Out-Null
+
+# Base y archivos se respaldan por separado: SQL Server verifica el .bak y este
+# archivo comprimido conserva fotos, claves de protección y configuración local.
+$stateItems = @(Get-ChildItem -LiteralPath $stateRoot -Force -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -ne 'logs' })
+if ($stateItems.Count -gt 0) {
+    $stateArchive = Join-Path $localBackupRoot "LunaLav_estado_$timestamp.zip"
+    Compress-Archive -LiteralPath $stateItems.FullName -DestinationPath $stateArchive -CompressionLevel Optimal -Force
+    if (-not (Test-Path -LiteralPath $stateArchive) -or (Get-Item -LiteralPath $stateArchive).Length -lt 1) {
+        throw "No se pudo verificar el respaldo de archivos locales."
+    }
+
+    Get-ChildItem -LiteralPath $localBackupRoot -Filter 'LunaLav_estado_*.zip' -File |
+        Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-$RetenerDias) } |
+        Remove-Item -Force
+    Write-Host "Archivos locales respaldados: $stateArchive" -ForegroundColor Green
+}
+
 Write-Host "Respaldo verificado por SQL Server: $backupFile" -ForegroundColor Green
 Write-Host "Retención: $RetenerDias días" -ForegroundColor DarkGray
