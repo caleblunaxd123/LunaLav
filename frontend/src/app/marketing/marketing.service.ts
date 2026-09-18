@@ -7,4 +7,5 @@ export interface Prospect { id:number; nombreComercial:string; distrito?:string;
   agentSettings(){return this.http.get<any>(`${this.url}/agent-settings`);} saveAgentSettings(body:any){return this.http.put(`${this.url}/agent-settings`,body);}
   automationRules(){return this.http.get<any[]>(`${this.url}/automation/rules`);} setAutomationRule(id:number,activa:boolean){return this.http.patch(`${this.url}/automation/rules/${id}`,activa);}
   approvals(){return this.http.get<any[]>(`${this.url}/automation/approvals`);} decideApproval(id:number,estado:'APPROVED'|'REJECTED'){return this.http.patch(`${this.url}/automation/approvals/${id}`,{estado});} runAutomation(type:string){return this.http.post(`${this.url}/automation/jobs/${type}`,{});}
+  googleStatus(){return this.http.get<any>(`${this.url}/google/status`);} searchPlaces(q:string,max=10){return this.http.get<any[]>(`${this.url}/google/places/search`,{params:{q,max}});}
 }
