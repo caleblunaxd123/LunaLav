@@ -1,7 +1,21 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard, moduloGuard, rolGuard } from './core/guards/auth.guard';
+import { marketingGuard, marketingGuestGuard } from './marketing/marketing.guard';
 
 export const routes: Routes = [
+  {
+    path: 'marketing/login', canActivate: [marketingGuestGuard],
+    loadComponent: () => import('./marketing/marketing-login.component').then(m => m.MarketingLoginComponent)
+  },
+  {
+    path: 'marketing', canActivate: [marketingGuard],
+    loadComponent: () => import('./marketing/marketing-shell.component').then(m => m.MarketingShellComponent),
+    children: [
+      { path: '', loadComponent: () => import('./marketing/marketing-dashboard.component').then(m => m.MarketingDashboardComponent) },
+      { path: 'prospectos', loadComponent: () => import('./marketing/marketing-prospects.component').then(m => m.MarketingProspectsComponent) },
+      { path: 'prospectos/nuevo', loadComponent: () => import('./marketing/marketing-prospect-new.component').then(m => m.MarketingProspectNewComponent) }
+    ]
+  },
   {
     path: '',
     pathMatch: 'full',

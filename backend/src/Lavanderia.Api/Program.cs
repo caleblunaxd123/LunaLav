@@ -217,6 +217,7 @@ builder.Services.AddTransient<IPedidoService, PedidoService>();
 
 // Auth
 builder.Services.AddSingleton<ITokenService, TokenService>();
+builder.Services.AddSingleton<IMarketingTokenService, MarketingTokenService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opts =>
     {
@@ -235,6 +236,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnTokenValidated = async context =>
             {
+                // La sesión interna de Marketing no pertenece a un tenant de lavandería.
+                // El policy "Marketing" restringe sus endpoints; aquí evitamos aplicar la
+                // validación de suscripción de un negocio inexistente.
+                if (context.Principal?.FindFirst("app")?.Value == "marketing") return;
                 if (context.Principal?.IsInRole("PROPIETARIO") == true) return;
 
                 var negocioClaim = context.Principal?.FindFirst("negocioId")?.Value;
@@ -253,6 +258,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, ModuloAuthorizationHandler>();
 builder.Services.AddAuthorization(options =>
 {
+    options.AddPolicy("Marketing", policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.RequireClaim("app", "marketing");
+    });
     foreach (var modulo in Lavanderia.Api.Domain.Modulos.Todos)
     {
         options.AddPolicy(ModuloPolicies.For(modulo), policy =>
