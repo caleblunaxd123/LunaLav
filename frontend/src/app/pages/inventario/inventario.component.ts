@@ -58,6 +58,7 @@ export class InventarioComponent implements OnInit, OnDestroy {
   // Por defecto se muestran solo los consumibles (lo que se usa a diario); equipos y materiales
   // quedan ocultos hasta que el usuario cambie el filtro de clase.
   readonly filtroClase = signal<'TODAS' | ClaseInsumo>('INSUMO');
+  readonly soloFavoritos = signal(false);
 
   // Clases de inventario: valor almacenado + etiqueta visible.
   readonly clases: { valor: ClaseInsumo; etiqueta: string }[] = [
@@ -98,20 +99,24 @@ export class InventarioComponent implements OnInit, OnDestroy {
     const termino = this.normalizar(this.busqueda());
     const estado = this.filtroEstado();
     const clase = this.filtroClase();
+    const soloFav = this.soloFavoritos();
     return this.insumos().filter(i => {
       const coincideTexto = !termino || this.normalizar(i.nombre).includes(termino);
       const coincideEstado = estado === 'TODOS'
         || (estado === 'ACTIVOS' && i.activo)
         || (estado === 'BAJO_STOCK' && i.activo && this.bajoStock(i))
         || (estado === 'INACTIVOS' && !i.activo);
-      const coincideClase = clase === 'TODAS' || i.clase === clase;
-      return coincideTexto && coincideEstado && coincideClase;
+      const coincideClase = soloFav || clase === 'TODAS' || i.clase === clase;
+      const coincideFavorito = !soloFav || !!i.favorito;
+      return coincideTexto && coincideEstado && coincideClase && coincideFavorito;
     });
   });
   readonly insumosOrdenados = computed(() => [...this.insumosFiltrados()].sort((a, b) => {
+    const favA = a.favorito ? 0 : 1;
+    const favB = b.favorito ? 0 : 1;
     const prioridadA = !a.activo ? 2 : (this.bajoStock(a) ? 0 : 1);
     const prioridadB = !b.activo ? 2 : (this.bajoStock(b) ? 0 : 1);
-    return prioridadA - prioridadB || a.nombre.localeCompare(b.nombre, 'es');
+    return favA - favB || prioridadA - prioridadB || a.nombre.localeCompare(b.nombre, 'es');
   }));
   readonly insumosPaginados = computed(() => {
     const inicio = (this.paginaInsumos() - 1) * this.tamanoPaginaInsumos();
@@ -120,7 +125,19 @@ export class InventarioComponent implements OnInit, OnDestroy {
   cambiarPaginaInsumos(p: number) { this.paginaInsumos.set(p); }
   cambiarTamanoPaginaInsumos(t: number) { this.tamanoPaginaInsumos.set(t); this.paginaInsumos.set(1); }
   cambiarFiltros() { this.paginaInsumos.set(1); }
-  limpiarFiltros() { this.busqueda.set(''); this.filtroEstado.set('TODOS'); this.filtroClase.set('INSUMO'); this.paginaInsumos.set(1); }
+  limpiarFiltros() { this.busqueda.set(''); this.filtroEstado.set('TODOS'); this.filtroClase.set('INSUMO'); this.soloFavoritos.set(false); this.paginaInsumos.set(1); }
+  toggleSoloFavoritos() { this.soloFavoritos.update(v => !v); this.paginaInsumos.set(1); }
+  toggleFavorito(i: Insumo, ev?: Event) {
+    ev?.stopPropagation();
+    const nuevo = !i.favorito;
+    this.insumos.update(list => list.map(x => x.id === i.id ? { ...x, favorito: nuevo } : x));
+    this.svc.marcarFavorito(i.id, nuevo).subscribe({
+      error: () => {
+        this.insumos.update(list => list.map(x => x.id === i.id ? { ...x, favorito: !nuevo } : x));
+        this.toast.error('No se pudo actualizar el favorito.');
+      }
+    });
+  }
 
   readonly paginaHistorial = signal(1);
   readonly tamanoPaginaHistorial = signal(15);

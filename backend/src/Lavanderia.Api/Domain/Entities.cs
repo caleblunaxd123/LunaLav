@@ -382,6 +382,8 @@ public class Insumo
     public string UnidadMedida { get; set; } = "";
     /// <summary>Clase de inventario: EQUIPO, MATERIAL o INSUMO (consumible).</summary>
     public string Clase { get; set; } = "INSUMO";
+    /// <summary>Marca de favorito para priorizar insumos de uso frecuente dentro de la sede.</summary>
+    public bool Favorito { get; set; }
     /// <summary>Contenido de cada unidad de stock, ej. bidón x 20 litros (opcional).</summary>
     public decimal? ContenidoValor { get; set; }
     public string? ContenidoUnidad { get; set; }

@@ -7,7 +7,7 @@ export type IconName =
   | 'chevron-left' | 'chevron-right' | 'chevron-first' | 'chevron-last' | 'arrow-left' | 'arrow-right'
   | 'smartphone' | 'bank' | 'credit-card' | 'info' | 'eye' | 'eye-off'
   | 'chart' | 'settings' | 'tag' | 'home' | 'list' | 'kanban' | 'bell' | 'camera' | 'mail'
-  | 'key' | 'copy' | 'exit-run' | 'truck';
+  | 'key' | 'copy' | 'exit-run' | 'truck' | 'star' | 'star-fill';
 
 @Component({
   selector: 'app-icon',

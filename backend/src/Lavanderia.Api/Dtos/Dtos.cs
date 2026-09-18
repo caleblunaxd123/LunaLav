@@ -341,6 +341,12 @@ public class RegistrarPagoRequest
     [StringLength(300)] public string? Descripcion { get; set; }
 }
 
+/// <summary>Marca o desmarca un insumo como favorito dentro de su sede.</summary>
+public class MarcarFavoritoInsumoRequest
+{
+    public bool Favorito { get; set; }
+}
+
 /// <summary>Corrige el método de un cobro ya registrado sin alterar su monto. Solo ADMIN.</summary>
 public class EditarMetodoPagoRequest
 {
@@ -527,6 +533,8 @@ public class InsumoDto
     [Required, StringLength(20)] public string UnidadMedida { get; set; } = "";
     /// <summary>EQUIPO, MATERIAL o INSUMO (consumible). Si viene vacío/ inválido se usa INSUMO.</summary>
     public string Clase { get; set; } = "INSUMO";
+    /// <summary>Los insumos favoritos aparecen primero en Inventario.</summary>
+    public bool Favorito { get; set; }
     /// <summary>Contenido de cada unidad, ej. 20 (litros). Opcional.</summary>
     [Range(0, 1000000)] public decimal? ContenidoValor { get; set; }
     [StringLength(20)] public string? ContenidoUnidad { get; set; }

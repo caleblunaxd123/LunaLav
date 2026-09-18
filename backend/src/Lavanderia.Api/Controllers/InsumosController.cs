@@ -165,6 +165,13 @@ public class InsumosController : TenantAwareControllerBase
         return NoContent();
     }
 
+    [HttpPatch("{id:int}/favorito")]
+    public async Task<IActionResult> MarcarFavorito(int id, [FromBody] MarcarFavoritoInsumoRequest req, CancellationToken ct)
+    {
+        var ok = await _repo.MarcarFavoritoAsync(id, req.Favorito, SedeRequeridaId, ct);
+        return ok ? NoContent() : NotFound();
+    }
+
     [HttpPost("{id:int}/movimientos")]
     public async Task<IActionResult> RegistrarMovimiento(int id, [FromBody] RegistrarMovimientoInsumoRequest req, CancellationToken ct)
     {
@@ -295,6 +302,7 @@ public class InsumosController : TenantAwareControllerBase
         Nombre = i.Nombre,
         UnidadMedida = i.UnidadMedida,
         Clase = i.Clase,
+        Favorito = i.Favorito,
         ContenidoValor = i.ContenidoValor,
         ContenidoUnidad = i.ContenidoUnidad,
         StockActual = i.StockActual,
