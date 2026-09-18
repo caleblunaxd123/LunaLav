@@ -29,6 +29,7 @@ public class MarketingProspectRequest
     public List<int> TagIds { get; set; } = [];
 }
 public record MarketingActivityRequest([Required, StringLength(30)] string Tipo, [StringLength(30)] string? Canal, [Required, StringLength(180)] string Titulo, [StringLength(2000)] string? Detalle);
+public record MarketingStatusRequest([Required, StringLength(30)] string Estado);
 public record MarketingFollowUpRequest(long ProspectId, [Required, StringLength(30)] string Tipo, [Required, StringLength(15)] string Prioridad, [Required, StringLength(500)] string Descripcion, DateTime FechaProgramada);
 public record MarketingTaskRequest(long? ProspectId, [Required, StringLength(180)] string Titulo, [Required, StringLength(15)] string Prioridad, DateTime? FechaVencimiento, [StringLength(1000)] string? Notas);
 public record MarketingTagRequest([Required, StringLength(60)] string Nombre, [Required, StringLength(12)] string Color);
