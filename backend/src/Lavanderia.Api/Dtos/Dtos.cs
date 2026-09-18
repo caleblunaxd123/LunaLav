@@ -28,7 +28,15 @@ public class CrearInteresadoDemoRequest
     [Required, StringLength(20)] public string PlanInteres { get; set; } = "BASICO";
     [Required] public bool Consentimiento { get; set; }
 }
-public record InteresadoDemoDto(int Id, string Nombre, string Negocio, string Celular, string? Email, string PlanInteres, DateTime FechaCreacion);
+public record InteresadoDemoDto(int Id, string Nombre, string Negocio, string Celular, string? Email, string PlanInteres,
+    bool Consentimiento, string EstadoSeguimiento, string? NotaSeguimiento, string? MensajeAprobado,
+    DateTime? FechaAprobacion, DateTime? FechaUltimoSeguimiento, DateTime FechaCreacion);
+public class AprobarSeguimientoInteresadoRequest
+{
+    [Required, StringLength(20)] public string Canal { get; set; } = "WHATSAPP";
+    [StringLength(2000)] public string? Mensaje { get; set; }
+    [StringLength(600)] public string? Nota { get; set; }
+}
 
 // ---------- Sedes ----------
 public class SedeDto
