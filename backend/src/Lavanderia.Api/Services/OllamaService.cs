@@ -28,23 +28,23 @@ public sealed class OllamaService(HttpClient http, IConfiguration config)
 
     private static string ConstruirPrompt(PublicacionPrompt p)
     {
+        var marca = string.IsNullOrWhiteSpace(p.Negocio) ? "LunaLav" : p.Negocio!.Trim();
         var tipo = (p.Tipo ?? "promo") switch
         {
-            "novedad" => "una novedad o apertura",
-            "consejo" => "un consejo o tip útil de lavandería",
-            "testimonio" => "un testimonio de cliente satisfecho",
-            _ => "una promoción o descuento"
+            "novedad" => "una nueva función o novedad del sistema",
+            "consejo" => "un consejo de gestión para dueños de lavanderías",
+            "testimonio" => $"un testimonio de un dueño de lavandería que usa {marca}",
+            _ => "una promoción del sistema"
         };
-        var temporada = string.IsNullOrWhiteSpace(p.Temporada) || p.Temporada == "ninguna" ? "" : $" Adáptalo a la temporada: {p.Temporada}.";
+        var temporada = string.IsNullOrWhiteSpace(p.Temporada) || p.Temporada == "ninguna" ? "" : $" Relaciónalo con la temporada {p.Temporada} (más carga de trabajo para la lavandería).";
         var datos = new List<string>();
-        if (!string.IsNullOrWhiteSpace(p.Negocio)) datos.Add($"negocio: {p.Negocio}");
         if (!string.IsNullOrWhiteSpace(p.Oferta)) datos.Add($"mensaje u oferta: {p.Oferta}");
         if (!string.IsNullOrWhiteSpace(p.Zona)) datos.Add($"zona: {p.Zona}");
         if (!string.IsNullOrWhiteSpace(p.Contacto)) datos.Add($"contacto: {p.Contacto}");
         var emojis = p.Emojis ? "Incluye algunos emojis apropiados." : "No uses emojis.";
-        return $"Eres experto en marketing digital para lavanderías en Perú. Escribe UNA sola publicación breve para redes sociales (Instagram y Facebook) en español, con tono cercano y persuasivo, sobre {tipo}.{temporada}\n"
-             + $"Datos del negocio: {string.Join("; ", datos)}.\n"
-             + $"{emojis} Máximo 60 palabras. Incluye un llamado a la acción claro y termina con 4 a 6 hashtags relevantes. "
-             + "Devuelve únicamente el texto listo para publicar, sin comillas, sin títulos y sin explicaciones.";
+        return $"Contexto: {marca} es un SISTEMA DE GESTIÓN (software en la nube) para lavanderías. Ayuda a los dueños de lavanderías a administrar pedidos, clientes, inventario, cobros/facturación, reportes y avisos por WhatsApp. MUY IMPORTANTE: {marca} NO es una lavandería y NO lava ropa; es el software que usan las lavanderías.\n"
+             + $"Tarea: escribe UNA sola publicación breve para redes sociales (Instagram y Facebook) en español, dirigida a DUEÑOS de lavanderías en Perú para que se interesen en {marca}, sobre {tipo}.{temporada}\n"
+             + $"Datos: {(datos.Count > 0 ? string.Join("; ", datos) : "sin datos extra")}.\n"
+             + $"Reglas: destaca beneficios del sistema (ahorro de tiempo, orden, menos errores, más ventas, control desde el celular). NO inventes servicios que {marca} no ofrece: nada de lavavajillas, secado, planchado ni delivery de ropa. {emojis} Máximo 60 palabras, incluye un llamado a la acción (ej. pedir una demo) y termina con 4 a 6 hashtags relevantes como #Lavanderias #GestionDeLavanderia #SoftwareParaLavanderias. Devuelve únicamente el texto listo para publicar, sin comillas, sin títulos y sin explicaciones.";
     }
 }
