@@ -153,9 +153,19 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/reporte-cuadres-diarios/reporte-cuadres-diarios.component').then(m => m.ReporteCuadresDiariosComponent)
       },
       {
+        path: 'reportes/inventario',
+        canActivate: [moduloGuard(['INVENTARIO', 'REPORTES'])],
+        loadComponent: () => import('./pages/reporte-inventario/reporte-inventario.component').then(m => m.ReporteInventarioComponent)
+      },
+      {
         path: 'inventario',
         canActivate: [moduloGuard('INVENTARIO')],
         loadComponent: () => import('./pages/inventario/inventario.component').then(m => m.InventarioComponent)
+      },
+      {
+        path: 'inventario/reporte',
+        canActivate: [moduloGuard('INVENTARIO')],
+        loadComponent: () => import('./pages/reporte-inventario/reporte-inventario.component').then(m => m.ReporteInventarioComponent)
       },
       {
         path: 'reportes/:key',

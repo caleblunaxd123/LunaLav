@@ -1,0 +1,204 @@
+:host { display: block; }
+
+.ri {
+  max-width: var(--workspace-max, 1600px);
+  margin: 0 auto;
+  padding: 16px var(--workspace-gutter, 24px) 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid var(--gris-borde, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card, 0 1px 3px rgba(15, 23, 42, .08));
+}
+
+/* ---------- Filtros ---------- */
+.ri-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 14px 16px;
+
+  &__campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .03em; }
+
+    // Estilo base de campo (el global solo aporta el ícono/flecha; el recuadro se define por página).
+    select, input {
+      min-height: 42px;
+      padding: 9px 12px;
+      border: 1px solid var(--gris-borde, #cbd5e1);
+      border-radius: 10px;
+      background: #fff;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--ink, #1c2733);
+    }
+
+    // El campo de fecha abre el calendario al tocar cualquier parte → cursor de mano.
+    input[type="date"] { cursor: pointer; }
+
+    &--insumo { flex: 1 1 240px; min-width: 200px; }
+    &--rango { flex: 1 1 auto; }
+  }
+}
+
+/* Chips de rango rápido */
+.ri-rangos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ri-rango {
+  border: 1px solid var(--gris-borde, #cbd5e1);
+  background: #fff;
+  color: #475569;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 38px;
+  transition: background-color .12s ease, border-color .12s ease, color .12s ease;
+
+  &:hover { background: #f1f5f9; border-color: #94a3b8; }
+  &.is-active {
+    background: var(--azul-oscuro, #053465);
+    border-color: var(--azul-oscuro, #053465);
+    color: #fff;
+  }
+}
+
+/* Fechas Desde/Hasta */
+.ri-fechas {
+  display: flex;
+  gap: 12px;
+  .ri-filtros__campo { flex: 1 1 150px; }
+}
+
+/* ---------- KPIs ---------- */
+.ri-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ri-kpi {
+  background: #fff;
+  border: 1px solid var(--gris-borde, #e2e8f0);
+  border-radius: 12px;
+  padding: 14px 16px;
+  border-left: 4px solid #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__lbl { font-size: 12px; color: #64748b; font-weight: 600; }
+  &__val { font-size: 24px; font-weight: 800; color: #1f2937; line-height: 1; small { font-size: 12px; font-weight: 600; color: #94a3b8; } }
+
+  &--consumo { border-left-color: #f59e0b; }
+  &--compra { border-left-color: #2878b8; }
+}
+
+/* ---------- Gráfico ---------- */
+.ri-grafico {
+  padding: 16px;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+
+    h3 { margin: 0; font-size: 15px; color: var(--azul-oscuro, #053465); }
+  }
+  &__sub { margin: 3px 0 0; font-size: 12px; color: #94a3b8; }
+  &__lienzo { width: 100%; overflow-x: auto; }
+
+  svg { width: 100%; height: auto; min-width: 520px; display: block; }
+}
+
+.ri-leyenda {
+  display: flex; gap: 14px; align-items: center;
+  &__it { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #475569; font-weight: 600; }
+}
+.ri-chip { width: 12px; height: 12px; border-radius: 3px; display: inline-block;
+  &--consumo { background: #f59e0b; }
+  &--compra { background: #2878b8; }
+}
+
+/* SVG */
+.ri-svg-grid { stroke: #eef2f6; stroke-width: 1; }
+.ri-svg-axis { stroke: #cbd5e1; stroke-width: 1.5; }
+.ri-svg-ylbl, .ri-svg-xlbl { fill: #94a3b8; font-size: 11px; font-family: inherit; }
+.ri-bar {
+  transition: opacity .12s ease;
+  &--consumo { fill: #f59e0b; }
+  &--compra { fill: #2878b8; }
+  &:hover { opacity: .8; }
+}
+
+.ri-estado { padding: 40px 16px; text-align: center; color: #94a3b8; font-size: 13px; }
+
+/* ---------- Tabla ---------- */
+.ri-tabla {
+  padding: 16px;
+  h3 { margin: 0 0 12px; font-size: 15px; color: var(--azul-oscuro, #053465); }
+  &__scroll { width: 100%; overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .03em;
+    color: #64748b; border-bottom: 2px solid var(--gris-borde, #e2e8f0); padding: 8px 10px; white-space: nowrap;
+    &.r { text-align: right; }
+  }
+  tbody td { padding: 9px 10px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: top;
+    &.r { text-align: right; font-weight: 700; white-space: nowrap; }
+  }
+  tbody tr:hover { background: #f8fafc; }
+}
+
+.ri-desc { color: #64748b; max-width: 420px; }
+
+.ri-badge {
+  display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700;
+  background: #eef0f3; color: #475569;
+  &--compra { background: #e4eef7; color: #1e5a8f; }
+  &--consumo { background: #fdf0dd; color: #92600f; }
+  &--ajuste { background: #ede9fe; color: #5b3ea8; }
+}
+
+.ri-vacio { padding: 32px 16px; text-align: center; color: #64748b; }
+
+@media (max-width: 900px) {
+  .ri-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  // En pantallas medianas/tablet cada bloque de filtro ocupa toda la fila.
+  .ri-filtros__campo--insumo,
+  .ri-filtros__campo--rango,
+  .ri-fechas { flex: 1 1 100%; }
+}
+@media (max-width: 560px) {
+  .ri-kpis { grid-template-columns: 1fr; }
+
+  // Celular (uso principal): campos grandes, fáciles de tocar.
+  .ri-filtros { gap: 16px; }
+  .ri-filtros__campo select,
+  .ri-filtros__campo input { min-height: 48px; font-size: 15px; }
+
+  // Desde/Hasta quedan lado a lado, ocupando el ancho completo.
+  .ri-fechas { gap: 10px; }
+  .ri-fechas .ri-filtros__campo { flex: 1 1 0; min-width: 0; }
+
+  // Chips de rango: más grandes y repartidos.
+  .ri-rango { flex: 1 1 auto; min-height: 44px; padding: 10px 12px; font-size: 13px; text-align: center; }
+}

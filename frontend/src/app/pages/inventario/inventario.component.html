@@ -1,6 +1,9 @@
 <div class="page">
   <app-page-header icono="package" color="morado" titulo="Inventario" tourId="inventario"
     subtitulo="Stock de consumibles: detergente, bolsas, suavizante, etc.">
+    <a class="btn btn-ver-reporte" routerLink="/inventario/reporte">
+      <app-icon name="chart" [size]="15"></app-icon> Ver reporte
+    </a>
     @if (tab() === 'insumos' && esAdmin()) {
       <button type="button" class="btn btn--ghost" (click)="abrirImportar()">
         <app-icon name="clipboard" [size]="15"></app-icon> Importar
@@ -17,12 +20,6 @@
     <button type="button" role="tab" class="tabs__item" [attr.aria-selected]="tab()==='historial'"
       [class.is-active]="tab()==='historial'" (click)="cambiarTab('historial')">Historial</button>
   </div>
-
-  @if (tab() === 'insumos' && tendencia(); as t) {
-    <div class="tendencias-grid">
-      <app-mini-barras titulo="Consumo de insumos por día" subtitulo="Últimos 14 días" color="ambar" [datos]="t"></app-mini-barras>
-    </div>
-  }
 
   @if (tab() === 'insumos') {
     @if (cargando()) {
@@ -82,21 +79,29 @@
           <button type="button" class="btn btn--ghost" (click)="limpiarFiltros()">Limpiar filtros</button>
         </app-empty-state>
       } @else {
-        <div class="insumos-grid">
+        <div class="insumo-list">
           @for (i of insumosPaginados(); track i.id) {
-          <article class="card insumo-card" [class.inactivo]="!i.activo" [class.insumo-card--low]="i.activo && bajoStock(i)"
+          <div class="insumo-row" [class.inactivo]="!i.activo" [class.insumo-row--low]="i.activo && bajoStock(i)"
             [class.is-updated]="insumoAnimadoId() === i.id">
-            <div class="insumo-card__head">
-              <div class="insumo-card__identity">
-                <div class="insumo-card__icon"><app-icon name="package" [size]="18"></app-icon></div>
-                <div>
-                  <strong>{{ i.nombre }}</strong>
-                  <span>
-                    {{ i.unidadMedida }}@if (i.contenidoValor) { <span class="insumo-card__contenido">× {{ i.contenidoValor | number:'1.0-2' }} {{ i.contenidoUnidad }}</span> }
-                    · <span class="insumo-card__clase" [attr.data-clase]="i.clase">{{ claseEtiqueta(i.clase) }}</span>
-                  </span>
-                </div>
+            <div class="insumo-row__main">
+              <div class="insumo-row__icon"><app-icon name="package" [size]="16"></app-icon></div>
+              <div class="insumo-row__name">
+                <strong [title]="i.nombre">{{ i.nombre }}</strong>
+                <span class="insumo-row__sub">
+                  {{ i.unidadMedida }} · <span class="insumo-row__clase" [attr.data-clase]="i.clase">{{ claseEtiqueta(i.clase) }}</span>
+                  @if (i.fechaVencimiento && estadoVencimiento(i) !== 'ok') {
+                    · <span class="insumo-row__venc" [attr.data-venc]="estadoVencimiento(i)">{{ estadoVencimiento(i) === 'vencido' ? '¡Vencido!' : 'Por vencer' }}</span>
+                  }
+                </span>
               </div>
+            </div>
+
+            <div class="insumo-row__stock">
+              <strong>{{ i.stockActual | number:'1.0-2' }} {{ i.unidadMedida }}</strong>
+              <span>mín {{ i.stockMinimo | number:'1.0-2' }}</span>
+            </div>
+
+            <div class="insumo-row__status">
               @if (!i.activo) {
                 <span class="badge badge--gris">Inactivo</span>
               } @else if (bajoStock(i)) {
@@ -106,59 +111,24 @@
               }
             </div>
 
-            <div class="insumo-card__stock">
-              <div class="insumo-card__actual"><strong>{{ i.stockActual | number:'1.0-2' }}</strong><span>{{ i.unidadMedida }}</span></div>
-              <div class="insumo-card__minimum"><span>Mínimo</span><strong>{{ i.stockMinimo | number:'1.0-2' }}</strong></div>
-            </div>
-
-            @if (contenidoTotalTexto(i); as total) {
-              <div class="insumo-card__total">{{ total }}</div>
-            }
-
-            <div class="stock-meter" aria-hidden="true"><span [style.width.%]="nivelStock(i)"></span></div>
-
-            @if (i.fechaIngreso) {
-              <div class="insumo-card__meta">
-                <span>Ingresó</span>
-                <strong>{{ i.fechaIngreso | date:'dd MMM yyyy' }}</strong>
-              </div>
-            }
-
-            <div class="insumo-card__meta">
-              <span>Última compra</span>
-              <strong>{{ i.ultimaCompra ? (i.ultimaCompra | date:'dd MMM yyyy') : 'Sin compras registradas' }}</strong>
-            </div>
-
-            @if (i.fechaVencimiento) {
-              <div class="insumo-card__meta insumo-card__venc" [attr.data-venc]="estadoVencimiento(i)">
-                <span>Vence</span>
-                <strong>
-                  {{ i.fechaVencimiento | date:'dd MMM yyyy' }}
-                  @if (estadoVencimiento(i) === 'vencido') { · ¡Vencido! }
-                  @else if (estadoVencimiento(i) === 'por-vencer') { · faltan {{ diasParaVencer(i) }} día(s) }
-                </strong>
-              </div>
-            }
-
-            <div class="insumo-card__acciones">
+            <div class="insumo-row__acciones">
               <button type="button" class="btn btn--outline-primary btn--sm" (click)="abrirModalMovimiento(i)" [disabled]="!i.activo">
                 <app-icon name="refresh" [size]="14"></app-icon> Movimiento
               </button>
               @if (esAdmin()) {
-                <button type="button" class="btn btn--sm btn--editar" (click)="abrirEditarInsumo(i)" [attr.aria-label]="'Editar ' + i.nombre">
-                  <app-icon name="edit" [size]="14"></app-icon> Editar
+                <button type="button" class="icon-btn" (click)="abrirEditarInsumo(i)" title="Editar" [attr.aria-label]="'Editar ' + i.nombre">
+                  <app-icon name="edit" [size]="15"></app-icon>
                 </button>
-                <button type="button" class="btn btn--sm btn--desactivar" (click)="toggleActivo(i)" [attr.aria-label]="(i.activo ? 'Desactivar ' : 'Reactivar ') + i.nombre">
-                  @if (i.activo) { <app-icon name="disable" [size]="14"></app-icon> Desactivar }
-                  @else { <app-icon name="refresh" [size]="14"></app-icon> Reactivar }
+                <button type="button" class="icon-btn" (click)="toggleActivo(i)" [title]="i.activo ? 'Desactivar' : 'Reactivar'" [attr.aria-label]="(i.activo ? 'Desactivar ' : 'Reactivar ') + i.nombre">
+                  <app-icon [name]="i.activo ? 'disable' : 'refresh'" [size]="15"></app-icon>
                 </button>
-                <button type="button" class="btn btn--sm btn--eliminar" (click)="pedirEliminar(i)" [disabled]="i.enUso"
-                  [title]="i.enUso ? 'Tiene movimientos registrados — solo puedes desactivarlo' : 'Eliminar'" [attr.aria-label]="'Eliminar ' + i.nombre">
-                  <app-icon name="trash" [size]="14"></app-icon> Eliminar
+                <button type="button" class="icon-btn icon-btn--peligro" (click)="pedirEliminar(i)" [disabled]="i.enUso"
+                  [title]="i.enUso ? 'Tiene movimientos — solo puedes desactivarlo' : 'Eliminar'" [attr.aria-label]="'Eliminar ' + i.nombre">
+                  <app-icon name="trash" [size]="15"></app-icon>
                 </button>
               }
             </div>
-          </article>
+          </div>
           }
         </div>
 
@@ -203,7 +173,7 @@
                 <td class="mono">{{ m.fecha | date:'dd/MM/yy HH:mm' }}</td>
                 <td>{{ m.insumoNombre }}</td>
                 <td><span [class]="claseTipo(m.tipo)">{{ etiquetaTipo(m.tipo) }}</span></td>
-                <td class="mono">{{ m.cantidad }}</td>
+                <td class="mono">{{ m.cantidad | number:'1.3-3' }}</td>
                 <td class="mono">{{ m.costoTotal ? ('S/ ' + (m.costoTotal | number:'1.2-2')) : '—' }}</td>
                 <td>{{ m.usuarioNombre }}</td>
                 <td>{{ m.descripcion || '—' }}</td>
@@ -233,7 +203,7 @@
             </div>
             <div class="movimiento-card__body">
               <div><span>Fecha:</span> {{ m.fecha | date:'dd/MM/yy HH:mm' }}</div>
-              <div><span>Cantidad:</span> <strong>{{ m.cantidad }}</strong></div>
+              <div><span>Cantidad:</span> <strong>{{ m.cantidad | number:'1.3-3' }}</strong></div>
               <div><span>Costo:</span> {{ m.costoTotal ? ('S/ ' + (m.costoTotal | number:'1.2-2')) : '—' }}</div>
               <div><span>Usuario:</span> {{ m.usuarioNombre }}</div>
               @if (m.descripcion) {
@@ -397,11 +367,25 @@
     <form (submit)="confirmarMovimiento(); $event.preventDefault()">
       <div class="modal__body">
         <label>Tipo de movimiento</label>
-        <div class="tipo-row">
-          <button type="button" class="tipo-btn" [class.is-active]="movTipo==='COMPRA'" (click)="movTipo='COMPRA'">Compra</button>
-          <button type="button" class="tipo-btn" [class.is-active]="movTipo==='MEDICION'" (click)="movTipo='MEDICION'">Medición</button>
-          <button type="button" class="tipo-btn" [class.is-active]="movTipo==='CONSUMO'" (click)="movTipo='CONSUMO'">Consumo</button>
-          <button type="button" class="tipo-btn" [class.is-active]="movTipo==='AJUSTE'" (click)="movTipo='AJUSTE'">Ajuste</button>
+        <div class="tipo-selector">
+          <div class="tipo-grupo">
+            <span class="tipo-grupo__cap">Uso diario</span>
+            <div class="tipo-row">
+              <button type="button" class="tipo-btn" [class.is-active]="movTipo==='COMPRA'" (click)="movTipo='COMPRA'">Compra</button>
+              <button type="button" class="tipo-btn" [class.is-active]="movTipo==='MEDICION'" (click)="movTipo='MEDICION'">Medición</button>
+            </div>
+          </div>
+
+          @if (esAdmin()) {
+            <div class="tipo-divisor" aria-hidden="true"></div>
+            <div class="tipo-grupo">
+              <span class="tipo-grupo__cap">Correcciones · admin</span>
+              <div class="tipo-row">
+                <button type="button" class="tipo-btn" [class.is-active]="movTipo==='CONSUMO'" (click)="movTipo='CONSUMO'">Consumo</button>
+                <button type="button" class="tipo-btn" [class.is-active]="movTipo==='AJUSTE'" (click)="movTipo='AJUSTE'">Ajuste</button>
+              </div>
+            </div>
+          }
         </div>
 
         @if (movTipo !== 'MEDICION') {
@@ -409,22 +393,27 @@
         }
 
         @if (movTipo === 'MEDICION') {
-          <p class="hint medicion-ayuda">Recálculo por peso, ideal al final del día: pesa el insumo y escribe cuánto queda hoy. El sistema calcula solo el consumo del día (peso anterior − peso de hoy) y deja el stock cuadrado con lo que pesaste.</p>
+          <p class="hint medicion-ayuda">Al final del día pesa el insumo y escribe cuánto queda. El sistema calcula el consumo (lo anterior − lo de hoy) y deja el stock cuadrado.</p>
 
           <label>Peso actual medido ({{ unidadPeso }})</label>
           <input type="number" step="0.001" min="0" max="1000000" inputmode="decimal" required
-            [(ngModel)]="movPesoActual" name="pesoActual" placeholder="Ej: 10.900" />
+            [(ngModel)]="movPesoActual" name="pesoActual" placeholder="Ej: 10.900"
+            (focus)="$any($event.target).select()" />
 
           <div class="medicion-preview">
-            <div class="medicion-preview__fila"><span>Había registrado</span><strong>{{ stockActualPeso | number:'1.0-3' }} {{ unidadPeso }}</strong></div>
-            <div class="medicion-preview__fila"><span>Pesaste hoy</span><strong>{{ (movPesoActual || 0) | number:'1.0-3' }} {{ unidadPeso }}</strong></div>
+            <div class="medicion-preview__fila"><span>Había registrado</span><strong>{{ stockActualPeso | number:'1.3-3' }} {{ unidadPeso }}</strong></div>
+            <div class="medicion-preview__fila"><span>Pesaste hoy</span><strong>{{ (movPesoActual || 0) | number:'1.3-3' }} {{ unidadPeso }}</strong></div>
             @if (consumoDelDiaPeso > 0.0001) {
               <div class="medicion-preview__fila medicion-preview__fila--consumo">
-                <span>Consumo del día</span><strong>{{ consumoDelDiaPeso | number:'1.0-3' }} {{ unidadPeso }}</strong>
+                <span>Consumo del día</span><strong>{{ consumoDelDiaPeso | number:'1.3-3' }} {{ unidadPeso }}</strong>
               </div>
             } @else if (consumoDelDiaPeso < -0.0001) {
               <div class="medicion-preview__fila medicion-preview__fila--sube">
-                <span>Aumentó</span><strong>+{{ (-consumoDelDiaPeso) | number:'1.0-3' }} {{ unidadPeso }}</strong>
+                <span>Aumentó</span><strong>+{{ (-consumoDelDiaPeso) | number:'1.3-3' }} {{ unidadPeso }}</strong>
+              </div>
+            } @else if (movPesoActual !== null) {
+              <div class="medicion-preview__fila medicion-preview__fila--igual">
+                <span>Sin consumo hoy</span><strong>✓ igual que antes</strong>
               </div>
             } @else {
               <div class="medicion-preview__fila"><span>Sin cambio</span><strong>—</strong></div>
@@ -440,8 +429,9 @@
           }
         } @else {
           <label>Cantidad ({{ insumoMovimiento?.unidadMedida }}) {{ movTipo === 'AJUSTE' ? '· usa negativo para restar' : '' }}</label>
-          <input type="number" step="0.01" [min]="movTipo === 'AJUSTE' ? -1000000 : 0.01" max="1000000"
-            inputmode="decimal" required [(ngModel)]="movCantidad" name="cantidad" />
+          <input type="number" step="0.001" [min]="movTipo === 'AJUSTE' ? -1000000 : 0.001" max="1000000"
+            inputmode="decimal" required [(ngModel)]="movCantidad" name="cantidad" placeholder="0.000"
+            (focus)="$any($event.target).select()" />
         }
 
         <label>Fecha del movimiento <small class="hint">(puedes registrar uno de días anteriores)</small></label>
@@ -452,9 +442,10 @@
             <div>
               <label>Costo total (opcional)</label>
               <input type="number" min="0" max="1000000" step="0.01" inputmode="decimal"
-                [(ngModel)]="movCosto" name="costo" />
+                [(ngModel)]="movCosto" name="costo" placeholder="0.00"
+                (focus)="$any($event.target).select()" />
             </div>
-            @if (movCosto > 0) {
+            @if ((movCosto ?? 0) > 0) {
               <div>
                 <label>Método de pago</label>
                 <select [(ngModel)]="movMetodoPago" name="metodoPago">
@@ -467,7 +458,7 @@
               </div>
             }
           </div>
-          @if (movCosto > 0) {
+          @if ((movCosto ?? 0) > 0) {
             <label>Tipo de gasto <small class="hint">(para que quede en Cuadre de Caja)</small></label>
             <select [(ngModel)]="movTipoGastoId" name="tipoGastoId">
               <option [ngValue]="''">Sin categoría</option>
@@ -481,7 +472,7 @@
         <label>Descripción <small class="hint">(opcional)</small></label>
         <input type="text" maxlength="300" [(ngModel)]="movDescripcion" name="descripcion" placeholder="Ej: compra en Makro" />
 
-        @if (movCosto > 0 && movTipo === 'COMPRA') {
+        @if ((movCosto ?? 0) > 0 && movTipo === 'COMPRA') {
           <p class="hint">Esto también se registrará como gasto en el Cuadre de Caja de la fecha de compra.</p>
         }
       </div>
@@ -544,7 +535,7 @@
       <button type="button" class="modal__close" aria-label="Cerrar" (click)="confirmarEliminarMov.set(null)"><app-icon name="close" [size]="16"></app-icon></button>
     </div>
     <div class="modal__body">
-      <p>Vas a eliminar: <strong>{{ etiquetaTipo(m.tipo) }} · {{ m.insumoNombre }} · {{ m.cantidad }}</strong>.</p>
+      <p>Vas a eliminar: <strong>{{ etiquetaTipo(m.tipo) }} · {{ m.insumoNombre }} · {{ m.cantidad | number:'1.3-3' }}</strong>.</p>
       <p class="hint">El stock se corrige automáticamente (se revierte este movimiento). Si era una compra con costo, también se quita su gasto de la caja. Esta acción no se puede deshacer.</p>
       <div class="modal__actions">
         <button type="button" class="btn btn--ghost" (click)="confirmarEliminarMov.set(null)">Cancelar</button>

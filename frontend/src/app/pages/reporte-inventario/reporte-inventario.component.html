@@ -1,0 +1,149 @@
+<app-page-header icono="chart" color="morado" titulo="Reporte de inventario"
+  subtitulo="Consumo y compras por insumo" volverTexto="Inventario" (volver)="volver()">
+</app-page-header>
+
+<div class="ri">
+  <!-- Filtros -->
+  <div class="ri-filtros card">
+    <div class="ri-filtros__campo ri-filtros__campo--insumo">
+      <label>Insumo</label>
+      <select [ngModel]="insumoId()" (ngModelChange)="cambiarInsumo($event)">
+        @for (i of insumos(); track i.id) {
+          <option [ngValue]="i.id">{{ i.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Rangos rápidos: la forma más cómoda en celular (evita abrir el calendario). -->
+    <div class="ri-filtros__campo ri-filtros__campo--rango">
+      <label>Periodo</label>
+      <div class="ri-rangos" role="group" aria-label="Rango rápido de fechas">
+        <button type="button" class="ri-rango" [class.is-active]="rangoActivo()===7" (click)="setRangoDias(7)">7 días</button>
+        <button type="button" class="ri-rango" [class.is-active]="rangoActivo()===14" (click)="setRangoDias(14)">14 días</button>
+        <button type="button" class="ri-rango" [class.is-active]="rangoActivo()===30" (click)="setRangoDias(30)">30 días</button>
+        <button type="button" class="ri-rango" [class.is-active]="rangoActivo()===90" (click)="setRangoDias(90)">90 días</button>
+        <button type="button" class="ri-rango" [class.is-active]="rangoActivo()==='m6'" (click)="setRangoMeses(6)">6 meses</button>
+        <button type="button" class="ri-rango" [class.is-active]="rangoActivo()==='m12'" (click)="setRangoMeses(12)">12 meses</button>
+        <button type="button" class="ri-rango" [class.is-active]="rangoActivo()==='mes'" (click)="setEsteMes()">Este mes</button>
+      </div>
+    </div>
+
+    <div class="ri-fechas">
+      <div class="ri-filtros__campo">
+        <label>Desde</label>
+        <input type="date" [(ngModel)]="desde" [max]="hasta || hoy" (change)="fechaManual()" (click)="abrirPicker($event)" />
+      </div>
+      <div class="ri-filtros__campo">
+        <label>Hasta</label>
+        <input type="date" [(ngModel)]="hasta" [max]="hoy" (change)="fechaManual()" (click)="abrirPicker($event)" />
+      </div>
+    </div>
+  </div>
+
+  @if (insumos().length === 0) {
+    <div class="ri-vacio card">No hay insumos registrados. Crea uno en Inventario para ver su reporte.</div>
+  } @else {
+    <!-- Tarjetas resumen -->
+    <div class="ri-kpis">
+      <div class="ri-kpi ri-kpi--consumo">
+        <span class="ri-kpi__lbl">Total consumido</span>
+        <strong class="ri-kpi__val">{{ formatoNum(totalConsumo()) }} <small>{{ unidad() }}</small></strong>
+      </div>
+      <div class="ri-kpi ri-kpi--compra">
+        <span class="ri-kpi__lbl">Total comprado</span>
+        <strong class="ri-kpi__val">{{ formatoNum(totalCompra()) }} <small>{{ unidad() }}</small></strong>
+      </div>
+      <div class="ri-kpi">
+        <span class="ri-kpi__lbl">Promedio diario (consumo)</span>
+        <strong class="ri-kpi__val">{{ formatoNum(promedioConsumo()) }} <small>{{ unidad() }}/día</small></strong>
+      </div>
+      <div class="ri-kpi">
+        <span class="ri-kpi__lbl">Stock actual</span>
+        <strong class="ri-kpi__val">{{ formatoNum(insumoSel()?.stockActual ?? 0) }} <small>{{ unidad() }}</small></strong>
+      </div>
+    </div>
+
+    <!-- Gráfico -->
+    <div class="ri-grafico card">
+      <div class="ri-grafico__head">
+        <div>
+          <h3>Consumo y compras {{ agrupadoPorMes() ? 'por mes' : 'por día' }}</h3>
+          <p class="ri-grafico__sub">{{ insumoSel()?.nombre }} · {{ desde }} a {{ hasta }} · en {{ unidad() }}</p>
+        </div>
+        <div class="ri-leyenda">
+          <span class="ri-leyenda__it"><i class="ri-chip ri-chip--consumo"></i> Consumo</span>
+          <span class="ri-leyenda__it"><i class="ri-chip ri-chip--compra"></i> Compra</span>
+        </div>
+      </div>
+
+      @if (cargando()) {
+        <div class="ri-estado">Cargando…</div>
+      } @else if (!grafico().hayDatos) {
+        <div class="ri-estado">No hubo consumo ni compras de este insumo en el rango elegido.</div>
+      } @else {
+        <div class="ri-grafico__lienzo">
+          <svg [attr.viewBox]="'0 0 ' + grafico().W + ' ' + grafico().H" preserveAspectRatio="xMidYMid meet"
+               role="img" aria-label="Gráfico de consumo y compras por día">
+            <!-- Líneas guía + etiquetas del eje Y -->
+            @for (t of grafico().ticks; track t.y) {
+              <line [attr.x1]="grafico().mL" [attr.x2]="grafico().plotDcho" [attr.y1]="t.y" [attr.y2]="t.y"
+                    class="ri-svg-grid" />
+              <text [attr.x]="grafico().mL - 8" [attr.y]="t.y + 4" text-anchor="end" class="ri-svg-ylbl">{{ t.valor }}</text>
+            }
+            <!-- Eje X -->
+            <line [attr.x1]="grafico().mL" [attr.x2]="grafico().plotDcho"
+                  [attr.y1]="grafico().baseY" [attr.y2]="grafico().baseY" class="ri-svg-axis" />
+
+            <!-- Barras -->
+            @for (b of grafico().barras; track b.fecha) {
+              @if (b.consumoH > 0) {
+                <rect [attr.x]="b.consumoX" [attr.y]="b.consumoY" [attr.width]="grafico().barW" [attr.height]="b.consumoH"
+                      rx="2" class="ri-bar ri-bar--consumo">
+                  <title>{{ b.etiqueta }} · Consumo: {{ formatoNum(b.consumo) }} {{ unidad() }}</title>
+                </rect>
+              }
+              @if (b.compraH > 0) {
+                <rect [attr.x]="b.compraX" [attr.y]="b.compraY" [attr.width]="grafico().barW" [attr.height]="b.compraH"
+                      rx="2" class="ri-bar ri-bar--compra">
+                  <title>{{ b.etiqueta }} · Compra: {{ formatoNum(b.compra) }} {{ unidad() }}</title>
+                </rect>
+              }
+              @if (b.mostrarEtiqueta) {
+                <text [attr.x]="b.cx" [attr.y]="grafico().baseY + 16" text-anchor="middle" class="ri-svg-xlbl">{{ b.etiqueta }}</text>
+              }
+            }
+          </svg>
+        </div>
+      }
+    </div>
+
+    <!-- Tabla de movimientos -->
+    <div class="ri-tabla card">
+      <h3>Movimientos del periodo ({{ movimientos().length }})</h3>
+      @if (movimientosOrdenados().length === 0) {
+        <div class="ri-estado">Sin movimientos en el rango.</div>
+      } @else {
+        <div class="ri-tabla__scroll">
+          <table>
+            <thead>
+              <tr><th>Fecha</th><th>Tipo</th><th class="r">Cantidad</th><th>Usuario</th><th>Descripción</th></tr>
+            </thead>
+            <tbody>
+              @for (m of movimientosOrdenados(); track m.id) {
+                <tr>
+                  <td>{{ m.fecha | date:'dd/MM/yy HH:mm' }}</td>
+                  <td><span class="ri-badge" [class.ri-badge--compra]="m.tipo==='COMPRA'"
+                        [class.ri-badge--consumo]="m.tipo==='CONSUMO'"
+                        [class.ri-badge--ajuste]="m.tipo==='AJUSTE'">{{ m.tipo }}</span></td>
+                  <td class="r">{{ m.cantidad | number:'1.3-3' }} {{ unidad() }}</td>
+                  <td>{{ m.usuarioNombre || '—' }}</td>
+                  <td class="ri-desc">{{ m.descripcion || '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+</div>

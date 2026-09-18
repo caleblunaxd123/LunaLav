@@ -43,6 +43,7 @@ export interface RegistrarMovimientoInsumoRequest {
   tipoGastoId?: number | null;
   descripcion?: string | null;
   fecha?: string | null;
+  esMedicion?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })

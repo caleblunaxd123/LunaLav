@@ -201,6 +201,7 @@ export class ReportesComponent {
       { nombre: 'Cuadres de Caja', clave: 'cuadres-caja', icono: this.svg('cash'), color: '#eef0ff' },
       { nombre: 'Órdenes Mensual', clave: 'ordenes-mensual', icono: this.svg('calendar'), color: '#e8f1ff' },
       { nombre: 'Almacén', clave: 'almacen', icono: this.svg('archive'), color: '#f1e8ff' },
+      { nombre: 'Reporte de inventario', clave: 'inventario', icono: this.svg('chart'), color: '#e6f9ee' },
       { nombre: 'Anulados', clave: 'anulados', icono: this.svg('ban'), color: '#fde8e8' },
       { nombre: 'Registro y Entregas', clave: 'registro-entregas', icono: this.svg('moped'), color: '#e6f9ee' },
       { nombre: 'Pagos', clave: 'pagos', icono: this.svg('wallet'), color: '#fff4e0' },

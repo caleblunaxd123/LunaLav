@@ -76,6 +76,8 @@ public class InsumosController : TenantAwareControllerBase
             return BadRequest(new { mensaje = "Máximo 1000 insumos por importación. Divide el archivo en partes." });
 
         var resultado = new ImportarInsumosResultado();
+        var existentes = await _repo.ListarTodosAsync(SedeRequeridaId, ct);
+        var canonExistentes = new HashSet<string>(existentes.Select(e => InventarioReglas.CanonicalNombre(e.Nombre)));
         var nombresLote = new HashSet<string>();
         var fila = 0;
         foreach (var f in req.Filas)
@@ -95,10 +97,11 @@ public class InsumosController : TenantAwareControllerBase
             if (f.StockMinimo < 0 || f.StockMinimo > 1_000_000)
             { resultado.Errores.Add(new() { Fila = fila, Nombre = nombre, Motivo = "Stock mínimo fuera de rango." }); continue; }
 
-            if (!nombresLote.Add(nombre.ToUpperInvariant()))
+            var canon = InventarioReglas.CanonicalNombre(nombre);
+            if (!nombresLote.Add(canon))
             { resultado.Omitidos++; resultado.Errores.Add(new() { Fila = fila, Nombre = nombre, Motivo = "Repetido dentro del archivo." }); continue; }
-            if (await _repo.ExisteNombreAsync(nombre, SedeRequeridaId, ct: ct))
-            { resultado.Omitidos++; resultado.Errores.Add(new() { Fila = fila, Nombre = nombre, Motivo = "Ya existe un insumo con ese nombre." }); continue; }
+            if (canonExistentes.Contains(canon))
+            { resultado.Omitidos++; resultado.Errores.Add(new() { Fila = fila, Nombre = nombre, Motivo = "Ya existe un insumo equivalente (se conserva el actual con sus movimientos)." }); continue; }
 
             await _repo.CrearAsync(new Insumo
             {
@@ -169,15 +172,20 @@ public class InsumosController : TenantAwareControllerBase
         var tiposValidos = new[] { "COMPRA", "CONSUMO", "AJUSTE" };
         if (!tiposValidos.Contains(req.Tipo)) return BadRequest(new { mensaje = "Tipo de movimiento inválido." });
 
+        if ((req.Tipo == "CONSUMO" || req.Tipo == "AJUSTE") && !req.EsMedicion && !User.IsInRole("ADMIN"))
+            return Forbid();
+
         var insumo = await _repo.ObtenerPorIdAsync(id, SedeRequeridaId, ct);
         if (insumo is null) return NotFound();
         if (!insumo.Activo)
             return Conflict(new { mensaje = "El insumo está inactivo. Reactívalo antes de registrar movimientos." });
 
-        if (req.Tipo != "AJUSTE" && req.Cantidad <= 0)
-            return BadRequest(new { mensaje = "La cantidad debe ser mayor a 0." });
-        if (req.Tipo == "AJUSTE" && req.Cantidad == 0)
-            return BadRequest(new { mensaje = "El ajuste debe aumentar o disminuir el stock; la cantidad no puede ser 0." });
+        if (req.Tipo != "AJUSTE" && req.Cantidad < 0)
+            return BadRequest(new { mensaje = "La cantidad no puede ser negativa." });
+        if (req.Cantidad == 0 && !req.EsMedicion)
+            return BadRequest(new { mensaje = req.Tipo == "AJUSTE"
+                ? "El ajuste debe aumentar o disminuir el stock; la cantidad no puede ser 0."
+                : "La cantidad debe ser mayor a 0." });
 
         if (req.CostoTotal is < 0)
             return BadRequest(new { mensaje = "El costo total no puede ser negativo." });

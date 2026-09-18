@@ -6,7 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { CajaService } from '../../core/services/caja.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ClaseInsumo, Insumo, InsumosService, MovimientoInsumo, RegistrarMovimientoInsumoRequest } from '../../core/services/insumos.service';
-import { MiniBarrasComponent, PuntoBarra } from '../../shared/mini-barras/mini-barras.component';
+import { PuntoBarra } from '../../shared/mini-barras/mini-barras.component';
 import { ToastService } from '../../core/services/toast.service';
 import { TipoGasto } from '../../core/models/models';
 import { ErroresCampo } from '../../core/util/errores-campo';
@@ -15,13 +15,13 @@ import { PaginacionComponent } from '../../shared/paginacion/paginacion.componen
 import { IconComponent } from '../../shared/icon/icon.component';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 import { debounceTime } from 'rxjs';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ActualizacionDatosService } from '../../core/services/actualizacion-datos.service';
 import { ColumnaImport, ImportadorMasivoComponent } from '../../shared/importador-masivo/importador-masivo.component';
 
 @Component({
   selector: 'app-inventario',
-  imports: [CommonModule, FormsModule, EmptyStateComponent, PaginacionComponent, IconComponent, PageHeaderComponent, ImportadorMasivoComponent, MiniBarrasComponent],
+  imports: [CommonModule, FormsModule, RouterLink, EmptyStateComponent, PaginacionComponent, IconComponent, PageHeaderComponent, ImportadorMasivoComponent],
   templateUrl: './inventario.component.html',
   styleUrl: './inventario.component.scss'
 })
@@ -55,7 +55,9 @@ export class InventarioComponent implements OnInit, OnDestroy {
   readonly insumosActivos = computed(() => this.insumos().filter(i => i.activo).length);
   readonly busqueda = signal('');
   readonly filtroEstado = signal<'TODOS' | 'ACTIVOS' | 'BAJO_STOCK' | 'INACTIVOS'>('TODOS');
-  readonly filtroClase = signal<'TODAS' | ClaseInsumo>('TODAS');
+  // Por defecto se muestran solo los consumibles (lo que se usa a diario); equipos y materiales
+  // quedan ocultos hasta que el usuario cambie el filtro de clase.
+  readonly filtroClase = signal<'TODAS' | ClaseInsumo>('INSUMO');
 
   // Clases de inventario: valor almacenado + etiqueta visible.
   readonly clases: { valor: ClaseInsumo; etiqueta: string }[] = [
@@ -118,7 +120,7 @@ export class InventarioComponent implements OnInit, OnDestroy {
   cambiarPaginaInsumos(p: number) { this.paginaInsumos.set(p); }
   cambiarTamanoPaginaInsumos(t: number) { this.tamanoPaginaInsumos.set(t); this.paginaInsumos.set(1); }
   cambiarFiltros() { this.paginaInsumos.set(1); }
-  limpiarFiltros() { this.busqueda.set(''); this.filtroEstado.set('TODOS'); this.filtroClase.set('TODAS'); this.paginaInsumos.set(1); }
+  limpiarFiltros() { this.busqueda.set(''); this.filtroEstado.set('TODOS'); this.filtroClase.set('INSUMO'); this.paginaInsumos.set(1); }
 
   readonly paginaHistorial = signal(1);
   readonly tamanoPaginaHistorial = signal(15);
@@ -145,14 +147,16 @@ export class InventarioComponent implements OnInit, OnDestroy {
   insumoMovimiento: Insumo | null = null;
   // 'MEDICION' es un modo de la UI: se ingresa el peso actual y se convierte a CONSUMO o AJUSTE al guardar.
   movTipo: 'COMPRA' | 'CONSUMO' | 'MEDICION' | 'AJUSTE' = 'COMPRA';
-  movCantidad = 0;
-  movCosto = 0;
+  // Campos numéricos: arrancan vacíos (null) para no mostrar un "0" a la izquierda que el
+  // usuario tenga que borrar. Al escribir, toman el valor directamente.
+  movCantidad: number | null = null;
+  movCosto: number | null = null;
   movMetodoPago: 'EFECTIVO' | 'YAPE' | 'PLIN' | 'TRANSFERENCIA' | 'POS' = 'EFECTIVO';
   movTipoGastoId: number | '' = '';
   movDescripcion = '';
   movFecha = '';  // fecha de la compra (opcional, solo COMPRA)
   // Modo Medición por peso:
-  movPesoActual = 0;        // peso medido hoy, en la unidad de contenido (Kg/Lt) o en la unidad base
+  movPesoActual: number | null = null;   // peso medido hoy, en la unidad de contenido (Kg/Lt) o en la unidad base
   movEsCorreccion = false;  // true = ajusta el stock sin contarlo como consumo del día
   guardandoMovimiento = signal(false);
 
@@ -197,7 +201,8 @@ export class InventarioComponent implements OnInit, OnDestroy {
 
   cambiarTab(t: 'insumos' | 'historial') {
     this.tab.set(t);
-    if (t === 'historial' && this.movimientos().length === 0) this.cargarHistorial();
+    // Al entrar al Historial se recarga para mostrarlo al día (no hay auto-refresh mientras se ve).
+    if (t === 'historial') this.cargarHistorial();
   }
 
   cargar(silencioso = false) {
@@ -412,12 +417,12 @@ export class InventarioComponent implements OnInit, OnDestroy {
     }
     this.insumoMovimiento = i;
     this.movTipo = 'COMPRA';
-    this.movCantidad = 0;
-    this.movCosto = 0;
+    this.movCantidad = null;
+    this.movCosto = null;
     this.movMetodoPago = 'EFECTIVO';
     this.movTipoGastoId = '';
     this.movDescripcion = '';
-    this.movPesoActual = 0;
+    this.movPesoActual = null;
     this.movEsCorreccion = false;
     this.movFecha = this.formatoFecha(new Date());  // por defecto hoy
     this.modalMovimiento.set(true);
@@ -442,8 +447,9 @@ export class InventarioComponent implements OnInit, OnDestroy {
   private get medicionEnBase(): number {
     return Math.round(((Number(this.movPesoActual) || 0) / this.factorPeso) * 1000) / 1000;
   }
-  /** Consumo del día en peso (positivo = consumió; negativo = aumentó). */
+  /** Consumo del día en peso (positivo = consumió; negativo = aumentó). Si aún no se pesa, 0. */
   get consumoDelDiaPeso(): number {
+    if (this.movPesoActual === null) return 0;   // sin peso ingresado → no mostrar consumo aún
     return Math.round((this.stockActualPeso - (Number(this.movPesoActual) || 0)) * 1000) / 1000;
   }
 
@@ -464,16 +470,20 @@ export class InventarioComponent implements OnInit, OnDestroy {
   get puedeRegistrarMovimiento(): boolean {
     if (this.guardandoMovimiento()) return false;
     if (this.movTipo === 'MEDICION') {
+      if (this.movPesoActual === null) return false;   // hay que ingresar el peso medido
       const peso = Number(this.movPesoActual);
       if (!Number.isFinite(peso) || peso < 0 || peso > 1_000_000) return false;
-      // Debe haber un cambio real respecto al stock actual.
-      return Math.abs(this.consumoDelDiaPeso) > 0.0001;
+      // Se permite aunque no haya cambio: registra la medición del día como "sin consumo".
+      return true;
     }
-    if (!Number.isFinite(this.movCantidad) || !Number.isFinite(this.movCosto)) return false;
-    if (this.movCantidad === 0) return false;
-    if (this.movTipo !== 'AJUSTE' && this.movCantidad <= 0) return false;
-    if (Math.abs(this.movCantidad) > 1_000_000 || this.movCosto < 0 || this.movCosto > 1_000_000) return false;
-    if (this.movTipo === 'CONSUMO' && this.movCantidad > (this.insumoMovimiento?.stockActual ?? 0)) return false;
+    const cant = this.movCantidad;
+    if (cant === null || !Number.isFinite(cant)) return false;
+    const costo = this.movCosto ?? 0;
+    if (!Number.isFinite(costo)) return false;
+    if (cant === 0) return false;
+    if (this.movTipo !== 'AJUSTE' && cant <= 0) return false;
+    if (Math.abs(cant) > 1_000_000 || costo < 0 || costo > 1_000_000) return false;
+    if (this.movTipo === 'CONSUMO' && cant > (this.insumoMovimiento?.stockActual ?? 0)) return false;
     if (this.movFecha && this.movFecha > this.formatoFecha(new Date())) return false;
     return true;
   }
@@ -487,12 +497,13 @@ export class InventarioComponent implements OnInit, OnDestroy {
       ? this.construirRequestMedicion(i)
       : {
           tipo: this.movTipo,
-          cantidad: this.movCantidad,
-          costoTotal: this.movTipo === 'COMPRA' && this.movCosto > 0 ? this.movCosto : null,
-          metodoPago: this.movTipo === 'COMPRA' && this.movCosto > 0 ? this.movMetodoPago : null,
+          cantidad: this.movCantidad ?? 0,
+          costoTotal: this.movTipo === 'COMPRA' && (this.movCosto ?? 0) > 0 ? this.movCosto : null,
+          metodoPago: this.movTipo === 'COMPRA' && (this.movCosto ?? 0) > 0 ? this.movMetodoPago : null,
           tipoGastoId: this.movTipoGastoId ? (this.movTipoGastoId as number) : null,
           descripcion: this.movDescripcion.trim() || null,
-          fecha: this.movFecha || null
+          fecha: this.movFecha || null,
+          esMedicion: false
         };
 
     this.svc.registrarMovimiento(i.id, req).subscribe({
@@ -506,9 +517,11 @@ export class InventarioComponent implements OnInit, OnDestroy {
           if (this.insumoAnimadoId() === i.id) this.insumoAnimadoId.set(null);
         }, 1200);
         // Refresco completo tras el movimiento: stock (tarjetas), gráfico de consumo e historial.
+        // El historial se recarga siempre (aunque estemos en la pestaña de insumos) para que, al
+        // abrirlo, ya muestre la medición/movimiento recién registrado — sin auto-refresh.
         this.cargar();
         this.cargarTendencia();
-        if (this.tab() === 'historial') this.cargarHistorial();
+        this.cargarHistorial();
       },
       error: (err: HttpErrorResponse) => {
         this.guardandoMovimiento.set(false);
@@ -533,13 +546,18 @@ export class InventarioComponent implements OnInit, OnDestroy {
     const sufijo = nota ? ` — ${nota}` : '';
     const fecha = this.movFecha || null;
 
-    if (this.movEsCorreccion || deltaBase <= 0) {
+    if (this.movEsCorreccion || deltaBase < 0) {
       // AJUSTE: deja el stock exactamente en la medición (cantidad con signo).
       const cantidad = Math.round((medicionBase - i.stockActual) * 10000) / 10000;
       const motivo = this.movEsCorreccion
         ? `Corrección por medición: quedó en ${peso} ${unidad}`
         : `Medición: subió a ${peso} ${unidad}`;
-      return { tipo: 'AJUSTE', cantidad, costoTotal: null, metodoPago: null, tipoGastoId: null, descripcion: `${motivo}${sufijo}`, fecha };
+      return { tipo: 'AJUSTE', cantidad, costoTotal: null, metodoPago: null, tipoGastoId: null, descripcion: `${motivo}${sufijo}`, fecha, esMedicion: true };
+    }
+    if (deltaBase === 0) {
+      // Mismo peso que el registrado: se pesó y no hubo consumo. Se deja constancia del día.
+      return { tipo: 'CONSUMO', cantidad: 0, costoTotal: null, metodoPago: null, tipoGastoId: null,
+        descripcion: `Medición: pesó ${peso} ${unidad}. Sin consumo del día.${sufijo}`, fecha, esMedicion: true };
     }
     // CONSUMO del día por la diferencia.
     const consumoPeso = Math.round(deltaBase * factor * 1000) / 1000;
@@ -548,7 +566,8 @@ export class InventarioComponent implements OnInit, OnDestroy {
       cantidad: deltaBase,
       costoTotal: null, metodoPago: null, tipoGastoId: null,
       descripcion: `Medición: pesó ${peso} ${unidad}. Consumo del día: ${consumoPeso} ${unidad}${sufijo}`,
-      fecha
+      fecha,
+      esMedicion: true
     };
   }
 

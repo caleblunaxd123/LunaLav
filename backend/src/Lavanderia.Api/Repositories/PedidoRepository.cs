@@ -30,6 +30,7 @@ public interface IPedidoRepository
     Task<Dictionary<DateTime, decimal>> VentasPorDiaAsync(DateTime desde, int sedeId, CancellationToken ct = default);
     Task<int> PedidosDelMesAsync(DateTime fecha, int sedeId, CancellationToken ct = default);
     Task RegistrarPagoAsync(int pedidoId, decimal monto, string metodo, int usuarioId, string? descripcion, int sedeId, CancellationToken ct = default);
+    Task<bool> EditarMetodoPagoAsync(int pedidoId, int pagoId, string metodo, int sedeId, CancellationToken ct = default);
     /// <summary>Registra una entrega (parcial o final): actualiza CantidadEntregada de cada ítem, guarda
     /// la entrega y su detalle, registra los cobros (pago mixto) y ajusta el estado del pedido
     /// (ENTREGA_PARCIAL si aún quedan prendas, ENTREGADO si ya se entregó todo). Devuelve el estado final.</summary>
@@ -587,6 +588,22 @@ public class PedidoRepository : IPedidoRepository
             Descripcion = r.GetNullableString("Descripcion"),
             UsuarioNombre = r.GetNullableString("UsuarioNombre")
         }, ct);
+    }
+
+    public async Task<bool> EditarMetodoPagoAsync(int pedidoId, int pagoId, string metodo, int sedeId, CancellationToken ct = default)
+    {
+        await using var conn = _factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            UPDATE dbo.MovimientoCaja
+               SET MetodoPago = @Metodo
+             WHERE Id = @PagoId AND PedidoId = @PedidoId AND SedeId = @SedeId AND Tipo = 'INGRESO'";
+        cmd.AddParam("@Metodo", metodo);
+        cmd.AddParam("@PagoId", pagoId);
+        cmd.AddParam("@PedidoId", pedidoId);
+        cmd.AddParam("@SedeId", sedeId);
+        return await cmd.ExecuteNonQueryAsync(ct) > 0;
     }
 
     public async Task<Dictionary<string, int>> ContadoresPorEstadoAsync(int sedeId, CancellationToken ct = default)

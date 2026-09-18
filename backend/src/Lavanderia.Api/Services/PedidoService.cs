@@ -17,6 +17,7 @@ public interface IPedidoService
     Task<DashboardDto> DashboardAsync(int negocioId, int sedeId, CancellationToken ct = default);
     Task<PedidoContadoresDto> ContadoresAsync(int sedeId, CancellationToken ct = default);
     Task RegistrarPagoAsync(int pedidoId, RegistrarPagoRequest req, int usuarioId, int sedeId, CancellationToken ct = default);
+    Task EditarMetodoPagoAsync(int pedidoId, int pagoId, string metodo, int sedeId, CancellationToken ct = default);
     Task<string> EntregarAsync(int pedidoId, EntregarPedidoRequest req, int usuarioId, int sedeId, CancellationToken ct = default);
     Task<List<PedidoEntregaDto>> ObtenerEntregasAsync(int pedidoId, int sedeId, CancellationToken ct = default);
     Task AgregarItemAsync(int pedidoId, AgregarItemRequest req, int negocioId, int sedeId, CancellationToken ct = default);
@@ -626,6 +627,15 @@ public class PedidoService : IPedidoService
             throw new InvalidOperationException("Método de pago inválido.");
 
         await _pedidos.RegistrarPagoAsync(pedidoId, req.Monto, req.Metodo.ToUpperInvariant(), usuarioId, req.Descripcion, sedeId, ct);
+    }
+
+    public async Task EditarMetodoPagoAsync(int pedidoId, int pagoId, string metodo, int sedeId, CancellationToken ct = default)
+    {
+        var normalizado = (metodo ?? "").Trim().ToUpperInvariant();
+        if (!MetodosPagoValidos.Contains(normalizado))
+            throw new InvalidOperationException("Método de pago inválido.");
+        if (!await _pedidos.EditarMetodoPagoAsync(pedidoId, pagoId, normalizado, sedeId, ct))
+            throw new InvalidOperationException("No se encontró el pago indicado para este pedido.");
     }
 
     private static readonly string[] MetodosPagoValidos = ["EFECTIVO", "YAPE", "PLIN", "TRANSFERENCIA", "POS", "TARJETA"];

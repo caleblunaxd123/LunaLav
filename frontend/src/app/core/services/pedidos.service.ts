@@ -193,6 +193,10 @@ export class PedidosService {
     return this.http.post<void>(`${this.base}/${id}/pagos`, { monto, metodo, descripcion });
   }
 
+  editarMetodoPago(pedidoId: number, pagoId: number, metodo: string) {
+    return this.http.put<void>(`${this.base}/${pedidoId}/pagos/${pagoId}/metodo`, { metodo });
+  }
+
   /** Registra una entrega (parcial o final): qué prendas se lleva el cliente y con qué pagos (mixto). */
   entregar(id: number, req: EntregarPedidoRequest) {
     return this.http.post<{ estadoProceso: string }>(`${this.base}/${id}/entregar`, req);

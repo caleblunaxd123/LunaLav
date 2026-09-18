@@ -487,6 +487,26 @@
     color: #94a3b8;
     font-size: 11px;
   }
+
+  // Botón "Corregir método" (solo admin): discreto, en su propia fila.
+  &__editar {
+    grid-column: 1 / -1;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+    padding: 3px 8px;
+    border: none;
+    background: transparent;
+    color: var(--azul-oscuro, #053465);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 6px;
+
+    &:hover { background: #eef2f7; }
+  }
 }
 
 .chip-pago {

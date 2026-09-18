@@ -253,6 +253,22 @@ public class PedidosController : TenantAwareControllerBase
         }
     }
 
+    /// <summary>Corrige el método de un cobro ya registrado sin cambiar el monto. Solo ADMIN.</summary>
+    [HttpPut("{id:int}/pagos/{pagoId:int}/metodo")]
+    [Authorize(Roles = "ADMIN")]
+    public async Task<IActionResult> EditarMetodoPago(int id, int pagoId, [FromBody] EditarMetodoPagoRequest req, CancellationToken ct)
+    {
+        try
+        {
+            await _service.EditarMetodoPagoAsync(id, pagoId, req.Metodo, SedeRequeridaId, ct);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { mensaje = ex.Message });
+        }
+    }
+
     /// <summary>Entregas del pedido (parciales y final), con el detalle de lo entregado y lo cobrado.</summary>
     [HttpGet("{id:int}/entregas")]
     [Authorize(Policy = "Modulo:PEDIDOS")]

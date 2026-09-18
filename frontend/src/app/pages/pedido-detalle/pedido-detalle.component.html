@@ -248,6 +248,11 @@
                     @if (pago.usuarioNombre) {
                       <small class="cobros__usuario">Cobró: {{ pago.usuarioNombre }}</small>
                     }
+                    @if (esAdmin()) {
+                      <button type="button" class="cobros__editar" (click)="abrirEditarMetodo(pago)">
+                        <app-icon name="edit" [size]="12"></app-icon> Corregir método
+                      </button>
+                    }
                   </li>
                 }
               </ul>
@@ -777,6 +782,40 @@
         <button type="button" class="btn btn--ghost" (click)="cerrarModales()">Cancelar</button>
         <button type="button" class="btn btn--danger" [disabled]="procesando() || motivoAnulacion.trim().length < 3" (click)="confirmarAnular()">
           {{ procesando() ? 'Anulando…' : 'Sí, anular' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal: Corregir método de pago (solo ADMIN) -->
+@if (modalEditarPago()) {
+  <div class="modal-backdrop" (click)="cerrarModales()"></div>
+  <div class="modal-simple" role="dialog" aria-modal="true" aria-labelledby="titulo-editar-metodo">
+    <div class="modal-simple__head">
+      <h3 id="titulo-editar-metodo"><app-icon name="edit" [size]="15"></app-icon> Corregir método de pago</h3>
+      <button type="button" aria-label="Cerrar" (click)="cerrarModales()"><app-icon name="close" [size]="15"></app-icon></button>
+    </div>
+    <div class="modal-simple__body">
+      <p class="modal-simple__info">
+        Solo cambia el método del cobro de
+        <strong>S/ {{ (pagoEditando()?.monto ?? 0) | number:'1.2-2' }}</strong>
+        (era {{ etiquetaMetodo(pagoEditando()?.metodoPago ?? '') }}). No modifica el monto ni el saldo del pedido.
+      </p>
+
+      <label>Nuevo método</label>
+      <div class="metodos">
+        @for (m of metodosPago; track m.v) {
+          <button type="button" class="metodo" [class.is-active]="metodoEditar === m.v" (click)="metodoEditar = m.v">
+            <app-icon [name]="m.icono" [size]="13"></app-icon> {{ m.nombre }}
+          </button>
+        }
+      </div>
+
+      <div class="modal-simple__actions">
+        <button type="button" class="btn btn--ghost" (click)="cerrarModales()">Cancelar</button>
+        <button type="button" class="btn btn--primario" [disabled]="procesando()" (click)="confirmarEditarMetodo()">
+          {{ procesando() ? 'Guardando…' : 'Guardar' }}
         </button>
       </div>
     </div>

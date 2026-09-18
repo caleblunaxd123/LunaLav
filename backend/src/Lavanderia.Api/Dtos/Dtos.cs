@@ -341,6 +341,12 @@ public class RegistrarPagoRequest
     [StringLength(300)] public string? Descripcion { get; set; }
 }
 
+/// <summary>Corrige el método de un cobro ya registrado sin alterar su monto. Solo ADMIN.</summary>
+public class EditarMetodoPagoRequest
+{
+    [Required, StringLength(30)] public string Metodo { get; set; } = "EFECTIVO";
+}
+
 /// <summary>Una línea de cobro (permite pago mixto: parte efectivo, parte Yape, etc.).</summary>
 public class PagoLineaDto
 {
@@ -546,6 +552,8 @@ public class RegistrarMovimientoInsumoRequest
     [StringLength(300)] public string? Descripcion { get; set; }
     /// <summary>Fecha del movimiento (cualquier tipo). Si es null se usa la fecha/hora actual.</summary>
     public DateTime? Fecha { get; set; }
+    /// <summary>Indica que CONSUMO/AJUSTE procede de una medición de inventario.</summary>
+    public bool EsMedicion { get; set; }
 }
 
 /// <summary>Corrección de un movimiento ya registrado: solo fecha y nota (no toca el stock).</summary>

@@ -11,6 +11,7 @@ import { ClientesService } from '../../core/services/clientes.service';
 import { esCelularValido } from '../../core/util/telefono';
 import { TelefonoPaisComponent } from '../../shared/telefono-pais/telefono-pais.component';
 import { ActualizacionDatosService } from '../../core/services/actualizacion-datos.service';
+import { AuthService } from '../../core/services/auth.service';
 import { CatalogosService } from '../../core/services/catalogos.service';
 import { ConfiguracionService } from '../../core/services/configuracion.service';
 import { FacturacionService } from '../../core/services/facturacion.service';
@@ -19,7 +20,7 @@ import { Motorizado, MotorizadosService } from '../../core/services/motorizados.
 import { PagoPedido, PedidoEntrega, PedidoHistorial, PedidosService } from '../../core/services/pedidos.service';
 import { ToastService } from '../../core/services/toast.service';
 import { WhatsappService } from '../../core/services/whatsapp.service';
-import { IconComponent } from '../../shared/icon/icon.component';
+import { IconComponent, IconName } from '../../shared/icon/icon.component';
 import { MapaUbicacionComponent, UbicacionMapa } from '../../shared/mapa-ubicacion/mapa-ubicacion.component';
 import { SkeletonComponent } from '../../shared/skeleton/skeleton.component';
 import { TourService } from '../../core/services/tour.service';
@@ -58,6 +59,8 @@ export interface LineaPagoEntrega {
 })
 export class PedidoDetalleComponent implements OnInit, OnDestroy {
   private readonly service = inject(PedidosService);
+  private readonly auth = inject(AuthService);
+  readonly esAdmin = computed(() => this.auth.usuario()?.rol === 'ADMIN');
   private readonly clientesSvc = inject(ClientesService);
   private readonly catalogos = inject(CatalogosService);
   private readonly toast = inject(ToastService);
@@ -98,7 +101,7 @@ export class PedidoDetalleComponent implements OnInit, OnDestroy {
   recibidoPor = '';
 
   // --- Entrega (parcial o final) + cobro mixto ---
-  readonly metodosPago: Array<{ v: MetodoPagoEntrega; nombre: string; icono: string }> = [
+  readonly metodosPago: Array<{ v: MetodoPagoEntrega; nombre: string; icono: IconName }> = [
     { v: 'EFECTIVO', nombre: 'Efectivo', icono: 'cash' },
     { v: 'YAPE', nombre: 'Yape', icono: 'smartphone' },
     { v: 'PLIN', nombre: 'Plin', icono: 'smartphone' },
@@ -194,6 +197,40 @@ export class PedidoDetalleComponent implements OnInit, OnDestroy {
     this.service.pagos(this.pedidoId).subscribe({
       next: list => this.pagos.set(list),
       error: () => this.pagos.set([])
+    });
+  }
+
+  // ---------- Corregir método de un cobro (solo ADMIN) ----------
+  readonly modalEditarPago = signal(false);
+  readonly pagoEditando = signal<PagoPedido | null>(null);
+  metodoEditar: MetodoPagoEntrega = 'EFECTIVO';
+
+  abrirEditarMetodo(pago: PagoPedido) {
+    if (!this.esAdmin()) return;
+    this.pagoEditando.set(pago);
+    // Si el método guardado no está entre los seleccionables (ej: TARJETA), parte de EFECTIVO.
+    const valido = this.metodosPago.some(m => m.v === pago.metodoPago);
+    this.metodoEditar = (valido ? pago.metodoPago : 'EFECTIVO') as MetodoPagoEntrega;
+    this.modalEditarPago.set(true);
+  }
+
+  confirmarEditarMetodo() {
+    const pago = this.pagoEditando();
+    if (!pago || this.procesando()) return;
+    if (this.metodoEditar === pago.metodoPago) { this.modalEditarPago.set(false); return; }
+    this.procesando.set(true);
+    this.service.editarMetodoPago(this.pedidoId, pago.id, this.metodoEditar).subscribe({
+      next: () => {
+        this.procesando.set(false);
+        this.modalEditarPago.set(false);
+        this.pagoEditando.set(null);
+        this.toast.exito('Método de pago corregido');
+        this.cargarPagos();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.procesando.set(false);
+        this.toast.desdeHttp(err, 'No se pudo corregir el método de pago.');
+      }
     });
   }
 
@@ -1033,6 +1070,7 @@ export class PedidoDetalleComponent implements OnInit, OnDestroy {
     this.modalItem.set(false);
     this.modalFecha.set(false);
     this.modalAnular.set(false);
+    this.modalEditarPago.set(false);
     this.cerrarDestinoDelivery();
   }
 }
