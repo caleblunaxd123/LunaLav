@@ -196,9 +196,12 @@
 .site-footer__links { display: flex; gap: 24px; }.site-footer__links a { color: #d9e6eb; text-decoration: none; font-size: 14px; }
 .site-footer__copy { grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,.09); padding-top: 22px; }
 
-.sales-chat { position: fixed; right: 24px; bottom: 22px; z-index: 80; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
-.sales-chat__panel { width: min(365px, calc(100vw - 32px)); overflow: hidden; border: 1px solid #d7e6ea; border-radius: 18px; background: #fff; box-shadow: 0 25px 70px rgba(7,29,52,.24); opacity: 0; visibility: hidden; transform: translateY(12px) scale(.98); transform-origin: bottom right; transition: .2s ease; }
-.sales-chat--open .sales-chat__panel { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+/* pointer-events:none en el contenedor: su caja (grande y fija) no debe capturar toques
+   sobre el resto de la página; solo el botón flotante y el panel abierto son interactivos. */
+.sales-chat { position: fixed; right: 24px; bottom: 22px; z-index: 80; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; pointer-events: none; }
+.sales-chat__panel { width: min(365px, calc(100vw - 32px)); overflow: hidden; border: 1px solid #d7e6ea; border-radius: 18px; background: #fff; box-shadow: 0 25px 70px rgba(7,29,52,.24); opacity: 0; visibility: hidden; transform: translateY(12px) scale(.98); transform-origin: bottom right; transition: .2s ease; pointer-events: none; }
+.sales-chat--open .sales-chat__panel { opacity: 1; visibility: visible; transform: translateY(0) scale(1); pointer-events: auto; }
+.sales-chat__trigger { pointer-events: auto; }
 .sales-chat__panel header { display: grid; grid-template-columns: 41px 1fr auto; align-items: center; gap: 11px; padding: 16px 17px; color: #fff; background: linear-gradient(120deg, var(--navy), var(--blue)); }
 .sales-chat__avatar { width: 41px; height: 41px; display: grid; place-items: center; border-radius: 13px; color: var(--navy); background: var(--teal); font-weight: 950; }
 .sales-chat__panel header strong, .sales-chat__panel header small { display: block; }
