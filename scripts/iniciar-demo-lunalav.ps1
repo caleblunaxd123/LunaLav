@@ -75,7 +75,7 @@ $migraciones = Get-ChildItem (Join-Path $root "backend\db\scripts") -Filter "*.s
 # migraciones históricas que, después de cambios de esquema posteriores, ya no
 # necesariamente son repetibles.
 $primeraMigracion = $migraciones | Where-Object Name -eq "001_schema.sql" | Select-Object -First 1
-& sqlcmd -S $SqlServer -E -b -C -I -d master -i $primeraMigracion.FullName
+& sqlcmd -S $SqlServer -E -b -C -I -f 65001 -d master -i $primeraMigracion.FullName
 if ($LASTEXITCODE -ne 0) { throw "Falló la migración $($primeraMigracion.Name)." }
 
 $crearRegistro = @"
@@ -113,7 +113,7 @@ if ($aplicadas -notcontains $primeraMigracion.Name) {
 
 foreach ($sql in $migraciones | Where-Object Name -ne "001_schema.sql") {
     if ($aplicadas -contains $sql.Name) { continue }
-    & sqlcmd -S $SqlServer -E -b -C -I -d LunaLav -i $sql.FullName
+    & sqlcmd -S $SqlServer -E -b -C -I -f 65001 -d LunaLav -i $sql.FullName
     if ($LASTEXITCODE -ne 0) { throw "Falló la migración $($sql.Name)." }
     $nombreSeguro = $sql.Name.Replace("'", "''")
     & sqlcmd -S $SqlServer -E -b -C -I -d LunaLav -Q "INSERT dbo.SchemaMigration (Nombre) VALUES (N'$nombreSeguro');"

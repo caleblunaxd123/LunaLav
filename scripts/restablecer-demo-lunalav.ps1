@@ -35,11 +35,11 @@ try {
         ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^\d+$' } | Select-Object -First 1
     if ([string]::IsNullOrWhiteSpace($demoId)) { throw "No se encontró el tenant demo; no se eliminó ningún archivo." }
 
-    & sqlcmd -S $SqlServer -E -b -C -d $Database -i $maintenanceSql
+    & sqlcmd -S $SqlServer -E -b -C -f 65001 -d $Database -i $maintenanceSql
     if ($LASTEXITCODE -ne 0) { throw "Falló la limpieza aislada de la demo." }
 
     foreach ($seedFile in $seedFiles) {
-        & sqlcmd -S $SqlServer -E -b -C -d $Database -i $seedFile
+        & sqlcmd -S $SqlServer -E -b -C -f 65001 -d $Database -i $seedFile
         if ($LASTEXITCODE -ne 0) { throw "Falló la carga de datos ficticios: $(Split-Path $seedFile -Leaf)" }
     }
 
