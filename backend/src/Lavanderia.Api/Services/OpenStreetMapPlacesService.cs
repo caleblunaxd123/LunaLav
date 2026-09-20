@@ -25,10 +25,12 @@ public sealed class OpenStreetMapPlacesService(HttpClient http, IConfiguration c
     {
         max = Math.Clamp(max, 1, 40);
         var c = CultureInfo.InvariantCulture;
+        // Además de las etiquetadas shop=laundry, incluimos cualquier negocio cuyo NOMBRE
+        // contenga lavand/laundr (muchas lavanderías están en el mapa sin la etiqueta).
         var overpassQuery = $@"[out:json][timeout:25];
 (
-  node[""shop""~""laundry|dry_cleaning""](around:{radius},{lat.ToString(c)},{lon.ToString(c)});
-  way[""shop""~""laundry|dry_cleaning""](around:{radius},{lat.ToString(c)},{lon.ToString(c)});
+  nwr[""shop""~""laundry|dry_cleaning""](around:{radius},{lat.ToString(c)},{lon.ToString(c)});
+  nwr[""name""~""lavand|laundr"",i](around:{radius},{lat.ToString(c)},{lon.ToString(c)});
 );
 out center {max};";
         var body = await PostOverpassAsync(overpassQuery, ct);
