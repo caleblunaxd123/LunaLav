@@ -245,6 +245,15 @@
   .sales-chat { right: 14px; bottom: 14px; }.sales-chat__label { display: none; }.sales-chat__trigger { padding: 7px; }.sales-chat__bubble { width: 40px; height: 40px; }
 }
 
+/* En pantallas táctiles el transform en :hover puede exigir un segundo toque; lo desactivamos. */
+@media (hover: none) {
+  .site-nav .nav-cta:hover,
+  .button--primary:hover,
+  .button--light:hover,
+  .button--outline-light:hover,
+  .feature:hover { transform: none; }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .app-window { animation: float 6s ease-in-out infinite; }
   @keyframes float { 0%, 100% { transform: perspective(1100px) rotateY(-3deg) rotateX(1deg) translateY(0); } 50% { transform: perspective(1100px) rotateY(-3deg) rotateX(1deg) translateY(-8px); } }

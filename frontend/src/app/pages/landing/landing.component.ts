@@ -13,6 +13,7 @@ export class LandingComponent {
   private readonly demo = inject(DemoPreviewService);
   readonly anio = new Date().getFullYear();
   readonly demoUrl = 'https://demo.lunalav.pe/demo';
+  readonly asesoriaUrl = 'https://wa.me/51930791664?text=' + encodeURIComponent('Hola, quiero asesoría sobre LunaLav para mi lavandería.');
   readonly esDemo = this.demo.esDemoPublica();
   menuAbierto = false;
   chatAbierto = false;
@@ -50,9 +51,9 @@ export class LandingComponent {
         url: '#precios'
       },
       persona: {
-        texto: 'Cuéntanos cómo trabaja tu lavandería y te orientaremos sin compromiso.',
-        accion: 'Escribir a LunaLav',
-        url: 'mailto:contacto@lunalav.pe?subject=Quiero conversar sobre LunaLav'
+        texto: 'Cuéntanos cómo trabaja tu lavandería y te orientaremos sin compromiso. Escríbenos por WhatsApp al +51 930 791 664.',
+        accion: 'Escribir por WhatsApp',
+        url: this.asesoriaUrl
       }
     }[tema];
 
