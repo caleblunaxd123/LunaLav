@@ -12,7 +12,10 @@ $maintenanceSql = Join-Path $root "backend\db\maintenance\restablecer_demo_lunal
 $seedFiles = @(
     (Join-Path $root "backend\db\scripts\064_datos_demo_lunalav.sql"),
     (Join-Path $root "backend\db\scripts\065_comprobantes_demo_simulados.sql"),
-    (Join-Path $root "backend\db\scripts\066_configuracion_facturacion_demo.sql")
+    (Join-Path $root "backend\db\scripts\066_configuracion_facturacion_demo.sql"),
+    # 075 debe ir después de 065: agrega el detalle de ítems y el RUC de ejemplo a
+    # los comprobantes recién recreados para que la boleta/factura impresa no salga vacía.
+    (Join-Path $root "backend\db\scripts\075_comprobantes_demo_detalle.sql")
 )
 $stateRoot = Join-Path $env:LOCALAPPDATA "LunaLav\demo"
 $fotosRoot = Join-Path $stateRoot "fotos"
