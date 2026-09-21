@@ -8,6 +8,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ConfiguracionService } from '../../core/services/configuracion.service';
 import { AlertasGlobalesService } from '../../core/services/alertas-globales.service';
 import { SedesService } from '../../core/services/sedes.service';
+import { DemoPlan, DemoPreviewService } from '../../core/services/demo-preview.service';
 import { DESARROLLADOR_CREDITO } from '../../core/util/marca';
 import { IconComponent, IconName } from '../../shared/icon/icon.component';
 
@@ -15,6 +16,7 @@ interface SubLink {
   label: string;
   path: string;
   modulo?: string; // si difiere del módulo del padre (para permisos)
+  planes?: DemoPlan[]; // en la demo, solo visible para estos planes (vacío = todos)
 }
 
 interface NavLink {
@@ -23,6 +25,7 @@ interface NavLink {
   modulo: string;
   icono: IconName;
   children?: SubLink[];
+  planes?: DemoPlan[]; // en la demo, solo visible para estos planes (vacío = todos)
 }
 
 @Component({
@@ -36,6 +39,7 @@ export class HeaderComponent implements OnInit {
   private readonly config = inject(ConfiguracionService);
   private readonly sedesSvc = inject(SedesService);
   private readonly alertasSvc = inject(AlertasGlobalesService);
+  private readonly demoPreview = inject(DemoPreviewService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -165,12 +169,12 @@ export class HeaderComponent implements OnInit {
       children: [
         { label: 'Todos los reportes', path: '/reportes' },
         { label: 'Vista gerencial', path: '/reportes/gerencial' },
-        { label: 'Consolidado', path: '/reportes/consolidado' },
+        { label: 'Consolidado', path: '/reportes/consolidado', planes: ['MULTISEDE'] },
         { label: 'Cuadres diarios', path: '/reportes/cuadres-caja' },
       ]
     },
     { label: 'Inventario', path: '/inventario', modulo: 'INVENTARIO', icono: 'package' },
-    { label: 'Comprobantes electrónicos', path: '/facturacion/comprobantes', modulo: 'PEDIDOS', icono: 'note' },
+    { label: 'Comprobantes electrónicos', path: '/facturacion/comprobantes', modulo: 'PEDIDOS', icono: 'note', planes: ['FACTURA', 'MULTISEDE'] },
     {
       label: 'Ajustes', path: '/ajustes', modulo: 'AJUSTES', icono: 'settings',
       children: [
@@ -189,13 +193,25 @@ export class HeaderComponent implements OnInit {
 
   private filtrar(list: NavLink[]): NavLink[] {
     const modulos = this.usuario()?.modulosPermitidos ?? [];
-    return list.filter(l => modulos.includes(l.modulo));
+    return list.filter(l => modulos.includes(l.modulo) && this.planPermite(l.planes));
   }
 
   /** Hijos visibles según los permisos del usuario. */
   hijosVisibles(link: NavLink): SubLink[] {
     const modulos = this.usuario()?.modulosPermitidos ?? [];
-    return (link.children ?? []).filter(c => modulos.includes(c.modulo ?? link.modulo));
+    return (link.children ?? [])
+      .filter(c => modulos.includes(c.modulo ?? link.modulo) && this.planPermite(c.planes));
+  }
+
+  /**
+   * En la demo pública, cada plan muestra solo sus módulos: Comprobantes es de
+   * Factura/Multisede y el consolidado es de Multisede. Fuera de la demo (o sin
+   * restricción de plan) no se oculta nada por este criterio.
+   */
+  private planPermite(planes?: DemoPlan[]): boolean {
+    if (!planes || planes.length === 0) return true;
+    const plan = this.demoPreview.perfil()?.plan;
+    return plan ? planes.includes(plan) : true;
   }
 
   /** La sección está activa si la ruta actual coincide con el padre o alguno de sus hijos. */
