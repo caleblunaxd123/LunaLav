@@ -5,10 +5,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Lavanderia.Api.Controllers;
 
 [ApiController,Authorize(Policy="Marketing"),Route("api/marketing/google")]
-public class MarketingGoogleController(GooglePlacesService places, GmailOAuthService gmail, OpenStreetMapPlacesService osm) : ControllerBase
+public class MarketingGoogleController(GooglePlacesService places, GmailOAuthService gmail, OpenStreetMapPlacesService osm, IConfiguration config) : ControllerBase
 {
+    // Clave pública para el mapa (Maps JavaScript API), restringida por dominio (referrer).
+    // Es DISTINTA de GooglePlaces:ApiKey, que es de servidor y nunca se envía al navegador.
+    private string? MapsKey => config.GetValue<string>("GoogleMaps:ApiKey");
+
     [HttpGet("status")]
-    public async Task<IActionResult> Status(CancellationToken ct)=>Ok(new{placesConfigured=places.Configured,descubrimientoGratis=true,proveedorDescubrimiento=places.Configured?"Google Places":"OpenStreetMap",gmail=await gmail.StatusAsync(ct),gmailMessage="Gmail usa consentimiento OAuth; LunaLav no recibe ni almacena tu contraseña."});
+    public async Task<IActionResult> Status(CancellationToken ct)=>Ok(new{placesConfigured=places.Configured,descubrimientoGratis=true,proveedorDescubrimiento=places.Configured?"Google Places":"OpenStreetMap",mapsConfigured=!string.IsNullOrWhiteSpace(MapsKey),mapsKey=MapsKey,gmail=await gmail.StatusAsync(ct),gmailMessage="Gmail usa consentimiento OAuth; LunaLav no recibe ni almacena tu contraseña."});
     [HttpPost("gmail/connect")]
     public async Task<IActionResult> ConnectGmail(CancellationToken ct)
     {
@@ -33,7 +37,9 @@ public class MarketingGoogleController(GooglePlacesService places, GmailOAuthSer
     {
         try{
             if(lat.HasValue && lng.HasValue)
-                return Ok(await osm.SearchAroundAsync((decimal)lat.Value,(decimal)lng.Value,max,ct));
+                return Ok(places.Configured
+                    ? await places.SearchNearbyAsync((decimal)lat.Value,(decimal)lng.Value,max,ct)
+                    : await osm.SearchAroundAsync((decimal)lat.Value,(decimal)lng.Value,max,ct));
             if(string.IsNullOrWhiteSpace(q))return BadRequest(new{mensaje="Indica una búsqueda o comparte tu ubicación."});
             return Ok(places.Configured ? await places.SearchTextAsync(q.Trim(),max,ct) : await osm.SearchLaundriesAsync(q.Trim(),max,ct));
         }

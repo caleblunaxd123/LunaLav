@@ -18,6 +18,22 @@ public sealed class GooglePlacesService(HttpClient http,IConfiguration config)
         using var request=new HttpRequestMessage(HttpMethod.Post,"https://places.googleapis.com/v1/places:searchText");
         request.Headers.Add("X-Goog-Api-Key",Key);request.Headers.Add("X-Goog-FieldMask","places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.nationalPhoneNumber,places.websiteUri");
         request.Content=JsonContent.Create(new{textQuery=text,languageCode="es",regionCode="PE",maxResultCount=Math.Clamp(max,1,20)});
+        return await EnviarAsync(request,ct);
+    }
+
+    /// <summary>Búsqueda por cercanía (Places API New: searchNearby) usada por "Buscar en esta zona" y "Mi ubicación".</summary>
+    public async Task<IReadOnlyList<GooglePlaceResult>> SearchNearbyAsync(decimal lat,decimal lng,int max,CancellationToken ct)
+    {
+        if(!Configured) throw new InvalidOperationException("Google Places no está configurado. Agrega GooglePlaces:ApiKey en appsettings.Local.json o una variable de entorno.");
+        using var request=new HttpRequestMessage(HttpMethod.Post,"https://places.googleapis.com/v1/places:searchNearby");
+        request.Headers.Add("X-Goog-Api-Key",Key);request.Headers.Add("X-Goog-FieldMask","places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.nationalPhoneNumber,places.websiteUri");
+        request.Content=JsonContent.Create(new{includedTypes=new[]{"laundry"},maxResultCount=Math.Clamp(max,1,20),languageCode="es",regionCode="PE",
+            locationRestriction=new{circle=new{center=new{latitude=(double)lat,longitude=(double)lng},radius=3000.0}}});
+        return await EnviarAsync(request,ct);
+    }
+
+    private async Task<IReadOnlyList<GooglePlaceResult>> EnviarAsync(HttpRequestMessage request,CancellationToken ct)
+    {
         using var response=await http.SendAsync(request,ct);var json=await response.Content.ReadAsStringAsync(ct);if(!response.IsSuccessStatusCode)throw new InvalidOperationException($"Google Places respondió {(int)response.StatusCode}: {json[..Math.Min(json.Length,400)]}");
         using var doc=JsonDocument.Parse(json);if(!doc.RootElement.TryGetProperty("places",out var places))return [];
         return places.EnumerateArray().Select(p=>new GooglePlaceResult(
