@@ -15,20 +15,20 @@ New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\P
   -Name 'HiberbootEnabled' -Value 0 -PropertyType DWord -Force | Out-Null
 Write-Host "[1/3] Fast Startup DESACTIVADO (arranque limpio en cada encendido)." -ForegroundColor Green
 
-# 2) La tarea de servicios: arranca AL ENCENDER (boot) y AL INICIAR SESION,
-#    y corre AUNQUE NADIE HAYA INICIADO SESION (S4U, sin guardar contraseña),
-#    con 3 reintentos por si SQL aún no está listo.
+# 2) La tarea de servicios arranca al iniciar sesión. Se usa el token interactivo
+#    del propietario porque las claves de Data Protection/Gmail están protegidas
+#    por DPAPI para esa cuenta; S4U puede iniciar sin el perfil criptográfico y
+#    dejar las credenciales ilegibles. El runtime espera a SQL y reintenta puertos.
 $action    = New-ScheduledTaskAction -Execute 'powershell.exe' `
   -Argument ('-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "{0}"' -f $script)
-$tBoot     = New-ScheduledTaskTrigger -AtStartup; $tBoot.Delay = 'PT45S'
-$tLogon    = New-ScheduledTaskTrigger -AtLogOn
-$principal = New-ScheduledTaskPrincipal -UserId $user -LogonType S4U -RunLevel Limited
+$tLogon    = New-ScheduledTaskTrigger -AtLogOn -User $user
+$principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
 $settings  = New-ScheduledTaskSettingsSet -StartWhenAvailable -RestartCount 3 `
   -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Hours 72) `
-  -MultipleInstances IgnoreNew -AllowStartIfOnBatteries
+  -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 Register-ScheduledTask -TaskName 'LunaLav - Servicios' -Action $action `
-  -Trigger @($tBoot, $tLogon) -Principal $principal -Settings $settings -Force | Out-Null
-Write-Host "[2/3] Tarea 'LunaLav - Servicios' -> arranque + logon, corre sin sesión." -ForegroundColor Green
+  -Trigger $tLogon -Principal $principal -Settings $settings -Force | Out-Null
+Write-Host "[2/3] Tarea 'LunaLav - Servicios' -> inicio de sesión con perfil criptográfico." -ForegroundColor Green
 
 # 3) Asegurar que los servicios base arranquen solos.
 foreach ($s in 'cloudflared', 'MSSQL$SQLEXPRESS') {
