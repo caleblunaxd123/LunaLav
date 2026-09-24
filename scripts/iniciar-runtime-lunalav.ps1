@@ -1,14 +1,19 @@
 [CmdletBinding()]
 param(
     [string]$SqlServer = "localhost\SQLEXPRESS",
-    [int[]]$Ports = @(5004, 5005)
+    [int[]]$Ports = @(5004, 5005),
+    [string]$PublishDirectory = ""
 )
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
 $root = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
-$publishDir = Join-Path $root ".demo-build\publish"
+$publishDir = if ([string]::IsNullOrWhiteSpace($PublishDirectory)) {
+    Join-Path $root ".demo-build\publish"
+} else {
+    [System.IO.Path]::GetFullPath($PublishDirectory)
+}
 $apiDll = Join-Path $publishDir "Lavanderia.Api.dll"
 $buildRoot = Join-Path $root ".demo-build"
 $localState = Join-Path $env:LOCALAPPDATA "LunaLav\demo"
