@@ -7,6 +7,7 @@ namespace Lavanderia.Api.Repositories;
 public interface IClienteRepository
 {
     Task<List<Cliente>> BuscarAsync(string? texto, string? campo, int limite, int negocioId, CancellationToken ct = default);
+    Task<(List<Cliente> Items, int Total)> BuscarPaginadoAsync(string? texto, int pagina, int tamanoPagina, int negocioId, CancellationToken ct = default);
     Task<Cliente?> ObtenerPorIdAsync(int id, int negocioId, CancellationToken ct = default);
     Task<Cliente?> BuscarPorCelularOrDniAsync(string valor, int negocioId, CancellationToken ct = default);
     Task<Cliente?> BuscarDuplicadoAsync(string? nombre, string? celular, string? dni, string? documentoFiscal, int negocioId, int? excluirClienteId = null, CancellationToken ct = default);
@@ -57,21 +58,52 @@ public class ClienteRepository : IClienteRepository
         await conn.OpenAsync(ct);
         await using var cmd = conn.CreateCommand();
 
-        var whereExtra = "";
-        if (!string.IsNullOrWhiteSpace(texto))
-        {
-            whereExtra = campo?.ToLowerInvariant() switch
-            {
-                "celular" => " AND Celular LIKE @Texto",
-                "dni" => " AND Dni LIKE @Texto",
-                _ => " AND Nombre LIKE @Texto"
-            };
-            cmd.AddParam("@Texto", $"%{texto}%");
-        }
+        var whereExtra = FiltroBusqueda(cmd, texto, campo);
         cmd.CommandText = $"SELECT TOP (@Limite) * FROM ({BaseSelect}) t WHERE Activo = 1 AND NegocioId = @NegocioId {whereExtra} ORDER BY Nombre";
         cmd.AddParam("@Limite", limite);
         cmd.AddParam("@NegocioId", negocioId);
         return await cmd.ReadListAsync(Map, ct);
+    }
+
+    /// <summary>Página del directorio de clientes (orden alfabético) con el total, sin tope.</summary>
+    public async Task<(List<Cliente> Items, int Total)> BuscarPaginadoAsync(string? texto, int pagina, int tamanoPagina, int negocioId, CancellationToken ct = default)
+    {
+        await using var conn = _factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+
+        var whereExtra = FiltroBusqueda(cmd, texto, null);
+        cmd.CommandText = $@"
+            SELECT COUNT(*) FROM ({BaseSelect}) t WHERE Activo = 1 AND NegocioId = @NegocioId {whereExtra};
+            SELECT * FROM ({BaseSelect}) t WHERE Activo = 1 AND NegocioId = @NegocioId {whereExtra}
+            ORDER BY Nombre, Id OFFSET @Offset ROWS FETCH NEXT @Tamano ROWS ONLY;";
+        cmd.AddParam("@NegocioId", negocioId);
+        cmd.AddParam("@Offset", (pagina - 1) * tamanoPagina);
+        cmd.AddParam("@Tamano", tamanoPagina);
+
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        var total = await r.ReadAsync(ct) ? r.GetInt32(0) : 0;
+        await r.NextResultAsync(ct);
+        var items = new List<Cliente>();
+        while (await r.ReadAsync(ct)) items.Add(Map(r));
+        return (items, total);
+    }
+
+    /// <summary>
+    /// Sin campo indicado se busca a la vez por nombre, celular y DNI: así funciona el buscador
+    /// único de la app ("nombre, celular o DNI").
+    /// </summary>
+    private static string FiltroBusqueda(Microsoft.Data.SqlClient.SqlCommand cmd, string? texto, string? campo)
+    {
+        if (string.IsNullOrWhiteSpace(texto)) return "";
+        cmd.AddParam("@Texto", $"%{texto.Trim()}%");
+        return campo?.ToLowerInvariant() switch
+        {
+            "celular" => " AND Celular LIKE @Texto",
+            "dni" => " AND Dni LIKE @Texto",
+            "nombre" => " AND Nombre LIKE @Texto",
+            _ => " AND (Nombre LIKE @Texto OR Celular LIKE @Texto OR Dni LIKE @Texto)"
+        };
     }
 
     public async Task<Cliente?> ObtenerPorIdAsync(int id, int negocioId, CancellationToken ct = default)

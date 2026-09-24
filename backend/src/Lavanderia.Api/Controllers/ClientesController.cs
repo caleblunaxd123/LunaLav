@@ -44,6 +44,20 @@ public class ClientesController : TenantAwareControllerBase
         return Ok(list.Select(Map).ToList());
     }
 
+    /// <summary>Directorio paginado en el servidor (app móvil): no se corta en un tope fijo.</summary>
+    [HttpGet("paginado")]
+    public async Task<ActionResult<PagedResultDto<ClienteDto>>> Paginado(
+        [FromQuery] string? texto,
+        [FromQuery] int pagina = 1,
+        [FromQuery] int tamanoPagina = 15,
+        CancellationToken ct = default)
+    {
+        pagina = Math.Max(1, pagina);
+        tamanoPagina = Math.Clamp(tamanoPagina, 1, 100);
+        var (items, total) = await _repo.BuscarPaginadoAsync(texto, pagina, tamanoPagina, NegocioId, ct);
+        return Ok(new PagedResultDto<ClienteDto> { Items = items.Select(Map).ToList(), Total = total, Pagina = pagina, TamanoPagina = tamanoPagina });
+    }
+
     [HttpPost("fusionar")]
     public async Task<IActionResult> Fusionar([FromBody] FusionarClientesRequest req, CancellationToken ct)
     {
