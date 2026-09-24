@@ -21,11 +21,11 @@ public class ComprobantePdfGenerator
                     col.Item().Text(c.RazonSocialEmisor ?? negocio.NombreNegocio).FontSize(15).Bold();
                     col.Item().Text($"RUC: {c.RucEmisor}");
                     if (!string.IsNullOrWhiteSpace(c.DireccionFiscalEmisor)) col.Item().Text(c.DireccionFiscalEmisor);
-                    if (!string.IsNullOrWhiteSpace(negocio.Telefono)) col.Item().Text($"Telefono: {negocio.Telefono}");
+                    if (!string.IsNullOrWhiteSpace(negocio.Telefono)) col.Item().Text($"Teléfono: {negocio.Telefono}");
                 });
                 row.ConstantItem(210).Border(1).Padding(10).Column(col =>
                 {
-                    col.Item().AlignCenter().Text(c.Tipo == "FACTURA" ? "FACTURA ELECTRONICA" : "BOLETA DE VENTA ELECTRONICA").Bold();
+                    col.Item().AlignCenter().Text(c.Tipo == "FACTURA" ? "FACTURA ELECTRÓNICA" : "BOLETA DE VENTA ELECTRÓNICA").Bold();
                     col.Item().AlignCenter().Text($"{c.Serie}-{c.Correlativo:D8}").FontSize(14).Bold();
                     col.Item().AlignCenter().Text($"RUC: {c.RucEmisor}").FontSize(9);
                 });
@@ -35,16 +35,20 @@ public class ComprobantePdfGenerator
                 col.Item().Row(row =>
                 {
                     row.RelativeItem().Text($"Cliente: {c.ClienteNombre}");
-                    row.RelativeItem().AlignRight().Text($"{c.ClienteTipoDoc}: {c.ClienteNumDoc ?? "-"}");
+                    // Un cliente sin documento (boleta menor) no imprime el código interno SIN_DOC.
+                    if (!string.IsNullOrWhiteSpace(c.ClienteNumDoc) && c.ClienteTipoDoc is not (null or "" or "SIN_DOC"))
+                        row.RelativeItem().AlignRight().Text($"{c.ClienteTipoDoc}: {c.ClienteNumDoc}");
                 });
-                col.Item().Text($"Fecha de emision: {c.FechaEmision:dd/MM/yyyy HH:mm}");
+                col.Item().Text($"Fecha de emisión: {c.FechaEmision:dd/MM/yyyy HH:mm}");
                 col.Item().PaddingTop(14).Table(table =>
                 {
                     table.ColumnsDefinition(x => { x.RelativeColumn(1); x.RelativeColumn(4); x.RelativeColumn(2); x.RelativeColumn(2); });
                     table.Header(h =>
                     {
-                        foreach (var text in new[] { "Cant.", "Descripcion", "P. Unit.", "Importe" })
-                            h.Cell().PaddingVertical(5).BorderBottom(1).Text(text).SemiBold();
+                        h.Cell().PaddingVertical(5).BorderBottom(1).Text("Cant.").SemiBold();
+                        h.Cell().PaddingVertical(5).BorderBottom(1).Text("Descripción").SemiBold();
+                        h.Cell().PaddingVertical(5).BorderBottom(1).AlignRight().Text("P. Unit.").SemiBold();
+                        h.Cell().PaddingVertical(5).BorderBottom(1).AlignRight().Text("Importe").SemiBold();
                     });
                     foreach (var item in c.Detalles)
                     {
@@ -69,7 +73,7 @@ public class ComprobantePdfGenerator
                 });
                 if (c.EsSimulado) col.Item().PaddingTop(12).Background(Colors.Orange.Lighten4).Padding(8).Text("DOCUMENTO SIMULADO - SIN VALIDEZ TRIBUTARIA").Bold();
             });
-            page.Footer().AlignCenter().Text(c.Estado == "ACEPTADO" ? "Representacion impresa. Aceptado por SUNAT." : $"Representacion impresa. Estado: {c.Estado}.").FontSize(8);
+            page.Footer().AlignCenter().Text(c.Estado == "ACEPTADO" ? "Representación impresa. Aceptado por SUNAT." : $"Representación impresa. Estado: {c.Estado}.").FontSize(8);
         })).GeneratePdf();
     }
 
