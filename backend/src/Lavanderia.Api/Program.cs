@@ -164,10 +164,19 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (context, ct) =>
     {
+        // Cada política tiene su propia ventana (1 minuto el login, 1 hora el alta): el mensaje
+        // usa el tiempo real que falta en vez de prometer siempre "un minuto".
+        var espera = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
+            ? retryAfter : TimeSpan.FromMinutes(1);
+        var segundos = (int)Math.Ceiling(espera.TotalSeconds);
+        context.HttpContext.Response.Headers.RetryAfter = segundos.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var minutos = (int)Math.Ceiling(espera.TotalMinutes);
         context.HttpContext.Response.ContentType = "application/json";
         await context.HttpContext.Response.WriteAsJsonAsync(new
         {
-            mensaje = "Demasiados intentos. Espera un minuto y vuelve a intentarlo."
+            mensaje = minutos <= 1
+                ? "Demasiados intentos. Espera un minuto y vuelve a intentarlo."
+                : $"Demasiados intentos. Espera {minutos} minutos y vuelve a intentarlo."
         }, ct);
     };
 
@@ -196,6 +205,19 @@ builder.Services.AddRateLimiter(options =>
         {
             PermitLimit = 10,
             Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+
+    // Crear un tenant genera varias filas y una cuenta administradora. Es más estricto que los
+    // formularios públicos comunes para frenar altas automatizadas, pero deja margen para que un
+    // vendedor registre varias lavanderías en campo desde su propio celular (misma IP).
+    options.AddPolicy("signup", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "desconocido",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromHours(1),
             QueueLimit = 0,
             AutoReplenishment = true
         }));

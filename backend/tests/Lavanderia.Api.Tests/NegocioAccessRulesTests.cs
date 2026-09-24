@@ -32,4 +32,31 @@ public class NegocioAccessRulesTests
 
         Assert.False(NegocioAccessRules.PuedeOperar(negocio));
     }
+
+    [Fact]
+    public void PermitePruebaHastaElDiaDeVencimiento()
+    {
+        var negocio = new Negocio
+        {
+            Activo = true,
+            EstadoSuscripcion = "PRUEBA",
+            ProximoPago = DateOnly.FromDateTime(DateTime.UtcNow)
+        };
+
+        Assert.True(NegocioAccessRules.PuedeOperar(negocio));
+    }
+
+    [Fact]
+    public void BloqueaPruebaCuandoYaVencio()
+    {
+        var negocio = new Negocio
+        {
+            Activo = true,
+            EstadoSuscripcion = "PRUEBA",
+            ProximoPago = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1))
+        };
+
+        Assert.False(NegocioAccessRules.PuedeOperar(negocio));
+        Assert.Contains("prueba gratuita", NegocioAccessRules.MensajeBloqueo(negocio), StringComparison.OrdinalIgnoreCase);
+    }
 }

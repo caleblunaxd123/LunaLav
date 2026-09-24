@@ -18,6 +18,23 @@ public record SeleccionarSedeRequest([Required] int SedeId, string? RefreshToken
 
 public record RefreshTokenRequest([Required] string RefreshToken);
 
+// ---------- Alta autónoma móvil/web ----------
+public class RegistrarPruebaRequest
+{
+    [Required, StringLength(120, MinimumLength = 2)] public string NombreNegocio { get; set; } = "";
+    [Required, StringLength(50, MinimumLength = 2)] public string Slug { get; set; } = "";
+    [Required, StringLength(120, MinimumLength = 2)] public string NombreResponsable { get; set; } = "";
+    [Required, EmailAddress, StringLength(150)] public string Email { get; set; } = "";
+    [Required, StringLength(30, MinimumLength = 7)] public string Celular { get; set; } = "";
+    [Required, StringLength(50, MinimumLength = 3)] public string Usuario { get; set; } = "";
+    [Required, StringLength(100, MinimumLength = 8)] public string Password { get; set; } = "";
+    [Required, StringLength(20)] public string Plan { get; set; } = "BASICO";
+    [StringLength(80, MinimumLength = 2)] public string SedeNombre { get; set; } = "Principal";
+    [Required] public bool AceptaTerminos { get; set; }
+}
+
+public record RegistrarPruebaResponse(int NegocioId, string Slug, DateOnly PruebaHasta, int DiasPrueba);
+
 // ---------- Interesados de la demo pública ----------
 public class CrearInteresadoDemoRequest
 {
