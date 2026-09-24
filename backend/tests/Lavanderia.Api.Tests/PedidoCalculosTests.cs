@@ -123,18 +123,26 @@ public class PedidoCalculosTests
     }
 
     // ---------------- Validación de contacto ----------------
+    // El celular es opcional (hay clientes que no lo dan) y admite números del extranjero:
+    // solo se rechaza un formato que no sea numérico.
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Contacto_celularVacio_lanza(string? celular)
-        => Assert.Throws<InvalidOperationException>(() => PedidoCalculos.ValidarContacto(celular, null, "Tienda"));
+    public void Contacto_celularVacio_pasa(string? celular)
+        => PedidoCalculos.ValidarContacto(celular, null, "Tienda"); // no lanza
 
     [Theory]
-    [InlineData("12345678")]    // 8 dígitos
-    [InlineData("812345678")]   // no empieza en 9
-    [InlineData("9123")]        // muy corto
-    [InlineData("9123456789")]  // muy largo
+    [InlineData("12345678")]       // fijo o celular de 8 dígitos
+    [InlineData("+34612345678")]   // extranjero con código de país
+    public void Contacto_celularNumericoPasa(string celular)
+        => PedidoCalculos.ValidarContacto(celular, null, "Tienda"); // no lanza
+
+    [Theory]
+    [InlineData("987-654-321")]    // guiones
+    [InlineData("98765abc")]       // letras
+    [InlineData("912")]            // muy corto
+    [InlineData("123456789012345678901")] // más de 20 dígitos
     public void Contacto_celularFormatoInvalido_lanza(string celular)
         => Assert.Throws<InvalidOperationException>(() => PedidoCalculos.ValidarContacto(celular, null, "Tienda"));
 

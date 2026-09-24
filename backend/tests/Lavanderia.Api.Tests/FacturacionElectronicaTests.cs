@@ -18,7 +18,8 @@ public class FacturacionElectronicaTests
         var (c, config) = Datos();
         var doc = UblXmlBuilder.Construir(c, config, []);
         Assert.Equal("0101", doc.Descendants(Cbc + "ProfileID").Single().Value);
-        Assert.Null(doc.Descendants(Cbc + "InvoiceTypeCode").Single().Attribute("listID"));
+        // Tipo de operación (catálogo 51) en InvoiceTypeCode: SUNAT lo exige (error 3205).
+        Assert.Equal("0101", doc.Descendants(Cbc + "InvoiceTypeCode").Single().Attribute("listID")?.Value);
         Assert.Equal("150110", doc.Descendants(Cac + "RegistrationAddress").Descendants(Cbc + "ID").Single().Value);
         Assert.Contains(doc.Descendants(Cac + "AllowanceCharge"), x => x.Element(Cbc + "ChargeIndicator")?.Value == "false");
         Assert.Contains(doc.Descendants(Cac + "AllowanceCharge"), x => x.Element(Cbc + "ChargeIndicator")?.Value == "true");
