@@ -48,6 +48,12 @@ export const routes: Routes = [
     data: { tipo: 'terminos' }
   },
   {
+    // URL pública exigida por Google Play para solicitar la eliminación de la cuenta.
+    path: 'eliminar-cuenta',
+    loadComponent: () => import('./pages/legal/legal.component').then(m => m.LegalComponent),
+    data: { tipo: 'eliminar-cuenta' }
+  },
+  {
     path: 'plataforma',
     canActivate: [authGuard, rolGuard(['PROPIETARIO'])],
     children: [

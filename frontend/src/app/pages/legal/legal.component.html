@@ -8,8 +8,8 @@
     @if (tipo === 'privacidad') {
       <span class="kicker">Información legal</span>
       <h1>Política de privacidad</h1>
-      <p class="updated">Última actualización: 17 de septiembre de 2026</p>
-      <p class="lead">Esta política explica cómo LunaLav trata la información necesaria para ofrecer su plataforma de gestión para lavanderías.</p>
+      <p class="updated">Última actualización: 24 de septiembre de 2026</p>
+      <p class="lead">Esta política explica cómo LunaLav trata la información necesaria para ofrecer su plataforma de gestión para lavanderías, tanto en la web como en la aplicación móvil LunaLav para Android.</p>
 
       <section>
         <h2>1. Quién trata la información</h2>
@@ -42,8 +42,42 @@
         <p>Puedes solicitar acceso, rectificación, cancelación u oposición respecto de tus datos personales, conforme a la Ley N.º 29733 y sus normas vigentes. Para atender la solicitud podremos pedir información razonable que permita verificar tu identidad.</p>
       </section>
       <section>
-        <h2>7. Cambios a esta política</h2>
+        <h2>7. Aplicación móvil</h2>
+        <p>La aplicación LunaLav para Android usa los mismos datos de tu cuenta y de tu lavandería que la versión web. Guarda la sesión cifrada en el almacenamiento seguro del dispositivo para no pedirte la contraseña cada vez; al cerrar sesión se elimina. La aplicación no accede a tu ubicación, contactos, cámara, micrófono ni archivos, y no incluye publicidad ni herramientas de rastreo de terceros. Los botones de WhatsApp, llamada o correo solo abren esas aplicaciones cuando tú lo eliges.</p>
+        <p>La demostración pública usa datos de ejemplo y no requiere crear una cuenta.</p>
+      </section>
+      <section>
+        <h2>8. Eliminación de la cuenta</h2>
+        <p>Puedes solicitar la eliminación de tu cuenta y de los datos asociados desde la aplicación (Más → Eliminar mi cuenta) o siguiendo los pasos de <a href="/eliminar-cuenta">esta página</a>.</p>
+      </section>
+      <section>
+        <h2>9. Cambios a esta política</h2>
         <p>Podemos actualizar esta política cuando cambie el servicio o la normativa. Publicaremos la versión vigente y su fecha de actualización en esta página.</p>
+      </section>
+    } @else if (tipo === 'eliminar-cuenta') {
+      <span class="kicker">Tu cuenta</span>
+      <h1>Eliminar tu cuenta de LunaLav</h1>
+      <p class="updated">Última actualización: 24 de septiembre de 2026</p>
+      <p class="lead">Puedes pedir que eliminemos tu cuenta de LunaLav y los datos asociados en cualquier momento, desde la aplicación móvil o desde esta página.</p>
+
+      <section>
+        <h2>1. Cómo solicitarlo</h2>
+        <ul>
+          <li><strong>Desde la aplicación:</strong> entra a <em>Más → Eliminar mi cuenta</em> y confirma. Se abrirá un correo con tus datos ya completados.</li>
+          <li><strong>Por correo:</strong> escribe a <a href="mailto:contacto@lunalav.pe?subject=Eliminar mi cuenta de LunaLav">contacto@lunalav.pe</a> con el asunto «Eliminar mi cuenta», indicando el código de empresa y tu usuario.</li>
+        </ul>
+        <p>Para proteger tu información, enviaremos la confirmación al correo o celular registrado en la cuenta antes de eliminarla.</p>
+      </section>
+      <section>
+        <h2>2. Qué se elimina</h2>
+        <ul>
+          <li><strong>Si eres el administrador de la lavandería:</strong> se eliminan la empresa, sus sedes, usuarios, clientes, pedidos, movimientos de caja e inventario.</li>
+          <li><strong>Si eres un trabajador:</strong> se elimina tu usuario. Los pedidos que registraste siguen siendo de la lavandería. También puedes pedirle al administrador que te dé de baja desde <em>Ajustes → Usuarios</em>.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>3. Qué se conserva y por cuánto tiempo</h2>
+        <p>Atendemos la solicitud en un máximo de 30 días. Los comprobantes electrónicos enviados a SUNAT y los registros contables que la ley obliga a guardar se conservan por el plazo legal exigido y luego se eliminan. Las copias de seguridad se borran en su ciclo normal de rotación, en un máximo de 90 días.</p>
       </section>
     } @else {
       <span class="kicker">Información legal</span>

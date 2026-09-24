@@ -8,9 +8,10 @@ import { ActivatedRoute } from '@angular/router';
   styleUrl: './legal.component.scss'
 })
 export class LegalComponent {
-  readonly tipo: 'privacidad' | 'terminos';
+  readonly tipo: 'privacidad' | 'terminos' | 'eliminar-cuenta';
 
   constructor(route: ActivatedRoute) {
-    this.tipo = route.snapshot.data['tipo'] === 'terminos' ? 'terminos' : 'privacidad';
+    const tipo = route.snapshot.data['tipo'];
+    this.tipo = tipo === 'terminos' || tipo === 'eliminar-cuenta' ? tipo : 'privacidad';
   }
 }

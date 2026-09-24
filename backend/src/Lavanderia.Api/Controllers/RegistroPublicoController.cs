@@ -27,7 +27,7 @@ public class RegistroPublicoController : ControllerBase
         "login", "demo", "api", "admin", "app", "marketing", "soporte", "inicio", "pedidos",
         "clientes", "caja", "inventario", "ajustes", "facturacion", "plataforma", "privacidad", "terminos",
         "ticket", "cuadre-caja", "seleccionar-sede", "registrar", "registro-antiguo", "promociones",
-        "reportes", "assets", "seguimiento", "repartidor", "recibo-suscripcion", "nosotros"
+        "reportes", "assets", "seguimiento", "repartidor", "recibo-suscripcion", "nosotros", "eliminar-cuenta"
     };
     private static readonly Dictionary<string, decimal> Precios = new(StringComparer.OrdinalIgnoreCase)
     {
