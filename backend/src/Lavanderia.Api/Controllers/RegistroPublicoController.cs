@@ -36,6 +36,18 @@ public class RegistroPublicoController : ControllerBase
         ["MULTISEDE"] = 80m
     };
 
+    /// <summary>
+    /// La app y la web comercial venden "Básico / Factura / Multisede", pero el panel de la
+    /// plataforma (NegociosController) trabaja con BASICO / PRO / PREMIUM. Se guarda el código
+    /// interno para que el dueño pueda editar y cobrar la suscripción sin errores de plan.
+    /// </summary>
+    public static string PlanInterno(string planComercial) => planComercial.ToUpperInvariant() switch
+    {
+        "FACTURA" => "PRO",
+        "MULTISEDE" => "PREMIUM",
+        _ => "BASICO"
+    };
+
     private readonly ISqlConnectionFactory _db;
     public RegistroPublicoController(ISqlConnectionFactory db) => _db = db;
 
@@ -153,6 +165,16 @@ VALUES
 INSERT INTO dbo.Servicio (NegocioId, Nombre, Precio, Costo, Unidad, Activo, EsCargoDelivery)
 VALUES (@NegocioId, N'Servicio a Domicilio', 0, 0, N'Unidad', 1, 1);
 
+-- Catálogo inicial: sin servicios la lavandería no puede registrar su primer pedido
+-- (y la app móvil no permite crearlos). Precios referenciales que el dueño ajusta luego.
+INSERT INTO dbo.Servicio (NegocioId, Nombre, Precio, Costo, Unidad, Activo, EsCargoDelivery) VALUES
+    (@NegocioId, N'Lavado al agua por kilo', 4.50, 0, N'kg', 1, 0),
+    (@NegocioId, N'Lavado en seco', 12.00, 0, N'prenda', 1, 0),
+    (@NegocioId, N'Sábanas 2 plazas', 8.00, 0, N'pieza', 1, 0),
+    (@NegocioId, N'Toallas', 3.50, 0, N'pieza', 1, 0),
+    (@NegocioId, N'Planchado', 3.00, 0, N'prenda', 1, 0),
+    (@NegocioId, N'Desmanchado', 6.00, 0, N'prenda', 1, 0);
+
 SELECT @NegocioId;";
             cmd.Parameters.AddWithValue("@NombreNegocio", req.NombreNegocio.Trim());
             cmd.Parameters.AddWithValue("@Slug", slug);
@@ -161,7 +183,7 @@ SELECT @NegocioId;";
             cmd.Parameters.AddWithValue("@Celular", req.Celular.Trim());
             cmd.Parameters.AddWithValue("@Usuario", usuario);
             cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
-            cmd.Parameters.AddWithValue("@Plan", plan);
+            cmd.Parameters.AddWithValue("@Plan", PlanInterno(plan));
             cmd.Parameters.AddWithValue("@MontoMensual", montoMensual);
             cmd.Parameters.AddWithValue("@FinPrueba", finPrueba.ToDateTime(TimeOnly.MinValue));
             cmd.Parameters.AddWithValue("@SedeNombre", string.IsNullOrWhiteSpace(req.SedeNombre) ? "Principal" : req.SedeNombre.Trim());
