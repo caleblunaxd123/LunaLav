@@ -138,6 +138,9 @@ builder.Services.AddTransient<SecretProtector>();
   builder.Services.AddHttpClient<SunatSoapClient>(client => client.Timeout = TimeSpan.FromSeconds(45));
 builder.Services.AddHttpClient<GeocodificacionService>();
 builder.Services.AddHttpClient<GooglePlacesService>(client => client.Timeout = TimeSpan.FromSeconds(20));
+// Cobro recurrente de la mensualidad con tarjeta (Culqi). Llaves en Culqi:PublicKey / Culqi:SecretKey.
+builder.Services.AddHttpClient<Lavanderia.Api.Services.Pagos.CulqiClient>(client => client.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddScoped<Lavanderia.Api.Services.Pagos.SuscripcionCulqiService>();
 builder.Services.AddHttpClient<OpenStreetMapPlacesService>(client => client.Timeout = TimeSpan.FromSeconds(35));
 builder.Services.AddHttpClient<OllamaService>(client => client.Timeout = TimeSpan.FromSeconds(120));
 builder.Services.AddHttpClient<GmailOAuthService>(client => client.Timeout = TimeSpan.FromSeconds(20));
@@ -269,6 +272,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 // validación de suscripción de un negocio inexistente.
                 if (context.Principal?.FindFirst("app")?.Value == "marketing") return;
                 if (context.Principal?.IsInRole("PROPIETARIO") == true) return;
+                // Una empresa vencida debe poder ver su suscripción y pagarla: esas rutas quedan fuera
+                // del bloqueo (siguen acotadas a su propio negocio y, las de pago, al rol ADMIN).
+                if (context.HttpContext.Request.Path.StartsWithSegments("/api/suscripcion")) return;
 
                 var negocioClaim = context.Principal?.FindFirst("negocioId")?.Value;
                 if (!int.TryParse(negocioClaim, out var negocioId))
@@ -414,7 +420,7 @@ app.Use(async (context, next) =>
         headers["X-Frame-Options"] = "DENY";
         headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
         headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(self), payment=()";
-        headers["Content-Security-Policy"] = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https:; worker-src 'self' blob:";
+        headers["Content-Security-Policy"] = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://maps.googleapis.com https://maps.gstatic.com https://checkout.culqi.com https://3ds.culqi.com https://*.culqi.com https://*.cardinalcommerce.com; frame-src 'self' https://*.culqi.com https://*.cardinalcommerce.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.culqi.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https:; worker-src 'self' blob:";
         return Task.CompletedTask;
     });
     await next();

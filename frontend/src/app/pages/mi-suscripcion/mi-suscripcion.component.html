@@ -1,0 +1,103 @@
+<div class="page">
+  <app-page-header icono="credit-card" color="cian" titulo="Mi suscripción"
+    subtitulo="Tu plan de LunaLav y el cobro mensual automático con tarjeta." volverTexto="Ajustes" (volver)="volver()"></app-page-header>
+
+  @if (cargando()) {
+    <div class="estado">Cargando...</div>
+  } @else if (estado(); as e) {
+    @if (e.modo === 'TEST' && e.configurado) {
+      <div class="aviso prueba"><strong>Modo de prueba.</strong> Los cobros no son reales. Usa las tarjetas de prueba de Culqi.</div>
+    }
+
+    <div class="secciones">
+      <div class="card seccion resumen">
+        <h3>Tu plan</h3>
+        <div class="plan">
+          <div>
+            <span class="plan-nombre">LunaLav {{ planNombre() }}</span>
+            <span class="plan-precio">S/ {{ e.montoMensual | number:'1.2-2' }} <small>al mes</small></span>
+          </div>
+          <span class="badge" [class.ok]="e.estadoSuscripcion === 'ACTIVA'" [class.prueba]="e.estadoSuscripcion === 'PRUEBA'"
+                [class.mal]="(diasRestantes() ?? 0) < 0 || e.estadoSuscripcion === 'VENCIDA'">
+            {{ (diasRestantes() ?? 0) < 0 ? 'Vencida' : e.estadoSuscripcion === 'PRUEBA' ? 'Prueba gratis' : e.estadoSuscripcion === 'ACTIVA' ? 'Activa' : e.estadoSuscripcion }}
+          </span>
+        </div>
+        @if (e.proximoPago) {
+          <p class="vence">
+            @if ((diasRestantes() ?? 0) < 0) { Venció el <strong>{{ e.proximoPago | date:'d \'de\' MMMM \'de\' y' }}</strong>. Activa el pago para seguir usando LunaLav. }
+            @else if (e.estadoSuscripcion === 'PRUEBA') { Tu prueba gratis termina el <strong>{{ e.proximoPago | date:'d \'de\' MMMM \'de\' y' }}</strong> ({{ diasRestantes() }} {{ diasRestantes() === 1 ? 'día' : 'días' }}). }
+            @else { Cubierto hasta el <strong>{{ e.proximoPago | date:'d \'de\' MMMM \'de\' y' }}</strong>. }
+          </p>
+        }
+      </div>
+
+      <div class="card seccion">
+        <h3>Pago automático con tarjeta</h3>
+
+        @if (!e.configurado) {
+          <p class="nota">El pago con tarjeta estará disponible muy pronto. Mientras tanto, escríbenos a <a href="mailto:contacto@lunalav.pe">contacto&#64;lunalav.pe</a> para renovar.</p>
+        } @else if (autoActivo()) {
+          <div class="tarjeta-activa">
+            <span class="ok-badge">Activo</span>
+            <p>Cobramos <strong>S/ {{ e.montoMensual | number:'1.2-2' }}</strong> cada mes a tu tarjeta <strong>{{ e.pagoAutomatico.tarjeta }}</strong>. No tienes que hacer nada más.</p>
+          </div>
+          <div class="acciones">
+            <button type="button" class="btn-secundario" (click)="sincronizar()" [disabled]="procesando()">Actualizar estado</button>
+            <button type="button" class="btn-peligro" (click)="desactivar()" [disabled]="procesando()">Desactivar cobro automático</button>
+          </div>
+        } @else {
+          @if (e.pagoAutomatico.estado === 'FALLIDA' || e.pagoAutomatico.ultimoError) {
+            <div class="aviso mal">{{ e.pagoAutomatico.ultimoError || 'El último cobro fue rechazado.' }} Vuelve a registrar tu tarjeta.</div>
+          }
+          <p class="nota">
+            @if (e.estadoSuscripcion === 'PRUEBA' && (diasRestantes() ?? 0) > 0) {
+              Hoy se cobra el primer mes (S/ {{ e.montoMensual | number:'1.2-2' }}), <strong>pero no pierdes tus días de prueba</strong>: el mes pagado empieza cuando termina tu prueba.
+            } @else {
+              Hoy se cobra el primer mes (S/ {{ e.montoMensual | number:'1.2-2' }}) y luego se renueva solo cada mes. Puedes desactivarlo cuando quieras.
+            }
+          </p>
+
+          <div class="grid">
+            <div><label>Nombre del titular</label><input [(ngModel)]="nombre" autocomplete="cc-given-name" /></div>
+            <div><label>Apellido</label><input [(ngModel)]="apellido" autocomplete="cc-family-name" /></div>
+            <div><label>Correo para comprobantes</label><input [(ngModel)]="email" type="email" autocomplete="email" /></div>
+            <div><label>Celular</label><input [(ngModel)]="telefono" inputmode="tel" autocomplete="tel" /></div>
+            <div class="ancho"><label>Dirección de facturación</label><input [(ngModel)]="direccion" autocomplete="street-address" placeholder="Av. Ejemplo 123, distrito" /></div>
+            <div><label>Ciudad</label><input [(ngModel)]="ciudad" autocomplete="address-level2" /></div>
+          </div>
+
+          <label class="check">
+            <input type="checkbox" [(ngModel)]="acepta" />
+            Acepto que LunaLav cobre S/ {{ e.montoMensual | number:'1.2-2' }} cada mes a esta tarjeta hasta que lo desactive. Revisa los <a href="/terminos" target="_blank" rel="noopener">términos</a>.
+          </label>
+
+          @if (error()) { <div class="aviso mal">{{ error() }}</div> }
+
+          <button type="button" class="btn-primario" (click)="agregarTarjeta()" [disabled]="procesando()">
+            {{ procesando() ? 'Procesando…' : 'Agregar tarjeta y activar' }}
+          </button>
+          <p class="seguridad">🔒 Tus datos de tarjeta se ingresan en el formulario seguro de Culqi. LunaLav no ve ni guarda el número de tu tarjeta.</p>
+        }
+      </div>
+
+      @if (e.pagos.length) {
+        <div class="card seccion">
+          <h3>Pagos</h3>
+          <table>
+            <thead><tr><th>Fecha</th><th>Periodo</th><th>Método</th><th class="num">Monto</th></tr></thead>
+            <tbody>
+              @for (p of e.pagos; track p.id) {
+                <tr>
+                  <td>{{ p.fecha | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ p.periodoDesde | date:'dd/MM/yy' }} – {{ p.periodoHasta | date:'dd/MM/yy' }}</td>
+                  <td>{{ p.metodo === 'TARJETA' ? 'Tarjeta' : p.metodo }}</td>
+                  <td class="num">S/ {{ p.monto | number:'1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+</div>

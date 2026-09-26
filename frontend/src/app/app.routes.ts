@@ -289,6 +289,12 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/ajustes-facturacion-electronica/ajustes-facturacion-electronica.component').then(m => m.AjustesFacturacionElectronicaComponent)
       },
       {
+        // Plan y cobro mensual automático con tarjeta (Culqi): solo el administrador de la empresa.
+        path: 'ajustes/suscripcion',
+        canActivate: [moduloGuard('AJUSTES'), rolGuard(['ADMIN'])],
+        loadComponent: () => import('./pages/mi-suscripcion/mi-suscripcion.component').then(m => m.MiSuscripcionComponent)
+      },
+      {
         path: 'ajustes/pagos',
         canActivate: [moduloGuard('AJUSTES')],
         loadComponent: () => import('./pages/ajustes-pagos/ajustes-pagos.component').then(m => m.AjustesPagosComponent)

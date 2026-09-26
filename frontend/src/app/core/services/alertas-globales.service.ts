@@ -156,8 +156,8 @@ export class AlertasGlobalesService {
       const critica = suscripcion.tipo === 'VENCIDA';
       alertas.push({
         clave: 'suscripcion', huella: suscripcion.tipo, titulo: critica ? 'Suscripción vencida' : 'Suscripción próxima a vencer',
-        detalle: suscripcion.mensaje, accion: this.tieneModulo('AJUSTES') ? 'Revisar suscripción' : 'Ver inicio',
-        ruta: this.tieneModulo('AJUSTES') ? '/ajustes' : '/inicio', nivel: critica ? 'critica' : 'advertencia',
+        detalle: suscripcion.mensaje, accion: this.tieneModulo('AJUSTES') ? 'Pagar suscripción' : 'Ver inicio',
+        ruta: this.tieneModulo('AJUSTES') ? '/ajustes/suscripcion' : '/inicio', nivel: critica ? 'critica' : 'advertencia',
         icono: critica ? 'warning' : 'calendar', cantidad: 1, ambito: 'negocio'
       });
     }

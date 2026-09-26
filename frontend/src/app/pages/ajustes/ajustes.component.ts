@@ -311,6 +311,7 @@ export class AjustesComponent {
 
   constructor(private sanitizer: DomSanitizer) {
     this.ajustes = [
+      { nombre: 'Mi suscripción', descripcion: 'Tu plan de LunaLav, fecha de pago y cobro mensual automático con tarjeta', icono: this.svg('factura'), ruta: '/ajustes/suscripcion' },
       { nombre: 'Configuración del negocio', descripcion: 'Nombre, logo, colores, RUC, dirección, horario', icono: this.svg('tienda'), ruta: '/ajustes/negocio' },
       { nombre: 'Sedes', descripcion: 'Administra tus sucursales: cada una con su propia caja, pedidos e inventario', icono: this.svg('sedes'), ruta: '/ajustes/sedes' },
       { nombre: 'Usuarios', descripcion: 'Agrega, actualiza o desactiva usuarios del sistema', icono: this.svg('usuario'), ruta: '/ajustes/usuarios' },

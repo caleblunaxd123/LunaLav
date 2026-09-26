@@ -1,0 +1,60 @@
+.page { padding: 20px 24px; max-width: 900px; margin: 0 auto; }
+.estado { padding: 40px; text-align: center; color: #64748b; }
+
+.aviso {
+  padding: 12px 14px; border-radius: 10px; margin-bottom: 14px; font-size: 14px; line-height: 1.45;
+  background: #fff7e6; border: 1px solid #fcd9a3; color: #7a4b00;
+  &.prueba { background: #eef4ff; border-color: #c7d9f7; color: var(--azul-oscuro); }
+  &.mal { background: #fdecec; border-color: #f5c2c2; color: #a61b1b; margin-top: 12px; }
+}
+
+.secciones { display: grid; gap: 16px; }
+.seccion {
+  padding: 20px;
+  h3 { margin: 0 0 12px; font-size: 16px; color: var(--azul-oscuro); }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 4px; color: var(--gris-texto); }
+  input:not([type='checkbox']) {
+    width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid var(--gris-borde); font: inherit;
+    &:focus { outline: none; border-color: var(--azul-oscuro); }
+  }
+}
+
+.plan { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.plan-nombre { display: block; font-weight: 700; font-size: 18px; color: var(--azul-oscuro); }
+.plan-precio { display: block; font-size: 22px; font-weight: 800; margin-top: 2px; small { font-size: 13px; font-weight: 500; color: #64748b; } }
+.vence { margin: 12px 0 0; color: var(--gris-texto); }
+
+.badge {
+  padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap;
+  background: #eef2f7; color: #475569;
+  &.ok { background: #e7f7ee; color: #12794a; }
+  &.prueba { background: #eef4ff; color: #0b57d0; }
+  &.mal { background: #fdecec; color: #a61b1b; }
+}
+
+.nota { color: var(--gris-texto); font-size: 14px; line-height: 1.5; margin: 0 0 6px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; .ancho { grid-column: 1 / -1; } }
+.check { display: flex !important; gap: 8px; align-items: flex-start; font-weight: 500 !important; margin: 16px 0 !important; line-height: 1.4; input { margin-top: 3px; } }
+
+.tarjeta-activa { display: flex; gap: 12px; align-items: flex-start; p { margin: 0; line-height: 1.5; } }
+.ok-badge { background: #e7f7ee; color: #12794a; font-weight: 700; font-size: 12px; padding: 4px 10px; border-radius: 999px; }
+.acciones { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
+button { font: inherit; font-weight: 700; border-radius: 10px; padding: 11px 18px; cursor: pointer; border: 1px solid transparent; }
+button:disabled { opacity: .6; cursor: default; }
+.btn-primario { width: 100%; background: var(--azul-oscuro); color: #fff; margin-top: 4px; }
+.btn-secundario { background: #fff; border-color: var(--gris-borde); color: var(--gris-texto); }
+.btn-peligro { background: #fff; border-color: #f5c2c2; color: #a61b1b; }
+.seguridad { font-size: 12px; color: #64748b; text-align: center; margin: 10px 0 0; }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--gris-borde); }
+th { font-size: 12px; color: #64748b; font-weight: 600; }
+.num { text-align: right; }
+
+@media (max-width: 640px) {
+  .page { padding: 14px; }
+  .grid { grid-template-columns: 1fr; }
+  .acciones { flex-direction: column-reverse; button { width: 100%; } }
+}
