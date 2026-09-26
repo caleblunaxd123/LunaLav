@@ -12,8 +12,20 @@ namespace Lavanderia.Api.Controllers;
 public class ClientesController : TenantAwareControllerBase
 {
     private readonly IClienteRepository _repo;
+    private readonly RucConsultaService _rucs;
 
-    public ClientesController(IClienteRepository repo) => _repo = repo;
+    public ClientesController(IClienteRepository repo, RucConsultaService rucs)
+    {
+        _repo = repo;
+        _rucs = rucs;
+    }
+
+    /// <summary>
+    /// Valida el RUC: dígito verificador y, si el padrón de SUNAT responde, que exista.
+    /// Si el servicio externo está caído no bloquea (queda la validación del dígito).
+    /// </summary>
+    private async Task<string?> ProblemaRucAsync(string? ruc, CancellationToken ct)
+        => ruc is null ? null : (await _rucs.ConsultarAsync(ruc, ct)).Problema;
 
     [HttpGet("analitica")]
     public async Task<ActionResult<List<ClienteAnaliticaDto>>> Analitica(CancellationToken ct)
@@ -108,8 +120,8 @@ public class ClientesController : TenantAwareControllerBase
         var dni = LimpiarTexto(dto.Dni);
         var documentoFiscal = LimpiarTexto(dto.DocumentoFiscal);
         var direccion = LimpiarTexto(dto.Direccion);
-        if (documentoFiscal is not null && !DocumentoFiscalValidator.EsRucValido(documentoFiscal))
-            return BadRequest(new { mensaje = "El RUC ingresado no es valido ante SUNAT." });
+        if (await ProblemaRucAsync(documentoFiscal, ct) is { } problemaRuc)
+            return BadRequest(new { mensaje = problemaRuc });
 
         var duplicado = await _repo.BuscarDuplicadoAsync(nombre, celular, dni, documentoFiscal, NegocioId, null, ct);
         if (duplicado is not null)
@@ -203,8 +215,8 @@ public class ClientesController : TenantAwareControllerBase
         var celular = LimpiarTexto(dto.Celular);
         var dni = LimpiarTexto(dto.Dni);
         var documentoFiscal = LimpiarTexto(dto.DocumentoFiscal);
-        if (documentoFiscal is not null && !DocumentoFiscalValidator.EsRucValido(documentoFiscal))
-            return BadRequest(new { mensaje = "El RUC ingresado no es valido ante SUNAT." });
+        if (await ProblemaRucAsync(documentoFiscal, ct) is { } problemaRuc)
+            return BadRequest(new { mensaje = problemaRuc });
         var duplicado = await _repo.BuscarDuplicadoAsync(nombre, celular, dni, documentoFiscal, NegocioId, id, ct);
         if (duplicado is not null)
             return Conflict(new { mensaje = MensajeDuplicado(duplicado, celular, dni, documentoFiscal), clienteId = duplicado.Id });

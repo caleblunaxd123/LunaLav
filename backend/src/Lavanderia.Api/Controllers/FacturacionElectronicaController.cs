@@ -98,7 +98,7 @@ public class FacturacionElectronicaController : TenantAwareControllerBase
         var ubigeo = Limpiar(dto.Ubigeo);
         var establecimiento = (Limpiar(dto.CodigoEstablecimiento) ?? "0000").ToUpperInvariant();
         if (ambiente is not ("BETA" or "PRODUCCION")) return Bad("El ambiente debe ser BETA o PRODUCCION.");
-        if (ruc is not null && !DocumentoFiscalValidator.EsRucValido(ruc)) return Bad("El RUC emisor no es valido ante SUNAT.");
+        if (ruc is not null && !DocumentoFiscalValidator.EsRucValido(ruc)) return Bad("El RUC emisor no es válido: revisa los 11 dígitos.");
         if (!SerieBoleta.IsMatch(serieB) || !SerieFactura.IsMatch(serieF)) return Bad("Las series deben usar el formato B001 y F001.");
         if (ubigeo is not null && !Regex.IsMatch(ubigeo, "^[0-9]{6}$")) return Bad("El ubigeo debe tener 6 digitos.");
         if (!Regex.IsMatch(establecimiento, "^[A-Z0-9]{4}$")) return Bad("El codigo de establecimiento debe tener 4 caracteres.");
@@ -199,7 +199,7 @@ public class FacturacionElectronicaController : TenantAwareControllerBase
         if (tipo == "FACTURA")
         {
             documento = SoloDigitos(cliente.DocumentoFiscal);
-            if (!DocumentoFiscalValidator.EsRucValido(documento)) return Bad("Para emitir factura el cliente necesita un RUC valido ante SUNAT.");
+            if (!DocumentoFiscalValidator.EsRucValido(documento)) return Bad("Para emitir factura el cliente necesita un RUC válido (11 dígitos).");
             tipoDoc = "RUC"; nombre = cliente.Nombre.Trim();
         }
         else if (!string.IsNullOrWhiteSpace(cliente.Dni))
