@@ -30,6 +30,10 @@ public sealed record RucConsulta(
         : null;
 }
 
+/// <summary>Nombre de una persona por DNI (padrón de RENIEC vía apis.net.pe). Nunca bloquea: solo autocompleta.</summary>
+public sealed record DniConsulta(string Dni, bool FormatoValido, bool Verificado, bool Existe,
+    string? NombreCompleto, string? Nombres, string? ApellidoPaterno, string? ApellidoMaterno);
+
 /// <summary>
 /// Consulta de RUC contra el padrón de SUNAT mediante APIs públicas gratuitas (sin token):
 /// OpenRUC (principal) y apis.net.pe v1 (respaldo). Resultados en caché 24 h.
@@ -53,6 +57,41 @@ public sealed class RucConsultaService(HttpClient http, IMemoryCache cache, ILog
 
         cache.Set(clave, resultado, Duracion);
         return resultado;
+    }
+
+    public async Task<DniConsulta> ConsultarDniAsync(string? dniEntrada, CancellationToken ct)
+    {
+        var dni = new string((dniEntrada ?? "").Where(char.IsDigit).ToArray());
+        if (dni.Length != 8) return new DniConsulta(dni, false, false, false, null, null, null, null);
+
+        var clave = $"dni:{dni}";
+        if (cache.TryGetValue(clave, out DniConsulta? guardado) && guardado is not null) return guardado;
+        try
+        {
+            using var response = await http.GetAsync($"https://api.apis.net.pe/v1/dni?numero={dni}", ct);
+            DniConsulta? r = null;
+            if (response.StatusCode == HttpStatusCode.NotFound)
+                r = new DniConsulta(dni, true, true, false, null, null, null, null);
+            else if (response.IsSuccessStatusCode)
+            {
+                var j = JsonNode.Parse(await response.Content.ReadAsStringAsync(ct)) as JsonObject;
+                var nombres = Texto(j, "nombres");
+                var paterno = Texto(j, "apellidoPaterno");
+                var materno = Texto(j, "apellidoMaterno");
+                // "Nombres Apellidos" se lee mejor en el mostrador que el formato de RENIEC (apellidos primero).
+                var completo = nombres is null ? Texto(j, "nombre") : string.Join(" ", new[] { nombres, paterno, materno }.Where(x => x is not null));
+                if (completo is not null) r = new DniConsulta(dni, true, true, true, completo, nombres, paterno, materno);
+            }
+            if (r is null) return new DniConsulta(dni, true, false, false, null, null, null, null); // 429/caída: sin cachear
+            cache.Set(clave, r, Duracion);
+            return r;
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            if (ct.IsCancellationRequested) throw;
+            log.LogInformation("Consulta de DNI no disponible: {Error}", e.Message);
+            return new DniConsulta(dni, true, false, false, null, null, null, null);
+        }
     }
 
     private async Task<RucConsulta?> ConsultarOpenRucAsync(string ruc, CancellationToken ct)

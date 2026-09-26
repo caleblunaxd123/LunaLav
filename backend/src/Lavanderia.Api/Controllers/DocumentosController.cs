@@ -23,4 +23,8 @@ public class DocumentosController(RucConsultaService rucs) : ControllerBase
             r.ActivoHabido, r.Problema, r.Advertencia
         });
     }
+
+    /// <summary>Nombre de una persona por DNI, para autocompletar al registrar clientes.</summary>
+    [HttpGet("dni/{dni}")]
+    public async Task<IActionResult> Dni(string dni, CancellationToken ct) => Ok(await rucs.ConsultarDniAsync(dni, ct));
 }

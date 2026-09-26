@@ -49,7 +49,28 @@ public class RegistroPublicoController : ControllerBase
     };
 
     private readonly ISqlConnectionFactory _db;
-    public RegistroPublicoController(ISqlConnectionFactory db) => _db = db;
+    private readonly Lavanderia.Api.Services.RegistroVerificacionService _verificacion;
+    public RegistroPublicoController(ISqlConnectionFactory db, Lavanderia.Api.Services.RegistroVerificacionService verificacion)
+    {
+        _db = db;
+        _verificacion = verificacion;
+    }
+
+    public sealed record SolicitarCodigoRequest(string Email);
+
+    /// <summary>Envía el código de 6 dígitos al correo del titular (paso previo a crear la lavandería).</summary>
+    [HttpPost("codigo")]
+    [EnableRateLimiting("signup")]
+    public async Task<IActionResult> SolicitarCodigo([FromBody] SolicitarCodigoRequest req, CancellationToken ct)
+    {
+        var email = (req.Email ?? "").Trim();
+        if (!Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$") || email.Length > 150)
+            return BadRequest(new { mensaje = "Ingresa un correo válido." });
+        var error = await _verificacion.EnviarAsync(email, HttpContext.Connection.RemoteIpAddress?.ToString(), ct);
+        return error is null
+            ? Ok(new { enviado = true, minutosVigencia = Lavanderia.Api.Services.RegistroVerificacionService.MinutosVigencia })
+            : BadRequest(new { mensaje = error });
+    }
 
     /// <summary>
     /// Consulta en vivo del código de empresa mientras se escribe (paso 1 del alta), para no
@@ -94,6 +115,15 @@ public class RegistroPublicoController : ControllerBase
         if (!Precios.TryGetValue(plan, out var montoMensual))
             return BadRequest(new { mensaje = "El plan seleccionado no es válido." });
 
+        // El correo se confirma con el código enviado (una prueba gratis por correo).
+        int? verificacionId = null;
+        if (_verificacion.Requerida)
+        {
+            var v = await _verificacion.VerificarAsync(req.Email, req.CodigoVerificacion, ct);
+            if (v.Error is not null) return BadRequest(new { mensaje = v.Error, campo = "codigo" });
+            verificacionId = v.Id;
+        }
+
         var finPrueba = DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(DiasPrueba));
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(req.Password, workFactor: 12);
 
@@ -109,6 +139,14 @@ SET XACT_ABORT ON;
 
 IF EXISTS (SELECT 1 FROM dbo.Negocio WITH (UPDLOCK, HOLDLOCK) WHERE Slug = @Slug)
     THROW 51001, 'SLUG_DUPLICADO', 1;
+IF EXISTS (SELECT 1 FROM dbo.Negocio WITH (UPDLOCK, HOLDLOCK) WHERE LOWER(TitularEmail) = @Email)
+    THROW 51004, 'EMAIL_DUPLICADO', 1;
+-- El código se consume dentro de la misma transacción: no se puede reutilizar para otra alta.
+IF @VerificacionId IS NOT NULL
+BEGIN
+    UPDATE dbo.RegistroVerificacion SET Usado = 1 WHERE Id = @VerificacionId AND Usado = 0;
+    IF @@ROWCOUNT = 0 THROW 51003, 'CODIGO_USADO', 1;
+END
 
 DECLARE @AdminRolId INT = (SELECT TOP 1 Id FROM dbo.Rol WHERE Codigo = 'ADMIN' AND NegocioId IS NULL);
 IF @AdminRolId IS NULL THROW 51002, 'ROL_ADMIN_NO_CONFIGURADO', 1;
@@ -176,6 +214,7 @@ INSERT INTO dbo.Servicio (NegocioId, Nombre, Precio, Costo, Unidad, Activo, EsCa
     (@NegocioId, N'Desmanchado', 6.00, 0, N'prenda', 1, 0);
 
 SELECT @NegocioId;";
+            cmd.Parameters.AddWithValue("@VerificacionId", (object?)verificacionId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@NombreNegocio", req.NombreNegocio.Trim());
             cmd.Parameters.AddWithValue("@Slug", slug);
             cmd.Parameters.AddWithValue("@Responsable", req.NombreResponsable.Trim());
@@ -191,6 +230,13 @@ SELECT @NegocioId;";
             var negocioId = Convert.ToInt32(await cmd.ExecuteScalarAsync(ct));
             await tx.CommitAsync(ct);
             return Created($"/api/negocios/{negocioId}", new RegistrarPruebaResponse(negocioId, slug, finPrueba, DiasPrueba));
+        }
+        catch (SqlException ex) when (ex.Number is 51003 or 51004)
+        {
+            await tx.RollbackAsync(ct);
+            return ex.Number == 51004
+                ? Conflict(new { mensaje = "Ya existe una lavandería registrada con este correo. Inicia sesión o usa otro correo." })
+                : BadRequest(new { mensaje = "Ese código ya se usó. Pide uno nuevo.", campo = "codigo" });
         }
         catch (SqlException ex) when (ex.Number is 51001 or 2601 or 2627)
         {

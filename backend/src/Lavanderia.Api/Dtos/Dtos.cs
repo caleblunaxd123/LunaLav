@@ -31,6 +31,8 @@ public class RegistrarPruebaRequest
     [Required, StringLength(20)] public string Plan { get; set; } = "BASICO";
     [StringLength(80, MinimumLength = 2)] public string SedeNombre { get; set; } = "Principal";
     [Required] public bool AceptaTerminos { get; set; }
+    /// <summary>Código de 6 dígitos enviado al correo (POST /api/registro/codigo).</summary>
+    [StringLength(10)] public string? CodigoVerificacion { get; set; }
 }
 
 public record RegistrarPruebaResponse(int NegocioId, string Slug, DateOnly PruebaHasta, int DiasPrueba);
