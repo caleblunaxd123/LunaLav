@@ -277,7 +277,7 @@ public class PedidoRepository : IPedidoRepository
             where = @" WHERE p.SedeId = @SedeId AND (
                 CAST(p.Numero AS NVARCHAR(20)) = @Busqueda
                 OR c.Celular LIKE @BusquedaLike
-                OR c.Nombre LIKE @BusquedaLike
+                OR c.Nombre COLLATE Latin1_General_CI_AI LIKE @BusquedaLike
                 OR c.Dni LIKE @BusquedaLike
                 OR p.CodigoAntiguo LIKE @BusquedaLike
             ) ";

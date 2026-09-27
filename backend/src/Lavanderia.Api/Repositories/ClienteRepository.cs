@@ -101,8 +101,8 @@ public class ClienteRepository : IClienteRepository
         {
             "celular" => " AND Celular LIKE @Texto",
             "dni" => " AND Dni LIKE @Texto",
-            "nombre" => " AND Nombre LIKE @Texto",
-            _ => " AND (Nombre LIKE @Texto OR Celular LIKE @Texto OR Dni LIKE @Texto)"
+            "nombre" => " AND Nombre COLLATE Latin1_General_CI_AI LIKE @Texto",
+            _ => " AND (Nombre COLLATE Latin1_General_CI_AI LIKE @Texto OR Celular LIKE @Texto OR Dni LIKE @Texto)"
         };
     }
 

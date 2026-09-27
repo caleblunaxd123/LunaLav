@@ -49,14 +49,20 @@ function Wait-Ready([string]$Url, [int]$Seconds = 60) {
     return $false
 }
 
-function Wait-SqlReady([string]$Server, [int]$Seconds = 240) {
+function Wait-SqlReady([string]$Server, [int]$Seconds = 900) {
     $deadline = (Get-Date).AddSeconds($Seconds)
+    $nextStatus = (Get-Date).AddMinutes(1)
+    $sqlcmd = (Get-Command sqlcmd.exe -ErrorAction Stop).Source
     Write-RuntimeLog "Esperando SQL Server $Server..."
     do {
-        & sqlcmd -S $Server -E -C -l 5 -d LunaLav -Q "SET NOCOUNT ON; SELECT 1;" *> $null
+        & $sqlcmd -S $Server -E -C -l 5 -d LunaLav -Q "SET NOCOUNT ON; SELECT 1;" *> $null
         if ($LASTEXITCODE -eq 0) {
             Write-RuntimeLog "SQL Server disponible."
             return $true
+        }
+        if ((Get-Date) -ge $nextStatus) {
+            Write-RuntimeLog "SQL Server todavía está iniciando; se seguirá esperando (hasta $Seconds segundos)."
+            $nextStatus = (Get-Date).AddMinutes(1)
         }
         Start-Sleep -Seconds 5
     } while ((Get-Date) -lt $deadline)
