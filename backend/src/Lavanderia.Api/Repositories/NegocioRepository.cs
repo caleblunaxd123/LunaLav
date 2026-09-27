@@ -18,6 +18,7 @@ public interface INegocioRepository
     Task ActualizarDatosAsync(int id, string nombre, string? ruc, string? titularNombre, string? titularEmail, string? titularCelular, string? notas, CancellationToken ct = default);
     Task ActualizarSuscripcionAsync(int id, string plan, string estado, decimal monto, DateOnly? proximoPago, CancellationToken ct = default);
     Task<int> ContarPedidosMesAsync(int negocioId, CancellationToken ct = default);
+    Task<List<ActividadPlataformaDto>> ListarActividadAsync(int limite, CancellationToken ct = default);
 }
 
 public class NegocioRepository : INegocioRepository
@@ -145,7 +146,9 @@ public class NegocioRepository : INegocioRepository
                       INNER JOIN dbo.Sede s ON s.Id = p.SedeId
                       WHERE s.NegocioId = n.Id AND p.Anulado = 0
                         AND YEAR(p.FechaIngreso) = YEAR(GETDATE())
-                        AND MONTH(p.FechaIngreso) = MONTH(GETDATE())) AS PedidosMes
+                        AND MONTH(p.FechaIngreso) = MONTH(GETDATE())) AS PedidosMes,
+                   (SELECT TOP 1 sc.Estado FROM dbo.SuscripcionCulqi sc WHERE sc.NegocioId = n.Id) AS PagoAutomatico,
+                   CASE WHEN n.NotasInternas LIKE N'Alta aut%' THEN 1 ELSE 0 END AS AltaAutonoma
             FROM dbo.Negocio n
             WHERE n.Slug <> 'plataforma-interna'
             ORDER BY n.FechaCreacion DESC";
@@ -162,8 +165,36 @@ public class NegocioRepository : INegocioRepository
             r.GetDecimal(r.GetOrdinal("MontoMensual")),
             LeerFechaOpcional(r, "ProximoPago"),
             r.GetNullableDateTime("UltimoAcceso"),
-            r.GetInt32(r.GetOrdinal("PedidosMes"))
+            r.GetInt32(r.GetOrdinal("PedidosMes")),
+            r.GetNullableString("PagoAutomatico"),
+            r.GetInt32(r.GetOrdinal("AltaAutonoma")) == 1
         ), ct);
+    }
+
+    /// <summary>Últimas altas de empresas y pagos de suscripción (tarjeta o registrados a mano).</summary>
+    public async Task<List<ActividadPlataformaDto>> ListarActividadAsync(int limite, CancellationToken ct = default)
+    {
+        await using var conn = _factory.Create();
+        await conn.OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT TOP (@Limite) * FROM (
+                SELECT 'ALTA' AS Tipo, n.FechaCreacion AS Fecha, n.Id AS NegocioId, n.Nombre AS Empresa,
+                       CASE WHEN n.NotasInternas LIKE N'Alta aut%' THEN N'Se registró sola · plan ' ELSE N'Creada desde el panel · plan ' END
+                         + n.PlanSuscripcion + N' · ' + n.EstadoSuscripcion AS Detalle,
+                       CAST(NULL AS DECIMAL(10,2)) AS Monto
+                FROM dbo.Negocio n WHERE n.Slug NOT IN ('plataforma-interna', 'demo')
+                UNION ALL
+                SELECT 'PAGO', p.FechaCreacion, n.Id, n.Nombre,
+                       CASE WHEN p.Metodo = 'TARJETA' THEN N'Cobro automático con tarjeta' ELSE N'Pago registrado · ' + p.Metodo END
+                         + ISNULL(N' · cubre hasta ' + CONVERT(NVARCHAR(10), p.PeriodoHasta, 103), N''),
+                       p.Monto
+                FROM dbo.PagoSuscripcion p JOIN dbo.Negocio n ON n.Id = p.NegocioId
+            ) a ORDER BY a.Fecha DESC";
+        cmd.AddParam("@Limite", limite);
+        return await cmd.ReadListAsync(r => new ActividadPlataformaDto(
+            r.GetString(0), r.GetDateTime(1), r.GetInt32(2), r.GetString(3), r.GetString(4),
+            r.IsDBNull(5) ? null : r.GetDecimal(5)), ct);
     }
 
     public async Task<bool> CambiarEstadoAsync(int id, bool activo, CancellationToken ct = default)

@@ -144,6 +144,7 @@ builder.Services.AddScoped<Lavanderia.Api.Services.Pagos.SuscripcionCulqiService
 // Enlaces de pago sin iniciar sesión (correo y WhatsApp) y recordatorios automáticos de vencimiento.
 builder.Services.AddScoped<Lavanderia.Api.Services.Pagos.EnlacePagoService>();
 builder.Services.AddHostedService<Lavanderia.Api.Services.Pagos.RecordatorioPagoWorker>();
+builder.Services.AddHostedService<Lavanderia.Api.Services.Pagos.ConciliacionCulqiWorker>();
 builder.Services.AddScoped<Lavanderia.Api.Services.RegistroVerificacionService>();
 // Consulta de RUC en el padrón de SUNAT vía APIs públicas gratuitas (OpenRUC, apis.net.pe).
 builder.Services.AddHttpClient<Lavanderia.Api.Services.Facturacion.RucConsultaService>(client => client.Timeout = TimeSpan.FromSeconds(6));

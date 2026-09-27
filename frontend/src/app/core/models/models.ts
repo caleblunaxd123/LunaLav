@@ -194,6 +194,20 @@ export interface NegocioResumen {
   proximoPago?: string | null;
   ultimoAcceso?: string | null;
   pedidosMes: number;
+  /** Estado del cobro automático con tarjeta (Culqi): ACTIVA, FALLIDA, CANCELADA… o null si no tiene. */
+  pagoAutomatico?: string | null;
+  /** True si la lavandería se registró sola desde la app (no la creó el propietario). */
+  altaAutonoma?: boolean;
+}
+
+/** Evento reciente del panel del propietario: alta de una empresa o pago de suscripción. */
+export interface ActividadPlataforma {
+  tipo: 'ALTA' | 'PAGO';
+  fecha: string;
+  negocioId: number;
+  empresa: string;
+  detalle: string;
+  monto?: number | null;
 }
 
 export interface CrearNegocioRequest {

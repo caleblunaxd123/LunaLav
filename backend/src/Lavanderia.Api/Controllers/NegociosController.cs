@@ -64,6 +64,11 @@ public class NegociosController : ControllerBase
     public async Task<ActionResult<List<NegocioResumenDto>>> Listar(CancellationToken ct)
         => Ok(await _negocios.ListarConConteosAsync(ct));
 
+    /// <summary>Altas y pagos recientes (se actualiza solo: el panel lo consulta periódicamente).</summary>
+    [HttpGet("actividad")]
+    public async Task<ActionResult<List<ActividadPlataformaDto>>> Actividad([FromQuery] int limite = 15, CancellationToken ct = default)
+        => Ok(await _negocios.ListarActividadAsync(Math.Clamp(limite, 1, 50), ct));
+
     [HttpPost]
     public async Task<ActionResult<NegocioResumenDto>> Crear([FromBody] CrearNegocioRequest req, CancellationToken ct)
     {

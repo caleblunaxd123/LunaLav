@@ -152,9 +152,11 @@ public class PagoSuscripcionEnlaceController(
 
 /// <summary>
 /// Webhook de Culqi (URL a registrar en CulqiPanel: https://app.lunalav.pe/api/webhooks/culqi).
-/// Culqi no firma los avisos, así que no se confía en su contenido: el evento se vuelve a consultar
-/// a Culqi con la llave secreta (uno inventado no existe y se descarta) y la suscripción se concilia
-/// desde Culqi, de forma idempotente (un aviso repetido no duplica pagos).
+/// Culqi no firma los avisos y su API de eventos no devuelve los eventos de webhook, así que no se
+/// confía en el contenido: del aviso solo se toman identificadores (suscripción, tarjeta o cliente)
+/// para encontrar la empresa, y la suscripción se consulta a Culqi con la llave secreta. Solo se
+/// registran los cargos que Culqi confirma ahí (idempotente): un aviso falso a lo sumo provoca una
+/// sincronización inofensiva.
 /// </summary>
 [ApiController]
 [AllowAnonymous]
@@ -172,23 +174,18 @@ public class CulqiWebhookController(SuscripcionCulqiService pagos, CulqiClient c
 
         var eventId = body.TryGetProperty("id", out var idProp) ? idProp.GetString() : null;
         var tipo = body.TryGetProperty("type", out var tProp) ? tProp.GetString() : null;
-        // Suscripciones (creación, actualización, cancelación) y cargos: el panel de Culqi no ofrece un
-        // evento de "cobro de suscripción", los cobros mensuales llegan como charge.creation.*.
-        if (string.IsNullOrWhiteSpace(eventId) || tipo is null
-            || !(tipo.StartsWith("subscription.", StringComparison.Ordinal) || tipo.StartsWith("charge.", StringComparison.Ordinal)))
+        // Suscripciones y cargos: los cobros mensuales llegan como charge.creation.*.
+        if (tipo is null || !(tipo.StartsWith("subscription.", StringComparison.Ordinal) || tipo.StartsWith("charge.", StringComparison.Ordinal)))
             return Ok();
+
+        // "data" llega como texto JSON: la búsqueda sobre el cuerpo completo cubre ambos formatos.
+        var ids = IdCulqiRegex.Matches(body.GetRawText()).Select(x => x.Value).Distinct().Take(20).ToList();
+        var ref_ = await pagos.BuscarPorIdsCulqiAsync(ids, ct);
+        if (ref_ is null) { log.LogInformation("Evento Culqi {Evento} ({Tipo}) sin empresa de LunaLav asociada.", eventId, tipo); return Ok(); }
+        var (negocioId, subscriptionId) = ref_.Value;
 
         try
         {
-            // Verificación: el evento debe existir en Culqi con esta llave secreta.
-            var evento = await culqi.ObtenerEventoAsync(eventId, ct);
-            var ids = IdCulqiRegex.Matches(evento.ToJsonString()).Select(x => x.Value).Distinct().ToList();
-
-            // La empresa se identifica por la suscripción o, en un cargo, por su tarjeta o cliente.
-            var ref_ = await pagos.BuscarPorIdsCulqiAsync(ids, ct);
-            if (ref_ is null) { log.LogInformation("Evento Culqi {Evento} ({Tipo}) sin empresa de LunaLav asociada.", eventId, tipo); return Ok(); }
-            var (negocioId, subscriptionId) = ref_.Value;
-
             var nuevos = await pagos.ConciliarAsync(negocioId, subscriptionId, ct);
             log.LogInformation("Webhook Culqi {Tipo} ({Evento}): {Nuevos} pago(s) registrado(s) para el negocio {Negocio}.",
                 tipo, eventId, nuevos, negocioId);
@@ -196,8 +193,8 @@ public class CulqiWebhookController(SuscripcionCulqiService pagos, CulqiClient c
         }
         catch (CulqiException e)
         {
-            // Evento inexistente o Culqi caído: 400 para que Culqi reintente más tarde.
-            log.LogWarning("No se pudo verificar el webhook Culqi {Evento}: {Mensaje}", eventId, e.Message);
+            // Culqi no respondió: 400 para que reintente más tarde.
+            log.LogWarning("No se pudo conciliar la suscripción tras el webhook Culqi {Evento}: {Mensaje}", eventId, e.Message);
             return BadRequest();
         }
     }

@@ -38,6 +38,31 @@
     </div>
   }
 
+  <!-- Actividad reciente: altas y pagos, se actualiza sola -->
+  @if (actividad().length > 0) {
+    <section class="card actividad">
+      <div class="actividad__head">
+        <h3>Actividad reciente</h3>
+        @if (actualizado(); as t) { <span class="actividad__vivo" title="El panel se actualiza solo cada minuto"><i></i> Actualizado {{ t | date:'HH:mm' }}</span> }
+      </div>
+      <ul>
+        @for (a of actividad(); track a.tipo + a.negocioId + a.fecha) {
+          <li (click)="abrirActividad(a)" (keydown.enter)="abrirActividad(a)" role="button" tabindex="0">
+            <span class="actividad__icono" [class.actividad__icono--pago]="a.tipo === 'PAGO'">
+              <app-icon [name]="a.tipo === 'PAGO' ? 'cash' : 'plus'" [size]="14"></app-icon>
+            </span>
+            <div class="actividad__texto">
+              <strong>{{ a.tipo === 'PAGO' ? 'Pago de ' : 'Nueva empresa: ' }}{{ a.empresa }}</strong>
+              <small>{{ a.detalle }}</small>
+            </div>
+            @if (a.monto) { <span class="actividad__monto">S/ {{ a.monto | number:'1.2-2' }}</span> }
+            <time>{{ a.fecha | date:'dd/MM HH:mm' }}</time>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
   @if (cargando()) {
     <div class="estado">Cargando…</div>
   } @else if (error()) {
@@ -57,10 +82,11 @@
                [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" />
       </div>
       <div class="filtros">
-        <button [class.is-active]="filtro()==='todas'" (click)="filtro.set('todas')">Todas</button>
-        <button [class.is-active]="filtro()==='activas'" (click)="filtro.set('activas')">Activas</button>
-        <button [class.is-active]="filtro()==='por-cobrar'" (click)="filtro.set('por-cobrar')">Por cobrar</button>
-        <button [class.is-active]="filtro()==='suspendidas'" (click)="filtro.set('suspendidas')">Suspendidas</button>
+        <button [class.is-active]="filtro()==='todas'" (click)="filtro.set('todas')">Todas <small>{{ conteos().todas }}</small></button>
+        <button [class.is-active]="filtro()==='activas'" (click)="filtro.set('activas')">Activas <small>{{ conteos().activas }}</small></button>
+        <button [class.is-active]="filtro()==='prueba'" (click)="filtro.set('prueba')">En prueba <small>{{ conteos().prueba }}</small></button>
+        <button [class.is-active]="filtro()==='por-cobrar'" (click)="filtro.set('por-cobrar')">Por cobrar <small>{{ conteos().porCobrar }}</small></button>
+        <button [class.is-active]="filtro()==='suspendidas'" (click)="filtro.set('suspendidas')">Suspendidas <small>{{ conteos().suspendidas }}</small></button>
       </div>
     </div>
 
@@ -76,13 +102,15 @@
               <td class="nombre">
                 {{ n.nombre }}
                 <small class="mono">/{{ n.slug }}</small>
+                @if (n.altaAutonoma) { <small class="origen">Se registró sola · {{ n.fechaCreacion | date:'dd/MM/yyyy' }}</small> }
               </td>
               <td><span class="plan">{{ n.planSuscripcion }}</span></td>
               <td class="mono">S/ {{ n.montoMensual | number:'1.2-2' }}</td>
               <td>{{ n.proximoPago ? (n.proximoPago | date:'dd/MM/yyyy') : '—' }}</td>
               <td class="mono">{{ n.pedidosMes }}</td>
-              <td>
+              <td class="estados">
                 <span [class]="'badge ' + estadoSuscripcion(n).clase">{{ estadoSuscripcion(n).texto }}</span>
+                @if (cobroAutomatico(n); as c) { <span [class]="'badge ' + c.clase">{{ c.texto }}</span> }
               </td>
               <td class="acciones-row acciones-texto">
                 <button class="btn btn--sm btn--desactivar" (click)="toggleActivo(n, $event)" [title]="n.activo ? 'Suspender' : 'Reactivar'">
@@ -111,6 +139,8 @@
             <div><span>Plan:</span> {{ n.planSuscripcion }} · S/ {{ n.montoMensual | number:'1.2-2' }}/mes</div>
             <div><span>Próximo pago:</span> {{ n.proximoPago ? (n.proximoPago | date:'dd/MM/yyyy') : '—' }}</div>
             <div><span>Pedidos/mes:</span> {{ n.pedidosMes }}</div>
+            @if (cobroAutomatico(n); as c) { <div><span>Cobro:</span> <span [class]="'badge ' + c.clase">{{ c.texto }}</span></div> }
+            @if (n.altaAutonoma) { <div><span>Origen:</span> se registró sola el {{ n.fechaCreacion | date:'dd/MM/yyyy' }}</div> }
           </div>
           <div class="negocio-card__acciones">
             <button class="btn btn--sm btn--desactivar" (click)="toggleActivo(n, $event)" [title]="n.activo ? 'Suspender' : 'Reactivar'">

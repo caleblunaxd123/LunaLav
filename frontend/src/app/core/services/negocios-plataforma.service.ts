@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import {
-  CambiarSuscripcionRequest, ConfiguracionPlataforma, CrearNegocioRequest, EditarNegocioRequest,
+  ActividadPlataforma, CambiarSuscripcionRequest, ConfiguracionPlataforma, CrearNegocioRequest, EditarNegocioRequest,
   NegocioDetalle, NegocioResumen, PagoSuscripcion, PlataformaResumen, RegistrarPagoSuscripcionRequest
 } from '../models/models';
 
@@ -13,6 +13,7 @@ export class NegociosPlataformaService {
 
   listar() { return this.http.get<NegocioResumen[]>(this.base); }
   resumen() { return this.http.get<PlataformaResumen>(`${this.base}/resumen`); }
+  actividad(limite = 12) { return this.http.get<ActividadPlataforma[]>(`${this.base}/actividad`, { params: { limite } }); }
   detalle(id: number) { return this.http.get<NegocioDetalle>(`${this.base}/${id}`); }
   crear(req: CrearNegocioRequest) { return this.http.post<NegocioResumen>(this.base, req); }
   editar(id: number, req: EditarNegocioRequest) { return this.http.put<void>(`${this.base}/${id}`, req); }

@@ -301,3 +301,23 @@
 }
 
 /* Alertas de suscripción estilo panel (banners de colores + Mostrar) */
+
+/* Actividad reciente (altas y pagos) */
+.actividad { padding: 16px 18px; margin-bottom: 16px; }
+.actividad__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;
+  h3 { margin: 0; font-size: 15px; color: var(--azul-oscuro); } }
+.actividad__vivo { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b;
+  i { width: 8px; height: 8px; border-radius: 50%; background: #12b76a; box-shadow: 0 0 0 3px #12b76a26; } }
+.actividad ul { list-style: none; margin: 0; padding: 0; max-height: 300px; overflow-y: auto; }
+.actividad li { display: flex; align-items: center; gap: 12px; padding: 9px 4px; border-top: 1px solid var(--gris-borde); cursor: pointer;
+  &:first-child { border-top: 0; } &:hover { background: #f8fafc; }
+  time { font-size: 12px; color: #64748b; white-space: nowrap; } }
+.actividad__icono { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; background: #eef4ff; color: #0b57d0;
+  &--pago { background: #e7f7ee; color: #12794a; } }
+.actividad__texto { flex: 1; min-width: 0; display: flex; flex-direction: column;
+  strong { font-size: 14px; } small { font-size: 12px; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } }
+.actividad__monto { font-weight: 700; color: #12794a; white-space: nowrap; }
+.filtros button small { opacity: .7; margin-left: 4px; font-weight: 600; }
+.nombre .origen { display: block; font-size: 11px; color: #0b57d0; margin-top: 2px; }
+.estados { display: flex; flex-wrap: wrap; gap: 4px; }
+@media (max-width: 640px) { .actividad li time { display: none; } }

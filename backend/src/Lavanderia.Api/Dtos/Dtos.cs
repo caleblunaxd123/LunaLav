@@ -1080,7 +1080,11 @@ public record NegocioResumenDto(
     int Id, string Nombre, string Slug, bool Activo, DateTime FechaCreacion,
     int CantidadSedes, int CantidadUsuarios,
     string PlanSuscripcion, string EstadoSuscripcion, decimal MontoMensual,
-    DateOnly? ProximoPago, DateTime? UltimoAcceso, int PedidosMes);
+    DateOnly? ProximoPago, DateTime? UltimoAcceso, int PedidosMes,
+    string? PagoAutomatico = null, bool AltaAutonoma = false);
+
+/// <summary>Actividad reciente para el panel del propietario: altas nuevas y pagos de suscripción.</summary>
+public record ActividadPlataformaDto(string Tipo, DateTime Fecha, int NegocioId, string Empresa, string Detalle, decimal? Monto);
 
 /// <summary>KPIs del negocio-de-negocios para el tablero del propietario.</summary>
 public record PlataformaResumenDto(

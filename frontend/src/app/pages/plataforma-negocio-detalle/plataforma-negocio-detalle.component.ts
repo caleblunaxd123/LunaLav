@@ -217,7 +217,7 @@ export class PlataformaNegocioDetalleComponent implements OnInit {
   }
 
   metodoEtiqueta(m: string): string {
-    const map: Record<string, string> = { YAPE: 'Yape', PLIN: 'Plin', TRANSFERENCIA: 'Transferencia', EFECTIVO: 'Efectivo', OTRO: 'Otro' };
+    const map: Record<string, string> = { YAPE: 'Yape', PLIN: 'Plin', TRANSFERENCIA: 'Transferencia', EFECTIVO: 'Efectivo', OTRO: 'Otro', TARJETA: 'Tarjeta (automático)' };
     return map[m] ?? m;
   }
 

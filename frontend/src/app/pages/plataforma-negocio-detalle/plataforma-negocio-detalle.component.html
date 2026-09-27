@@ -179,7 +179,7 @@
               <li>
                 <div class="pagos__info">
                   <strong>S/ {{ p.monto | number:'1.2-2' }}</strong>
-                  <span class="badge badge--gris">{{ metodoEtiqueta(p.metodo) }}</span>
+                  <span class="badge" [class.badge--verde]="p.metodo === 'TARJETA'" [class.badge--gris]="p.metodo !== 'TARJETA'">{{ metodoEtiqueta(p.metodo) }}</span>
                   <small>{{ p.fecha | date:'dd/MM/yyyy' }}</small>
                   @if (p.periodoHasta) { <small class="periodo">cubre hasta {{ p.periodoHasta | date:'dd/MM/yyyy' }}</small> }
                   @if (p.nota) { <small class="nota">· {{ p.nota }}</small> }
