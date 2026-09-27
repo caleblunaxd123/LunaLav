@@ -21,6 +21,15 @@ export const guestGuard: CanActivateFn = () => {
   return router.createUrlTree([usuario?.sedeId ? '/inicio' : '/seleccionar-sede']);
 };
 
+/**
+ * app.lunalav.pe es el acceso al sistema: su raíz lleva al login (o al panel si ya hay sesión).
+ * La landing comercial se queda en lunalav.pe y en el resto de dominios.
+ */
+export const dominioAppGuard: CanActivateFn = () => {
+  if (typeof window === 'undefined' || !window.location.hostname.startsWith('app.')) return true;
+  return inject(Router).createUrlTree(['/login']);
+};
+
 export const rolGuard = (rolesPermitidos: string[]): CanActivateFn => () => {
   const auth = inject(AuthService);
   const router = inject(Router);

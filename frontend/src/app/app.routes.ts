@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, moduloGuard, rolGuard } from './core/guards/auth.guard';
+import { authGuard, dominioAppGuard, guestGuard, moduloGuard, rolGuard } from './core/guards/auth.guard';
 import { marketingGuard, marketingGuestGuard } from './marketing/marketing.guard';
 
 export const routes: Routes = [
@@ -30,6 +30,7 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
+    canActivate: [dominioAppGuard],
     loadComponent: () => import('./pages/landing/landing.component').then(m => m.LandingComponent)
   },
   {
