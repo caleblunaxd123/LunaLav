@@ -171,19 +171,40 @@ export class PlataformaNegocioDetalleComponent implements OnInit {
   }
 
   /** Abre WhatsApp con un recordatorio de cobro ya redactado para el titular de la empresa. */
+  /**
+   * Genera un enlace de pago (sin iniciar sesión) y abre WhatsApp con el mensaje listo para el
+   * titular. Con Culqi el titular paga con tarjeta desde el celular; si pagó por Yape u otro
+   * medio, se sigue registrando a mano con "Registrar pago".
+   */
   recordarCobro() {
     const n = this.negocio(); if (!n?.titularCelular) return;
-    const numero = numeroWhatsapp(n.titularCelular);
-    const cfg = this.config();
-    const plataforma = cfg?.nombrePlataforma || 'LunaLav';
-    const vence = n.proximoPago ? new Date(n.proximoPago).toLocaleDateString('es-PE') : '';
-    const saludo = n.titularNombre ? `Hola ${n.titularNombre}` : 'Hola';
-    let msg = `${saludo}, te recordamos el pago de tu suscripción a ${plataforma} (${n.nombre}): S/ ${n.montoMensual.toFixed(2)}`;
-    if (vence) msg += ` con vencimiento el ${vence}`;
-    msg += '.';
-    if (cfg?.yapeNumero) msg += ` Puedes pagar por Yape a ${(cfg.yapeNombre ? cfg.yapeNombre + ' ' : '')}${cfg.yapeNumero}.`;
-    msg += ' ¡Gracias!';
-    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, '_blank');
+    // La pestaña se abre ya (antes de la llamada) para que el navegador no la bloquee.
+    const ventana = window.open('', '_blank');
+    this.svc.enlacePago(n.id).subscribe({
+      next: r => {
+        const url = `https://wa.me/${numeroWhatsapp(n.titularCelular!)}?text=${encodeURIComponent(r.mensaje)}`;
+        if (ventana) ventana.location.href = url; else window.open(url, '_blank');
+      },
+      error: (err: HttpErrorResponse) => { ventana?.close(); this.toast.error(err.error?.mensaje ?? 'No se pudo generar el enlace de pago.'); }
+    });
+  }
+
+  enviarEnlaceCorreo() {
+    const n = this.negocio(); if (!n) return;
+    this.svc.enlacePago(n.id, true).subscribe({
+      next: r => r.correoEnviado
+        ? this.toast.exito(`Enlace de pago enviado a ${n.titularEmail}.`)
+        : this.toast.error(r.errorCorreo ?? 'No se pudo enviar el correo.'),
+      error: (err: HttpErrorResponse) => this.toast.error(err.error?.mensaje ?? 'No se pudo enviar el enlace.')
+    });
+  }
+
+  copiarEnlacePago() {
+    const n = this.negocio(); if (!n) return;
+    this.svc.enlacePago(n.id).subscribe({
+      next: r => { this.copiar(r.url); },
+      error: (err: HttpErrorResponse) => this.toast.error(err.error?.mensaje ?? 'No se pudo generar el enlace.')
+    });
   }
 
   /** Abre WhatsApp para dar soporte al titular (saludo genérico, no de cobro). */

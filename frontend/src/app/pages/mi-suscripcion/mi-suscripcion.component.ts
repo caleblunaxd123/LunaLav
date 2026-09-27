@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, NgZone, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { EstadoPagoSuscripcion, Parametros3DS, SuscripcionService } from '../../core/services/suscripcion.service';
 import { ToastService } from '../../core/services/toast.service';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
@@ -48,6 +48,12 @@ export class MiSuscripcionComponent implements OnInit, OnDestroy {
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly zone = inject(NgZone);
+  private readonly route = inject(ActivatedRoute);
+
+  /** Abierta desde el enlace de pago (correo/WhatsApp): sin sesión ni menú. */
+  readonly token = this.route.snapshot.paramMap.get('token');
+  readonly enlaceInvalido = signal('');
+  readonly pagado = signal(false);
 
   readonly estado = signal<EstadoPagoSuscripcion | null>(null);
   readonly cargando = signal(true);
@@ -90,7 +96,8 @@ export class MiSuscripcionComponent implements OnInit, OnDestroy {
 
   cargar() {
     this.cargando.set(true);
-    this.svc.estadoPago().subscribe({
+    const origen = this.token ? this.svc.estadoEnlace(this.token) : this.svc.estadoPago();
+    origen.subscribe({
       next: e => {
         this.estado.set(e);
         const [nom, ...ape] = (e.titular.nombre ?? '').trim().split(/\s+/);
@@ -100,7 +107,11 @@ export class MiSuscripcionComponent implements OnInit, OnDestroy {
         this.telefono ||= e.titular.celular ?? '';
         this.cargando.set(false);
       },
-      error: () => { this.cargando.set(false); this.toast.error('No se pudo cargar tu suscripción.'); }
+      error: (err: HttpErrorResponse) => {
+        this.cargando.set(false);
+        if (this.token) this.enlaceInvalido.set(err.error?.mensaje ?? 'Este enlace ya no es válido. Pide uno nuevo a LunaLav.');
+        else this.toast.error('No se pudo cargar tu suscripción.');
+      }
     });
   }
 
@@ -156,17 +167,19 @@ export class MiSuscripcionComponent implements OnInit, OnDestroy {
   private enviar(token: { id: string; email: string }, tds: Parametros3DS | null) {
     this.procesando.set(true);
     this.error.set('');
-    this.svc.activarPago({
+    const req = {
       tokenId: token.id, nombre: this.nombre.trim(), apellido: this.apellido.trim(), email: this.email.trim(),
       telefono: this.telefono.trim(), direccion: this.direccion.trim(), ciudad: this.ciudad.trim(),
       aceptaCobroRecurrente: this.acepta, parametros3DS: tds
-    }).subscribe({
+    };
+    (this.token ? this.svc.activarEnlace(this.token, req) : this.svc.activarPago(req)).subscribe({
       next: r => {
         if (r.requiere3DS) { void this.iniciar3DS(token); return; }
         this.procesando.set(false);
         this.tokenPendiente = null;
         this.toast.exito(r.pagosRegistrados > 0 ? '¡Pago realizado! Tu suscripción está al día.' : 'Pago automático activado.');
-        this.cargar();
+        // Desde el enlace no se vuelve a consultar: el enlace deja de servir al activar el pago.
+        if (this.token) this.pagado.set(true); else this.cargar();
       },
       error: (err: HttpErrorResponse) => {
         this.procesando.set(false);

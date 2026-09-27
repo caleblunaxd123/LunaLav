@@ -67,6 +67,16 @@ export class SuscripcionService {
     return this.http.post<{ cancelado: boolean }>(`${this.base}/pago/cancelar`, {});
   }
 
+  /** Página de pago abierta desde el enlace del correo o WhatsApp (sin iniciar sesión). */
+  estadoEnlace(token: string): Observable<EstadoPagoSuscripcion> {
+    return this.http.get<EstadoPagoSuscripcion>(`${environment.apiUrl}/pago-suscripcion/${encodeURIComponent(token)}`);
+  }
+
+  activarEnlace(token: string, req: ActivarPagoRequest): Observable<{ activado: boolean; requiere3DS: boolean; pagosRegistrados: number }> {
+    return this.http.post<{ activado: boolean; requiere3DS: boolean; pagosRegistrados: number }>(
+      `${environment.apiUrl}/pago-suscripcion/${encodeURIComponent(token)}/activar`, req);
+  }
+
   sincronizar(): Observable<{ pagosRegistrados: number }> {
     return this.http.post<{ pagosRegistrados: number }>(`${this.base}/pago/sincronizar`, {});
   }

@@ -141,6 +141,9 @@ builder.Services.AddHttpClient<GooglePlacesService>(client => client.Timeout = T
 // Cobro recurrente de la mensualidad con tarjeta (Culqi). Llaves en Culqi:PublicKey / Culqi:SecretKey.
 builder.Services.AddHttpClient<Lavanderia.Api.Services.Pagos.CulqiClient>(client => client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddScoped<Lavanderia.Api.Services.Pagos.SuscripcionCulqiService>();
+// Enlaces de pago sin iniciar sesión (correo y WhatsApp) y recordatorios automáticos de vencimiento.
+builder.Services.AddScoped<Lavanderia.Api.Services.Pagos.EnlacePagoService>();
+builder.Services.AddHostedService<Lavanderia.Api.Services.Pagos.RecordatorioPagoWorker>();
 builder.Services.AddScoped<Lavanderia.Api.Services.RegistroVerificacionService>();
 // Consulta de RUC en el padrón de SUNAT vía APIs públicas gratuitas (OpenRUC, apis.net.pe).
 builder.Services.AddHttpClient<Lavanderia.Api.Services.Facturacion.RucConsultaService>(client => client.Timeout = TimeSpan.FromSeconds(6));

@@ -16,7 +16,7 @@ const SEGMENTOS_RESERVADOS = new Set([
   'login', 'ticket', 'cuadre-caja', 'seleccionar-sede', 'inicio', 'pedidos', 'registrar',
   'registro-antiguo', 'clientes', 'promociones', 'reportes', 'inventario', 'ajustes',
   'facturacion', 'assets', 'plataforma', 'seguimiento', 'repartidor', 'recibo-suscripcion', 'nosotros',
-  'privacidad', 'terminos', 'marketing',
+  'privacidad', 'terminos', 'marketing', 'eliminar-cuenta', 'pagar',
 ]);
 
 const SLUG_VALIDO = /^[a-z0-9][a-z0-9-]{1,49}$/i;

@@ -337,6 +337,37 @@ public class NegociosController : ControllerBase
         return Ok(ToPagoDto(pago));
     }
 
+    /// <summary>
+    /// Genera un enlace de pago (sin iniciar sesión) para enviarlo al titular por WhatsApp y,
+    /// si se pide, también por correo. Devuelve el enlace y el texto listo para WhatsApp.
+    /// </summary>
+    [HttpPost("{id:int}/enlace-pago")]
+    public async Task<IActionResult> EnlacePago(int id, [FromQuery] bool enviarCorreo,
+        [FromServices] Lavanderia.Api.Services.Pagos.EnlacePagoService enlaces,
+        [FromServices] Lavanderia.Api.Services.GmailOAuthService gmail, CancellationToken ct)
+    {
+        var n = await _negocios.ObtenerPorIdAsync(id, ct);
+        if (n is null || n.Slug == "plataforma-interna")
+            return NotFound(new { mensaje = "Empresa no encontrada." });
+
+        var url = await enlaces.CrearAsync(id, enviarCorreo ? "CORREO" : "WHATSAPP", ct);
+        int? dias = n.ProximoPago is DateOnly pp ? pp.DayNumber - DateOnly.FromDateTime(DateTime.Now).DayNumber : null;
+        var (asunto, cuerpo) = Lavanderia.Api.Services.Pagos.EnlacePagoService.Mensaje(n, url, dias);
+
+        string? errorCorreo = null;
+        var correoEnviado = false;
+        if (enviarCorreo)
+        {
+            if (string.IsNullOrWhiteSpace(n.TitularEmail)) errorCorreo = "La empresa no tiene correo del titular.";
+            else
+            {
+                try { await gmail.SendAsync(n.TitularEmail.Trim(), asunto, cuerpo, null, null, null, null, ct, registrarEnBandeja: false); correoEnviado = true; }
+                catch (InvalidOperationException e) { errorCorreo = e.Message; }
+            }
+        }
+        return Ok(new { url, mensaje = cuerpo, correoEnviado, errorCorreo });
+    }
+
     /// <summary>Historial de pagos de una empresa (más recientes primero).</summary>
     [HttpGet("{id:int}/pagos")]
     public async Task<ActionResult<List<PagoSuscripcionDto>>> ListarPagos(int id, CancellationToken ct)

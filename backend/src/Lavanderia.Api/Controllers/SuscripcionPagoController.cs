@@ -1,5 +1,3 @@
-
-
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Lavanderia.Api.Repositories;
@@ -24,58 +22,16 @@ public sealed record ActivarPagoRequest(
 [Authorize(Roles = "ADMIN")]
 [Route("api/suscripcion/pago")]
 public class SuscripcionPagoController(
-    SuscripcionCulqiService pagos, INegocioRepository negocios, IPagoSuscripcionRepository historial) : TenantAwareControllerBase
+    SuscripcionCulqiService pagos, INegocioRepository negocios, IPagoSuscripcionRepository historial,
+    EnlacePagoService enlaces) : TenantAwareControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> Estado(CancellationToken ct)
-    {
-        var n = await negocios.ObtenerPorIdAsync(NegocioId, ct);
-        if (n is null) return NotFound(new { mensaje = "Empresa no encontrada." });
-        var auto = await pagos.ObtenerAsync(NegocioId, ct);
-        var pagosRecientes = (await historial.ListarPorNegocioAsync(NegocioId, ct)).Take(12)
-            .Select(p => new { p.Id, p.Fecha, p.Monto, p.Metodo, p.PeriodoDesde, p.PeriodoHasta });
-        return Ok(new
-        {
-            configurado = pagos.Configurado,
-            publicKey = pagos.Configurado ? pagos.PublicKey : null,
-            modo = pagos.Modo,
-            empresa = n.Nombre,
-            plan = n.PlanSuscripcion,
-            montoMensual = n.MontoMensual,
-            estadoSuscripcion = n.EstadoSuscripcion,
-            proximoPago = n.ProximoPago,
-            pagoAutomatico = new
-            {
-                estado = auto.Estado,
-                tarjeta = auto.TarjetaUltimos4 is null ? null : $"{auto.TarjetaMarca ?? "Tarjeta"} •••• {auto.TarjetaUltimos4}",
-                ultimoError = auto.UltimoError
-            },
-            titular = new { nombre = n.TitularNombre, email = n.TitularEmail, celular = n.TitularCelular },
-            pagos = pagosRecientes
-        });
-    }
+        => await PagoSuscripcionComun.EstadoAsync(NegocioId, pagos, negocios, historial, ct) is { } e ? Ok(e) : NotFound(new { mensaje = "Empresa no encontrada." });
 
     [HttpPost("activar")]
     public async Task<IActionResult> Activar([FromBody] ActivarPagoRequest req, CancellationToken ct)
-    {
-        if (!req.AceptaCobroRecurrente)
-            return BadRequest(new { mensaje = "Debes aceptar el cobro mensual automático a tu tarjeta." });
-        if (string.IsNullOrWhiteSpace(req.TokenId) || !req.TokenId.StartsWith("tkn_", StringComparison.Ordinal))
-            return BadRequest(new { mensaje = "No recibimos los datos de la tarjeta. Vuelve a ingresarla." });
-        var faltante = Validar(req);
-        if (faltante is not null) return BadRequest(new { mensaje = faltante });
-
-        var tds = req.Parametros3DS is { } p
-            ? new Parametros3DS(p.Eci, p.Xid, p.Cavv, p.ProtocolVersion, p.DirectoryServerTransactionId) : null;
-        try
-        {
-            var r = await pagos.ActivarAsync(NegocioId, req.TokenId.Trim(),
-                new DatosTitular(req.Nombre.Trim(), req.Apellido.Trim(), req.Email.Trim().ToLowerInvariant(),
-                    Regex.Replace(req.Telefono, @"[^\d+]", ""), req.Direccion.Trim(), req.Ciudad.Trim()), tds, ct);
-            return Ok(new { activado = r.Activado, requiere3DS = r.Requiere3DS, pagosRegistrados = r.PagosRegistrados });
-        }
-        catch (CulqiException e) { return BadRequest(new { mensaje = e.Message }); }
-    }
+        => await PagoSuscripcionComun.ActivarAsync(NegocioId, req, pagos, enlaces, ct);
 
     [HttpPost("cancelar")]
     public async Task<IActionResult> Cancelar(CancellationToken ct)
@@ -94,6 +50,64 @@ public class SuscripcionPagoController(
         catch (CulqiException e) { return BadRequest(new { mensaje = e.Message }); }
     }
 
+}
+
+/// <summary>Lógica compartida por la página con sesión (ADMIN) y la del enlace de pago.</summary>
+internal static class PagoSuscripcionComun
+{
+    public static async Task<object?> EstadoAsync(int negocioId, SuscripcionCulqiService pagos, INegocioRepository negocios,
+        IPagoSuscripcionRepository historial, CancellationToken ct)
+    {
+        var n = await negocios.ObtenerPorIdAsync(negocioId, ct);
+        if (n is null) return null;
+        var auto = await pagos.ObtenerAsync(negocioId, ct);
+        var pagosRecientes = (await historial.ListarPorNegocioAsync(negocioId, ct)).Take(12)
+            .Select(p => new { p.Id, p.Fecha, p.Monto, p.Metodo, p.PeriodoDesde, p.PeriodoHasta });
+        return new
+        {
+            configurado = pagos.Configurado,
+            publicKey = pagos.Configurado ? pagos.PublicKey : null,
+            modo = pagos.Modo,
+            empresa = n.Nombre,
+            plan = n.PlanSuscripcion,
+            montoMensual = n.MontoMensual,
+            estadoSuscripcion = n.EstadoSuscripcion,
+            proximoPago = n.ProximoPago,
+            pagoAutomatico = new
+            {
+                estado = auto.Estado,
+                tarjeta = auto.TarjetaUltimos4 is null ? null : $"{auto.TarjetaMarca ?? "Tarjeta"} •••• {auto.TarjetaUltimos4}",
+                ultimoError = auto.UltimoError
+            },
+            titular = new { nombre = n.TitularNombre, email = n.TitularEmail, celular = n.TitularCelular },
+            pagos = pagosRecientes
+        };
+    }
+
+    public static async Task<IActionResult> ActivarAsync(int negocioId, ActivarPagoRequest req, SuscripcionCulqiService pagos,
+        EnlacePagoService enlaces, CancellationToken ct)
+    {
+        if (!req.AceptaCobroRecurrente)
+            return new BadRequestObjectResult(new { mensaje = "Debes aceptar el cobro mensual automático a tu tarjeta." });
+        if (string.IsNullOrWhiteSpace(req.TokenId) || !req.TokenId.StartsWith("tkn_", StringComparison.Ordinal))
+            return new BadRequestObjectResult(new { mensaje = "No recibimos los datos de la tarjeta. Vuelve a ingresarla." });
+        var faltante = Validar(req);
+        if (faltante is not null) return new BadRequestObjectResult(new { mensaje = faltante });
+
+        var tds = req.Parametros3DS is { } p
+            ? new Parametros3DS(p.Eci, p.Xid, p.Cavv, p.ProtocolVersion, p.DirectoryServerTransactionId) : null;
+        try
+        {
+            var r = await pagos.ActivarAsync(negocioId, req.TokenId.Trim(),
+                new DatosTitular(req.Nombre.Trim(), req.Apellido.Trim(), req.Email.Trim().ToLowerInvariant(),
+                    Regex.Replace(req.Telefono, @"[^\d+]", ""), req.Direccion.Trim(), req.Ciudad.Trim()), tds, ct);
+            // Con el pago activado, los enlaces enviados por correo o WhatsApp dejan de servir.
+            if (r.Activado) await enlaces.RevocarAsync(negocioId, ct);
+            return new OkObjectResult(new { activado = r.Activado, requiere3DS = r.Requiere3DS, pagosRegistrados = r.PagosRegistrados });
+        }
+        catch (CulqiException e) { return new BadRequestObjectResult(new { mensaje = e.Message }); }
+    }
+
     private static string? Validar(ActivarPagoRequest r)
     {
         if (string.IsNullOrWhiteSpace(r.Nombre) || r.Nombre.Trim().Length < 2) return "Escribe el nombre del titular de la tarjeta.";
@@ -103,6 +117,36 @@ public class SuscripcionPagoController(
         if (string.IsNullOrWhiteSpace(r.Direccion) || r.Direccion.Trim().Length < 5) return "Escribe la dirección de facturación (mínimo 5 caracteres).";
         if (string.IsNullOrWhiteSpace(r.Ciudad) || r.Ciudad.Trim().Length < 2) return "Escribe la ciudad.";
         return null;
+    }
+}
+
+/// <summary>
+/// Pago de la suscripción desde el enlace enviado por correo o WhatsApp: sin iniciar sesión.
+/// El token solo da acceso a ver y pagar la suscripción de su empresa.
+/// </summary>
+[ApiController]
+[AllowAnonymous]
+[Route("api/pago-suscripcion/{token}")]
+public class PagoSuscripcionEnlaceController(
+    SuscripcionCulqiService pagos, INegocioRepository negocios, IPagoSuscripcionRepository historial,
+    EnlacePagoService enlaces) : ControllerBase
+{
+    private const string Vencido = "Este enlace ya no es válido: venció o ya se usó para pagar. Pide uno nuevo a LunaLav o entra a app.lunalav.pe.";
+
+    [HttpGet]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("public-read")]
+    public async Task<IActionResult> Estado(string token, CancellationToken ct)
+    {
+        if (await enlaces.ResolverAsync(token, ct) is not int negocioId) return NotFound(new { mensaje = Vencido });
+        return await PagoSuscripcionComun.EstadoAsync(negocioId, pagos, negocios, historial, ct) is { } e ? Ok(e) : NotFound(new { mensaje = Vencido });
+    }
+
+    [HttpPost("activar")]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("public-write")]
+    public async Task<IActionResult> Activar(string token, [FromBody] ActivarPagoRequest req, CancellationToken ct)
+    {
+        if (await enlaces.ResolverAsync(token, ct) is not int negocioId) return NotFound(new { mensaje = Vencido });
+        return await PagoSuscripcionComun.ActivarAsync(negocioId, req, pagos, enlaces, ct);
     }
 }
 

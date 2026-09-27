@@ -1,10 +1,32 @@
-<div class="page">
-  <app-page-header icono="credit-card" color="cian" titulo="Mi suscripción"
-    subtitulo="Tu plan de LunaLav y el cobro mensual automático con tarjeta." volverTexto="Ajustes" (volver)="volver()"></app-page-header>
+<div class="page" [class.publica]="!!token">
+  @if (token) {
+    <header class="marca">
+      <img src="lunalav-logo-color.svg" alt="LunaLav" />
+      <span>Renovación de suscripción</span>
+    </header>
+  } @else {
+    <app-page-header icono="credit-card" color="cian" titulo="Mi suscripción"
+      subtitulo="Tu plan de LunaLav y el cobro mensual automático con tarjeta." volverTexto="Ajustes" (volver)="volver()"></app-page-header>
+  }
 
   @if (cargando()) {
     <div class="estado">Cargando...</div>
+  } @else if (enlaceInvalido()) {
+    <div class="card seccion resultado">
+      <div class="icono mal">!</div>
+      <h3>Enlace no válido</h3>
+      <p>{{ enlaceInvalido() }}</p>
+      <a class="btn-primario" href="/login">Ir a LunaLav</a>
+    </div>
+  } @else if (pagado()) {
+    <div class="card seccion resultado">
+      <div class="icono ok">✓</div>
+      <h3>¡Listo! Tu suscripción está al día</h3>
+      <p>Guardamos tu tarjeta y cada mes se renovará sola. Verás cada pago en Ajustes → Mi suscripción.</p>
+      <p class="nota">Ya puedes cerrar esta página y seguir usando LunaLav.</p>
+    </div>
   } @else if (estado(); as e) {
+    @if (token) { <p class="empresa">Hola, <strong>{{ e.empresa }}</strong></p> }
     @if (e.modo === 'TEST' && e.configurado) {
       <div class="aviso prueba"><strong>Modo de prueba.</strong> Los cobros no son reales. Usa las tarjetas de prueba de Culqi.</div>
     }
@@ -41,10 +63,12 @@
             <span class="ok-badge">Activo</span>
             <p>Cobramos <strong>S/ {{ e.montoMensual | number:'1.2-2' }}</strong> cada mes a tu tarjeta <strong>{{ e.pagoAutomatico.tarjeta }}</strong>. No tienes que hacer nada más.</p>
           </div>
-          <div class="acciones">
-            <button type="button" class="btn-secundario" (click)="sincronizar()" [disabled]="procesando()">Actualizar estado</button>
-            <button type="button" class="btn-peligro" (click)="desactivar()" [disabled]="procesando()">Desactivar cobro automático</button>
-          </div>
+          @if (!token) {
+            <div class="acciones">
+              <button type="button" class="btn-secundario" (click)="sincronizar()" [disabled]="procesando()">Actualizar estado</button>
+              <button type="button" class="btn-peligro" (click)="desactivar()" [disabled]="procesando()">Desactivar cobro automático</button>
+            </div>
+          }
         } @else {
           @if (e.pagoAutomatico.estado === 'FALLIDA' || e.pagoAutomatico.ultimoError) {
             <div class="aviso mal">{{ e.pagoAutomatico.ultimoError || 'El último cobro fue rechazado.' }} Vuelve a registrar tu tarjeta.</div>
@@ -68,7 +92,7 @@
 
           <label class="check">
             <input type="checkbox" [(ngModel)]="acepta" />
-            Acepto que LunaLav cobre S/ {{ e.montoMensual | number:'1.2-2' }} cada mes a esta tarjeta hasta que lo desactive. Revisa los <a href="/terminos" target="_blank" rel="noopener">términos</a>.
+            Acepto que LunaLav cobre S/ {{ e.montoMensual | number:'1.2-2' }} cada mes a esta tarjeta hasta que lo desactive{{ token ? ' (desde Ajustes → Mi suscripción)' : '' }}. Revisa los <a href="/terminos" target="_blank" rel="noopener">términos</a>.
           </label>
 
           @if (error()) { <div class="aviso mal">{{ error() }}</div> }
@@ -80,7 +104,7 @@
         }
       </div>
 
-      @if (e.pagos.length) {
+      @if (e.pagos.length && !token) {
         <div class="card seccion">
           <h3>Pagos</h3>
           <table>

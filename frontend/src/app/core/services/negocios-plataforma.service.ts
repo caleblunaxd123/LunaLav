@@ -22,6 +22,11 @@ export class NegociosPlataformaService {
   cambiarEstado(id: number, activo: boolean) { return this.http.patch<void>(`${this.base}/${id}/estado`, { activo }); }
 
   // ---------- Cobranza ----------
+  /** Enlace de pago sin iniciar sesión para el titular; opcionalmente lo envía también por correo. */
+  enlacePago(id: number, enviarCorreo = false) {
+    return this.http.post<{ url: string; mensaje: string; correoEnviado: boolean; errorCorreo?: string | null }>(
+      `${this.base}/${id}/enlace-pago`, {}, { params: { enviarCorreo } });
+  }
   registrarPago(id: number, req: RegistrarPagoSuscripcionRequest) { return this.http.post<PagoSuscripcion>(`${this.base}/${id}/pagos`, req); }
   historialPagos(id: number) { return this.http.get<PagoSuscripcion[]>(`${this.base}/${id}/pagos`); }
   obtenerPago(id: number, pagoId: number) { return this.http.get<PagoSuscripcion>(`${this.base}/${id}/pagos/${pagoId}`); }

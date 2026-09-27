@@ -49,6 +49,11 @@ export const routes: Routes = [
     data: { tipo: 'terminos' }
   },
   {
+    // Enlace de pago enviado por correo o WhatsApp: paga la suscripción sin iniciar sesión.
+    path: 'pagar/:token',
+    loadComponent: () => import('./pages/mi-suscripcion/mi-suscripcion.component').then(m => m.MiSuscripcionComponent)
+  },
+  {
     // URL pública exigida por Google Play para solicitar la eliminación de la cuenta.
     path: 'eliminar-cuenta',
     loadComponent: () => import('./pages/legal/legal.component').then(m => m.LegalComponent),

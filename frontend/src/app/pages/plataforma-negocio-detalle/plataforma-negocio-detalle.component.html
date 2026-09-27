@@ -98,9 +98,14 @@
               <app-icon name="cash" [size]="15"></app-icon> Registrar pago
             </button>
             <button class="btn btn--ghost" (click)="recordarCobro()" [disabled]="!n.titularCelular"
-              [title]="n.titularCelular ? 'Enviar recordatorio por WhatsApp' : 'La empresa no tiene celular del titular'">
-              <app-icon name="whatsapp" [size]="15"></app-icon> Recordar cobro
+              [title]="n.titularCelular ? 'Enviar por WhatsApp el enlace para pagar con tarjeta, sin iniciar sesión' : 'La empresa no tiene celular del titular'">
+              <app-icon name="whatsapp" [size]="15"></app-icon> Enviar enlace de pago
             </button>
+            <button class="btn btn--ghost" (click)="enviarEnlaceCorreo()" [disabled]="!n.titularEmail"
+              [title]="n.titularEmail ? 'Enviar el enlace de pago al correo del titular' : 'La empresa no tiene correo del titular'">
+              <app-icon name="mail" [size]="15"></app-icon> Por correo
+            </button>
+            <button class="link" (click)="copiarEnlacePago()" title="Copiar un enlace de pago nuevo">Copiar enlace</button>
           </div>
         } @else {
           <div class="form">
