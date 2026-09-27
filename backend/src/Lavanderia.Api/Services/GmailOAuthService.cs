@@ -56,7 +56,7 @@ public sealed class GmailOAuthService(HttpClient http, IConfiguration config, IS
         await using var save = c.CreateCommand();
         save.CommandText = @"UPDATE communication.Mailbox SET Address=@address,Provider=N'GMAIL',Status=N'CONNECTED',DisplayName=N'LunaLav Ventas',EncryptedCredentials=@cred,LastSyncAt=SYSUTCDATETIME()
 WHERE Id=(SELECT TOP 1 Id FROM communication.Mailbox WHERE Provider=N'GMAIL' ORDER BY Id DESC);
-IF @@ROWCOUNT=0 INSERT(Address,Provider,Status,DisplayName,EncryptedCredentials,LastSyncAt) VALUES(@address,N'GMAIL',N'CONNECTED',N'LunaLav Ventas',@cred,SYSUTCDATETIME());";
+IF @@ROWCOUNT=0 INSERT INTO communication.Mailbox(Address,Provider,Status,DisplayName,EncryptedCredentials,LastSyncAt) VALUES(@address,N'GMAIL',N'CONNECTED',N'LunaLav Ventas',@cred,SYSUTCDATETIME());";
         save.AddParam("@address", mailboxAddress); save.AddParam("@cred", secrets.Proteger(creds)); await save.ExecuteNonQueryAsync(ct);
     }
 
