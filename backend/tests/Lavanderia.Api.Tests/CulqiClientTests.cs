@@ -102,8 +102,17 @@ public class CulqiClientTests
         Assert.Equal("pln_test_P", id);
         Assert.EndsWith("/v2/recurrent/plans/create", handler.Ultima!.RequestUri!.ToString());
         Assert.Contains("\"interval_unit_time\":3", handler.CuerpoEnviado);
-        Assert.Contains("\"interval_count\":0", handler.CuerpoEnviado);
+        Assert.Contains("\"interval_count\":1", handler.CuerpoEnviado); // llave de pruebas: Culqi exige 1 a 3
         Assert.Contains("\"amount\":5000", handler.CuerpoEnviado);
+        Assert.DoesNotContain("S/", handler.CuerpoEnviado); // Culqi rechaza "/" en el nombre
+    }
+
+    [Fact]
+    public async Task Plan_enProduccionEsIndefinido()
+    {
+        var (client, handler) = Crear(HttpStatusCode.Created, """{ "id": "pln_live_P" }""", "sk_live_x");
+        await client.CrearPlanMensualAsync(2000, CancellationToken.None);
+        Assert.Contains("\"interval_count\":0", handler.CuerpoEnviado);
     }
 
     [Fact]

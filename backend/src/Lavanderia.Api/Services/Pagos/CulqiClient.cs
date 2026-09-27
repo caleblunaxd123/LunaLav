@@ -79,19 +79,21 @@ public sealed class CulqiClient(HttpClient http, IConfiguration config)
         return new CulqiResultadoTarjeta(new CulqiTarjeta(id, marca, ultimos), false);
     }
 
-    /// <summary>Plan mensual indefinido (interval_unit_time 3 = mensual; interval_count 0 = sin fin).</summary>
+    /// <summary>Plan mensual (interval_unit_time 3 = mensual; interval_count 0 = sin fin en producción).</summary>
     public async Task<string> CrearPlanMensualAsync(int montoCentimos, CancellationToken ct)
     {
         var soles = (montoCentimos / 100m).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
         var r = await PostAsync("/recurrent/plans/create", new
         {
-            name = $"LunaLav mensual S/ {soles}",
+            // Culqi rechaza "/" y otros símbolos en el nombre: solo letras, números y espacios.
+            name = $"LunaLav mensual {soles} soles",
             short_name = $"lunalav-mensual-{montoCentimos}",
-            description = $"Suscripción mensual a LunaLav por S/ {soles}",
+            description = $"Suscripcion mensual a LunaLav {soles} soles",
             amount = montoCentimos,
             currency = "PEN",
             interval_unit_time = 3,
-            interval_count = 0,
+            // 0 = cobro indefinido; el entorno de integración de Culqi solo admite 1 a 3.
+            interval_count = Modo == "LIVE" ? 0 : 1,
             initial_cycles = new { count = 0, has_initial_charge = false, amount = 0, interval_unit_time = 3 }
         }, ct);
         return Texto(r, "id") ?? throw new CulqiException("Culqi no devolvió el plan creado.");
