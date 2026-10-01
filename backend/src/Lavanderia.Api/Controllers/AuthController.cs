@@ -15,7 +15,10 @@ public class AuthController : ControllerBase
 {
     // La demo permite recorrer el flujo operativo completo con datos ficticios.
     // Los ajustes de negocio/usuarios y la facturación real se bloquean en middleware.
-    private static readonly string[] ModulosVisitanteDemo = ["INICIO", "PEDIDOS", "REGISTRAR", "CAJA", "CLIENTES", "PROMOCIONES", "REPORTES", "INVENTARIO"];
+    // El visitante también recibe todos los sub-permisos finos (PermisosFinos): sin ellos la demo
+    // ocultaría montos, descuentos y botones que forman parte del recorrido que se quiere mostrar.
+    private static readonly string[] ModulosVisitanteDemo =
+        [.. new[] { "INICIO", "PEDIDOS", "REGISTRAR", "CAJA", "CLIENTES", "PROMOCIONES", "REPORTES", "INVENTARIO" }, .. PermisosFinos.ClavesTodas];
     private readonly IUsuarioRepository _usuarios;
     private readonly IRolPermisoRepository _permisos;
     private readonly ISedeRepository _sedes;
