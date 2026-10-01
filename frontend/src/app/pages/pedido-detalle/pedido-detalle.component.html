@@ -329,9 +329,11 @@
               <app-icon name="pin" [size]="18"></app-icon> Convertir a Delivery
             </button>
           }
-          <button type="button" class="btn btn--accion btn--accion-peligro" (click)="abrirModalAnular()">
-            <app-icon name="ban" [size]="18"></app-icon> Anular pedido
-          </button>
+          @if (puede('PEDIDOS_ANULAR')) {
+            <button type="button" class="btn btn--accion btn--accion-peligro" (click)="abrirModalAnular()">
+              <app-icon name="ban" [size]="18"></app-icon> Anular pedido
+            </button>
+          }
         }
       </div>
     </section>

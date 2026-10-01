@@ -426,13 +426,15 @@
             @if (errorPromo()) { <p class="hint hint--error">{{ errorPromo() }}</p> }
           }
 
-          <div class="switch-row">
-            <button class="switch-btn" [class.is-active]="!aplicaDescuento()" (click)="aplicaDescuento.set(false)">NO</button>
-            <button class="switch-btn" [class.is-active]="aplicaDescuento()" (click)="aplicaDescuento.set(true)">SI</button>
-          </div>
-          @if (aplicaDescuento()) {
-            <label>Porcentaje @if (maxDescuentoPct > 0) { <small class="hint">(máx. {{ maxDescuentoPct }}%)</small> }</label>
-            <input type="number" min="0" max="100" [ngModel]="descuentoPorcentaje()" (ngModelChange)="setDescuentoPct($event)" />
+          @if (puede('REGISTRAR_APLICAR_DESCUENTO')) {
+            <div class="switch-row">
+              <button class="switch-btn" [class.is-active]="!aplicaDescuento()" (click)="aplicaDescuento.set(false)">NO</button>
+              <button class="switch-btn" [class.is-active]="aplicaDescuento()" (click)="aplicaDescuento.set(true)">SI</button>
+            </div>
+            @if (aplicaDescuento()) {
+              <label>Porcentaje @if (maxDescuentoPct > 0) { <small class="hint">(máx. {{ maxDescuentoPct }}%)</small> }</label>
+              <input type="number" min="0" max="100" [ngModel]="descuentoPorcentaje()" (ngModelChange)="setDescuentoPct($event)" />
+            }
           }
 
           @if (canjeHabilitado) {

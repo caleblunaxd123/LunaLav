@@ -17,7 +17,10 @@
         marca abajo qué <strong>módulos</strong> puede ver cada uno. Al crear un usuario en
         <strong>Usuarios y permisos</strong> le asignas uno de estos roles.
       </p>
-      <p class="intro-roles__nota">Los cambios se aplican la próxima vez que esa persona inicie sesión.</p>
+      <p class="intro-roles__nota">
+        💡 Los módulos con una flecha (<strong>›</strong>) se pueden <strong>desplegar</strong> para controlar
+        botones o secciones específicas dentro de ese módulo. Los cambios se aplican la próxima vez que esa persona inicie sesión.
+      </p>
     </div>
 
     <div class="card tabla-wrap">
@@ -46,8 +49,19 @@
         </thead>
         <tbody>
           @for (m of modulos(); track m) {
-            <tr>
-              <td class="nombre">{{ etiquetas[m] || m }}</td>
+            <tr class="fila-modulo">
+              <td class="nombre">
+                @if (tieneFinos(m)) {
+                  <button type="button" class="btn-expandir" [class.is-open]="estaExpandido(m)"
+                    (click)="toggleExpandir(m)" [attr.aria-expanded]="estaExpandido(m)"
+                    [attr.aria-label]="(estaExpandido(m) ? 'Contraer ' : 'Desplegar ') + (etiquetas[m] || m)">
+                    <app-icon name="chevron-right" [size]="14"></app-icon>
+                  </button>
+                } @else {
+                  <span class="btn-expandir btn-expandir--vacio"></span>
+                }
+                {{ etiquetas[m] || m }}
+              </td>
               <td class="centro"><span class="check-fijo" title="El Administrador siempre tiene acceso">✓</span></td>
               @for (r of rolesEditables(); track r.id) {
                 <td class="centro">
@@ -55,6 +69,21 @@
                 </td>
               }
             </tr>
+            @if (estaExpandido(m)) {
+              @for (f of finosDe(m); track f.clave) {
+                <tr class="fila-fina">
+                  <td class="nombre nombre--fino" [title]="f.descripcion || ''">{{ f.etiqueta }}</td>
+                  <td class="centro"><span class="check-fijo" title="El Administrador siempre tiene acceso">✓</span></td>
+                  @for (r of rolesEditables(); track r.id) {
+                    <td class="centro">
+                      <input type="checkbox" [disabled]="!tienePermiso(r.id, m)"
+                        [checked]="tienePermiso(r.id, f.clave)" (change)="toggle(r.id, f.clave)"
+                        [title]="!tienePermiso(r.id, m) ? 'Primero da acceso al módulo' : ''" />
+                    </td>
+                  }
+                </tr>
+              }
+            }
           }
         </tbody>
       </table>

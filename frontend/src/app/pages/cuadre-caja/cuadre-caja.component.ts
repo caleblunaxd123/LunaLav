@@ -266,6 +266,9 @@ export class CuadreCajaComponent implements OnInit {
     this.cargarMovimientos();
   }
 
+  /** Permisos finos de caja (el Administrador siempre puede; el trabajador según su rol). */
+  puede(clave: string): boolean { return this.auth.puede(clave); }
+
   cargarMovimientos() {
     const version = ++this.versionMovimientos;
     this.cargandoMovimientos.set(true);

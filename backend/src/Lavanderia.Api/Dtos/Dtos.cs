@@ -93,6 +93,8 @@ public record CambiarEstadoUsuarioRequest(bool Activo);
 
 // ---------- Permisos ----------
 public record PermisoItemDto(int RolId, string Modulo, bool PuedeAcceder);
+// Catálogo de sub-permisos (permisos finos) por módulo, para el árbol de "Roles y accesos".
+public record PermisoFinoDto(string Clave, string Modulo, string Etiqueta, string? Descripcion);
 
 public class ActualizarPermisosRequest
 {

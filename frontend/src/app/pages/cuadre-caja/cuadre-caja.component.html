@@ -7,9 +7,11 @@
       {{ guardado ? 'Cerrado' : 'Sin cerrar' }}
     </span>
     <!-- Atajo al historial: nadie encontraba el reporte diario dentro de Reportes. -->
-    <a class="btn btn--secundario" routerLink="/reportes/cuadres-caja">
-      <app-icon name="calendar" [size]="16"></app-icon> Ver cierres de días anteriores
-    </a>
+    @if (puede('CAJA_VER_CIERRES_ANTERIORES')) {
+      <a class="btn btn--secundario" routerLink="/reportes/cuadres-caja">
+        <app-icon name="calendar" [size]="16"></app-icon> Ver cierres de días anteriores
+      </a>
+    }
   </app-page-header>
 
   <!-- Colaborador + alcance del día -->
@@ -32,14 +34,16 @@
         }
       }
     </div>
-    <div class="scope-toggle">
-      <button type="button" class="scope-btn" [class.is-active]="!verTodos()" (click)="verTodos() && alternarVerTodos()">
-        Solo {{ usuarioSeleccionadoNombre() || 'mi turno' }}
-      </button>
-      <button type="button" class="scope-btn" [class.is-active]="verTodos()" (click)="!verTodos() && alternarVerTodos()">
-        Toda la caja del día
-      </button>
-    </div>
+    @if (puede('CAJA_VER_OTROS_TURNOS')) {
+      <div class="scope-toggle">
+        <button type="button" class="scope-btn" [class.is-active]="!verTodos()" (click)="verTodos() && alternarVerTodos()">
+          Solo {{ usuarioSeleccionadoNombre() || 'mi turno' }}
+        </button>
+        <button type="button" class="scope-btn" [class.is-active]="verTodos()" (click)="!verTodos() && alternarVerTodos()">
+          Toda la caja del día
+        </button>
+      </div>
+    }
   </div>
 
   <div class="pasos">
@@ -179,42 +183,48 @@
             <span><app-icon name="cash" [size]="15"></app-icon> Efectivo</span>
             <strong>S/ {{ pedidosPagadosEfectivo().toFixed(2) }}</strong>
           </div>
-          <div class="metodo-chip metodo-chip--billetera">
-            <span><app-icon name="smartphone" [size]="15"></app-icon> Yape / Plin</span>
-            <strong>S/ {{ ingresosBilleteras().toFixed(2) }}</strong>
-          </div>
-          <div class="metodo-chip metodo-chip--transferencia">
-            <span><app-icon name="bank" [size]="15"></app-icon> Transferencia</span>
-            <strong>S/ {{ ingresosTransferencia().toFixed(2) }}</strong>
-          </div>
-          <div class="metodo-chip metodo-chip--tarjeta">
-            <span><app-icon name="credit-card" [size]="15"></app-icon> Tarjeta / POS</span>
-            <strong>S/ {{ ingresosTarjeta().toFixed(2) }}</strong>
-          </div>
+          @if (puede('CAJA_VER_MONTOS_DIGITALES')) {
+            <div class="metodo-chip metodo-chip--billetera">
+              <span><app-icon name="smartphone" [size]="15"></app-icon> Yape / Plin</span>
+              <strong>S/ {{ ingresosBilleteras().toFixed(2) }}</strong>
+            </div>
+            <div class="metodo-chip metodo-chip--transferencia">
+              <span><app-icon name="bank" [size]="15"></app-icon> Transferencia</span>
+              <strong>S/ {{ ingresosTransferencia().toFixed(2) }}</strong>
+            </div>
+            <div class="metodo-chip metodo-chip--tarjeta">
+              <span><app-icon name="credit-card" [size]="15"></app-icon> Tarjeta / POS</span>
+              <strong>S/ {{ ingresosTarjeta().toFixed(2) }}</strong>
+            </div>
+          }
         </div>
 
-        <div class="ventas-cierre">
-          <div class="ventas-cierre__fila ventas-cierre__fila--total">
-            <span>Total vendido hoy</span>
-            <strong>S/ {{ ingresosTotal().toFixed(2) }}</strong>
+        @if (puede('CAJA_VER_MONTOS_DIGITALES')) {
+          <div class="ventas-cierre">
+            <div class="ventas-cierre__fila ventas-cierre__fila--total">
+              <span>Total vendido hoy</span>
+              <strong>S/ {{ ingresosTotal().toFixed(2) }}</strong>
+            </div>
+            <div class="ventas-cierre__fila">
+              <span>− Gastos del día</span>
+              <strong class="txt-rojo">S/ {{ gastosTotal().toFixed(2) }}</strong>
+            </div>
+            <div class="ventas-cierre__fila ventas-cierre__fila--ganancia" [class.es-negativa]="gananciaNeta() < 0">
+              <span>= Ganancia del día</span>
+              <strong>S/ {{ gananciaNeta().toFixed(2) }}</strong>
+            </div>
           </div>
-          <div class="ventas-cierre__fila">
-            <span>− Gastos del día</span>
-            <strong class="txt-rojo">S/ {{ gastosTotal().toFixed(2) }}</strong>
-          </div>
-          <div class="ventas-cierre__fila ventas-cierre__fila--ganancia" [class.es-negativa]="gananciaNeta() < 0">
-            <span>= Ganancia del día</span>
-            <strong>S/ {{ gananciaNeta().toFixed(2) }}</strong>
-          </div>
-        </div>
+        }
 
         <!-- Gastos -->
         <div class="gastos-bloque">
           <div class="gastos-bloque__head">
             <label>Gastos registrados</label>
-            <button type="button" class="btn-registrar-gasto" (click)="abrirModalGasto()">
-              <app-icon name="cash" [size]="17"></app-icon> Registrar gasto
-            </button>
+            @if (puede('CAJA_REGISTRAR_GASTO')) {
+              <button type="button" class="btn-registrar-gasto" (click)="abrirModalGasto()">
+                <app-icon name="cash" [size]="17"></app-icon> Registrar gasto
+              </button>
+            }
           </div>
           @if (gastosDelDia().length === 0) {
             <p class="hint">Sin gastos registrados este día.</p>

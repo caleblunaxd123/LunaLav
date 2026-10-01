@@ -3,6 +3,7 @@ import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Comprobante, FacturacionService, GuiaRemisionPayload, KpiComprobantesMes } from '../../core/services/facturacion.service';
+import { AuthService } from '../../core/services/auth.service';
 import { DemoPreviewService } from '../../core/services/demo-preview.service';
 import { ToastService } from '../../core/services/toast.service';
 import { fechaLocalIso } from '../../core/util/fecha-local';
@@ -23,7 +24,11 @@ export class ComprobantesListComponent implements OnInit, OnDestroy {
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly demoPreview = inject(DemoPreviewService);
+  private readonly auth = inject(AuthService);
   private poll?: Subscription;
+
+  // El respaldo masivo es una acción solo de administrador (el endpoint exige rol ADMIN).
+  readonly esAdmin = computed(() => this.auth.usuario()?.rol === 'ADMIN');
   readonly esDemoPublica = this.demoPreview.esDemoPublica();
 
   readonly comprobantes = signal<Comprobante[]>([]);

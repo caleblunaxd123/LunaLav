@@ -61,6 +61,7 @@ export class PedidoDetalleComponent implements OnInit, OnDestroy {
   private readonly service = inject(PedidosService);
   private readonly auth = inject(AuthService);
   readonly esAdmin = computed(() => this.auth.usuario()?.rol === 'ADMIN');
+  puede(clave: string): boolean { return this.auth.puede(clave); }
   private readonly clientesSvc = inject(ClientesService);
   private readonly catalogos = inject(CatalogosService);
   private readonly toast = inject(ToastService);

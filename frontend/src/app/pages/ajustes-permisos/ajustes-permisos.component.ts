@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { PermisoItem, PermisosService } from '../../core/services/permisos.service';
+import { PermisoFino, PermisoItem, PermisosService } from '../../core/services/permisos.service';
 import { RolAcceso, RolesAccesoService } from '../../core/services/roles-acceso.service';
 import { ToastService } from '../../core/services/toast.service';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
@@ -25,7 +25,10 @@ export class AjustesPermisosComponent implements OnInit {
   readonly guardando = signal(false);
   readonly roles = signal<RolAcceso[]>([]);
   readonly modulos = signal<string[]>([]);
+  readonly finos = signal<PermisoFino[]>([]);
   readonly matriz = signal<Map<string, boolean>>(new Map());
+  // Módulos con su árbol desplegado (mostrando sus sub-permisos).
+  readonly expandidos = signal<Set<string>>(new Set());
 
   // Los roles editables (columnas de la matriz) = todos menos el de sistema (Administrador).
   readonly rolesEditables = computed(() => this.roles().filter(r => !r.esSistema));
@@ -48,6 +51,7 @@ export class AjustesPermisosComponent implements OnInit {
     this.rolesSvc.listar().subscribe({
       next: roles => {
         this.roles.set(roles);
+        this.svc.finos().subscribe({ next: f => this.finos.set(f), error: () => this.finos.set([]) });
         this.svc.modulos().subscribe(modulos => {
           this.modulos.set(modulos);
           this.svc.obtenerMatriz().subscribe({
@@ -83,12 +87,30 @@ export class AjustesPermisosComponent implements OnInit {
     this.matriz.set(nuevo);
   }
 
+  // ----- Árbol de sub-permisos (permisos finos) -----
+  /** Sub-permisos de un módulo (según el catálogo). */
+  finosDe(modulo: string): PermisoFino[] {
+    return this.finos().filter(f => f.modulo === modulo);
+  }
+  tieneFinos(modulo: string): boolean { return this.finosDe(modulo).length > 0; }
+  estaExpandido(modulo: string): boolean { return this.expandidos().has(modulo); }
+  toggleExpandir(modulo: string) {
+    if (!this.tieneFinos(modulo)) return;
+    const s = new Set(this.expandidos());
+    s.has(modulo) ? s.delete(modulo) : s.add(modulo);
+    this.expandidos.set(s);
+  }
+
   guardar() {
     this.guardando.set(true);
     const permisos: PermisoItem[] = [];
     for (const r of this.rolesEditables()) {
       for (const m of this.modulos()) {
         permisos.push({ rolId: r.id, modulo: m, puedeAcceder: this.tienePermiso(r.id, m) });
+      }
+      // Sub-permisos finos (se guardan con la clave del permiso en el mismo campo "modulo").
+      for (const f of this.finos()) {
+        permisos.push({ rolId: r.id, modulo: f.clave, puedeAcceder: this.tienePermiso(r.id, f.clave) });
       }
     }
     this.svc.guardar(permisos).subscribe({

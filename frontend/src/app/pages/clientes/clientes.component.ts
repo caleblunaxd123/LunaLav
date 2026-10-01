@@ -12,6 +12,7 @@ import { PedidosService } from '../../core/services/pedidos.service';
 import { CodigoGenerado, PromocionesService } from '../../core/services/promociones.service';
 import { WhatsappService } from '../../core/services/whatsapp.service';
 import { ToastService } from '../../core/services/toast.service';
+import { AuthService } from '../../core/services/auth.service';
 import { esCelularValido } from '../../core/util/telefono';
 import { ErroresCampo } from '../../core/util/errores-campo';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
@@ -31,6 +32,7 @@ import { ColumnaImport, ImportadorMasivoComponent } from '../../shared/importado
 })
 export class ClientesComponent implements OnInit, OnDestroy {
   private readonly service = inject(ClientesService);
+  private readonly auth = inject(AuthService);
   private readonly pedidosSvc = inject(PedidosService);
   private readonly promociones = inject(PromocionesService);
   private readonly whatsapp = inject(WhatsappService);
@@ -89,6 +91,8 @@ export class ClientesComponent implements OnInit, OnDestroy {
   get puedeFusionar(): boolean {
     return !!this.origenId && !!this.destinoId && this.origenId !== this.destinoId && !this.fusionando();
   }
+
+  puede(clave: string): boolean { return this.auth.puede(clave); }
 
   fusionarClientes() {
     if (!this.puedeFusionar) return;

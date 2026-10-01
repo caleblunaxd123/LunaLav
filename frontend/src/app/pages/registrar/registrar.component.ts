@@ -13,6 +13,7 @@ import { FotosPedidoService } from '../../core/services/fotos-pedido.service';
 import { PedidosService } from '../../core/services/pedidos.service';
 import { PromocionValida } from '../../core/services/promociones.service';
 import { ToastService } from '../../core/services/toast.service';
+import { AuthService } from '../../core/services/auth.service';
 import { WhatsappService } from '../../core/services/whatsapp.service';
 import { esCelularValido } from '../../core/util/telefono';
 import { IconComponent } from '../../shared/icon/icon.component';
@@ -51,6 +52,7 @@ export class RegistrarComponent implements OnInit, OnDestroy {
   private readonly clientesSvc = inject(ClientesService);
   private readonly pedidosSvc = inject(PedidosService);
   private readonly toast = inject(ToastService);
+  private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly whatsapp = inject(WhatsappService);
   private readonly config = inject(ConfiguracionService);
@@ -216,6 +218,8 @@ export class RegistrarComponent implements OnInit, OnDestroy {
   cerrarModalesConEscape(): void {
     if (this.modalNuevoServicio()) this.cerrarNuevoServicio();
   }
+
+  puede(clave: string): boolean { return this.auth.puede(clave); }
 
   ngOnInit() {
     this.whatsapp.cargar();

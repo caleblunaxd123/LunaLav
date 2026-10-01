@@ -22,6 +22,13 @@ public class PermisosController : TenantAwareControllerBase
     [HttpGet("modulos")]
     public ActionResult<List<string>> Modulos() => Ok(Domain.Modulos.Todos.ToList());
 
+    /// <summary>Catálogo de permisos finos (sub-permisos por módulo) para armar el árbol de accesos.</summary>
+    [HttpGet("finos")]
+    public ActionResult<List<PermisoFinoDto>> Finos() =>
+        Ok(Domain.PermisosFinos.Catalogo
+            .Select(i => new PermisoFinoDto(i.Clave, i.Modulo, i.Etiqueta, i.Descripcion))
+            .ToList());
+
     [HttpGet]
     public async Task<ActionResult<List<PermisoItemDto>>> ObtenerMatriz(CancellationToken ct)
     {
@@ -42,8 +49,8 @@ public class PermisosController : TenantAwareControllerBase
 
         if (req.Permisos.Any(p => !rolesEditables.Contains(p.RolId)))
             return BadRequest(new { mensaje = "La solicitud incluye un rol que no puede administrarse desde este negocio." });
-        if (req.Permisos.Any(p => !Domain.Modulos.Todos.Contains(p.Modulo)))
-            return BadRequest(new { mensaje = "La solicitud incluye un módulo no válido." });
+        if (req.Permisos.Any(p => !Domain.Modulos.Todos.Contains(p.Modulo) && !Domain.PermisosFinos.ClavesTodas.Contains(p.Modulo)))
+            return BadRequest(new { mensaje = "La solicitud incluye un módulo o permiso no válido." });
         if (req.Permisos.GroupBy(p => new { p.RolId, p.Modulo }).Any(g => g.Count() > 1))
             return BadRequest(new { mensaje = "La solicitud contiene permisos duplicados." });
 

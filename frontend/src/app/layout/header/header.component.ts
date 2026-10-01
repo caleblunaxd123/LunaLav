@@ -16,6 +16,7 @@ interface SubLink {
   label: string;
   path: string;
   modulo?: string; // si difiere del módulo del padre (para permisos)
+  permiso?: string; // sub-permiso fino requerido (además del módulo); ADMIN siempre lo tiene
   planes?: DemoPlan[]; // en la demo, solo visible para estos planes (vacío = todos)
 }
 
@@ -150,7 +151,7 @@ export class HeaderComponent implements OnInit {
       label: 'Cuadre de Caja', path: '/cuadre-caja', modulo: 'CAJA', icono: 'cash',
       children: [
         { label: 'Cuadre del día', path: '/cuadre-caja' },
-        { label: 'Reporte de cuadres', path: '/reportes/cuadres-caja', modulo: 'CAJA' },
+        { label: 'Reporte de cuadres', path: '/reportes/cuadres-caja', modulo: 'CAJA', permiso: 'CAJA_REPORTE_CUADRES' },
       ]
     },
   ];
@@ -168,9 +169,9 @@ export class HeaderComponent implements OnInit {
       label: 'Reportes', path: '/reportes', modulo: 'REPORTES', icono: 'chart',
       children: [
         { label: 'Todos los reportes', path: '/reportes' },
-        { label: 'Vista gerencial', path: '/reportes/gerencial' },
-        { label: 'Consolidado', path: '/reportes/consolidado', planes: ['MULTISEDE'] },
-        { label: 'Cuadres diarios', path: '/reportes/cuadres-caja' },
+        { label: 'Vista gerencial', path: '/reportes/gerencial', permiso: 'REPORTES_VER_GERENCIAL' },
+        { label: 'Consolidado', path: '/reportes/consolidado', permiso: 'REPORTES_VER_CONSOLIDADO', planes: ['MULTISEDE'] },
+        { label: 'Cuadres diarios', path: '/reportes/cuadres-caja', permiso: 'CAJA_REPORTE_CUADRES' },
       ]
     },
     { label: 'Inventario', path: '/inventario', modulo: 'INVENTARIO', icono: 'package' },
@@ -196,11 +197,11 @@ export class HeaderComponent implements OnInit {
     return list.filter(l => modulos.includes(l.modulo) && this.planPermite(l.planes));
   }
 
-  /** Hijos visibles según los permisos del usuario. */
+  /** Hijos visibles según los permisos del usuario (módulo + sub-permiso fino si aplica). */
   hijosVisibles(link: NavLink): SubLink[] {
     const modulos = this.usuario()?.modulosPermitidos ?? [];
     return (link.children ?? [])
-      .filter(c => modulos.includes(c.modulo ?? link.modulo) && this.planPermite(c.planes));
+      .filter(c => modulos.includes(c.modulo ?? link.modulo) && (!c.permiso || this.auth.puede(c.permiso)) && this.planPermite(c.planes));
   }
 
   /**

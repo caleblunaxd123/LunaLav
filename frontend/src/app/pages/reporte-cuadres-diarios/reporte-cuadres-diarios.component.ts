@@ -244,15 +244,19 @@ export class ReporteCuadresDiariosComponent implements OnInit {
   /** Todos los movimientos del día de ese cajero. */
   movsDelDia(id: number): MovimientoCaja[] { return this.movsPorFila()[id] ?? []; }
 
-  /** Movimientos que afectan el efectivo contado: cobros en efectivo y egresos (gastos). */
+  /**
+   * Movimientos que afectan el efectivo contado: SOLO los que tienen método EFECTIVO
+   * (cobros y gastos en efectivo). Un gasto pagado por Yape/Plin NO sale del cajón, así que
+   * no va aquí — antes se colaba cualquier GASTO sin mirar el método y aparecía un egreso en
+   * "efectivo" que no restaba del cuadre (p. ej. un "cambio de paleta" pagado por Yape).
+   */
   movsEfectivo(id: number): MovimientoCaja[] {
-    return this.movsDelDia(id).filter(
-      m => (m.tipo === 'INGRESO' && (m.metodoPago || '').toUpperCase() === 'EFECTIVO') || m.tipo === 'GASTO'
-    );
+    return this.movsDelDia(id).filter(m => (m.metodoPago || '').toUpperCase() === 'EFECTIVO');
   }
-  /** Cobros digitales (Yape/Plin/Transf/POS): no afectan el efectivo, pero un pago mal clasificado sí descuadra. */
+  /** Movimientos digitales (Yape/Plin/Transf/POS): cobros Y gastos. No afectan el efectivo,
+   *  pero un pago mal clasificado sí descuadra. */
   movsDigitales(id: number): MovimientoCaja[] {
-    return this.movsDelDia(id).filter(m => m.tipo === 'INGRESO' && (m.metodoPago || '').toUpperCase() !== 'EFECTIVO');
+    return this.movsDelDia(id).filter(m => (m.metodoPago || '').toUpperCase() !== 'EFECTIVO');
   }
   /** ¿Ya se cargaron (aunque sea vacío) los movimientos de esta fila? */
   movsCargados(id: number): boolean { return this.movsPorFila()[id] !== undefined; }

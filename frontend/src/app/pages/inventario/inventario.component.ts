@@ -32,6 +32,7 @@ export class InventarioComponent implements OnInit, OnDestroy {
   private readonly toast = inject(ToastService);
   /** Solo el ADMIN puede corregir/eliminar movimientos del historial. */
   readonly esAdmin = computed(() => this.auth.usuario()?.rol === 'ADMIN');
+  puede(clave: string): boolean { return this.auth.puede(clave); }
   private readonly actualizaciones = inject(ActualizacionDatosService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);

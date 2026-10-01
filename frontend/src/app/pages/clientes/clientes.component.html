@@ -9,7 +9,9 @@
   <div class="tabs">
     <button class="tabs__item" [class.is-active]="tab()==='buscar'" (click)="cambiarTab('buscar')">Buscar</button>
     <button class="tabs__item" [class.is-active]="tab()==='frecuentes'" (click)="cambiarTab('frecuentes')">Informe</button>
-    <button class="tabs__item" [class.is-active]="tab()==='unir'" (click)="cambiarTab('unir')">Unir</button>
+    @if (puede('CLIENTES_FUSIONAR')) {
+      <button class="tabs__item" [class.is-active]="tab()==='unir'" (click)="cambiarTab('unir')">Unir</button>
+    }
   </div>
 
   @if (tab() === 'buscar') {

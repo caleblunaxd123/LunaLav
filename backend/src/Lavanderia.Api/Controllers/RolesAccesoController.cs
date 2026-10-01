@@ -43,9 +43,12 @@ public class RolesAccesoController : TenantAwareControllerBase
         var codigo = "ROL_" + Guid.NewGuid().ToString("N")[..10].ToUpperInvariant();
         var id = await _roles.CrearAsync(NegocioId, codigo, nombre, ct);
 
-        // Sembrar permisos (todo en false) para que el rol aparezca en la matriz.
+        // Sembrar permisos (todo en false) para que el rol aparezca en la matriz:
+        // primero los módulos de navegación y luego los sub-permisos finos.
         foreach (var modulo in Modulos.Todos)
             await _permisos.GuardarAsync(id, modulo, false, NegocioId, ct);
+        foreach (var clave in PermisosFinos.ClavesTodas)
+            await _permisos.GuardarAsync(id, clave, false, NegocioId, ct);
 
         return Ok(new RolAccesoDto(id, nombre, false, false));
     }

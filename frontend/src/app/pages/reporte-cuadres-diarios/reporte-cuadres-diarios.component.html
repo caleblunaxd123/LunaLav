@@ -298,20 +298,23 @@
                                 </ul>
                               }
 
-                              <!-- Pagos digitales: no afectan el efectivo, pero pueden estar con el método equivocado -->
+                              <!-- Movimientos digitales (Yape/Plin/Transf/POS): cobros Y gastos. No afectan el efectivo,
+                                   pero pueden estar con el método equivocado. -->
                               @if (movsDigitales(c.id).length > 0) {
-                                <h5 class="movs-titulo-sec">Otros pagos del día <small>(Yape/Plin — no afectan el efectivo)</small></h5>
+                                <h5 class="movs-titulo-sec">Otros movimientos digitales <small>(Yape/Plin — no afectan el efectivo)</small></h5>
                                 <ul class="movs movs--digital">
                                   @for (m of movsDigitales(c.id); track m.id) {
-                                    <li class="movs__item" [class.movs__item--candidato]="esCandidato(m, c)">
-                                      <span class="movs__tipo movs__tipo--dig">{{ metodoLabel(m.metodoPago || '') }}</span>
+                                    <li class="movs__item" [class.movs__item--gasto]="m.tipo === 'GASTO'" [class.movs__item--candidato]="esCandidato(m, c)">
+                                      <span class="movs__tipo movs__tipo--dig">{{ m.tipo === 'GASTO' ? 'Egreso' : 'Cobro' }} · {{ metodoLabel(m.metodoPago || '') }}</span>
                                       <span class="movs__desc">
                                         @if (m.pedidoNumero) { Pedido #{{ m.pedidoNumero }} }
                                         @if (m.clienteNombre) { · {{ m.clienteNombre }} }
+                                        @if (m.tipoGastoNombre) { {{ m.tipoGastoNombre }} }
+                                        @if (m.descripcion) { · {{ m.descripcion }} }
                                         @if (esCandidato(m, c)) { <span class="movs__flag">⚠ coincide con la diferencia</span> }
                                       </span>
                                       <span class="movs__hora">{{ m.fecha | date:'hh:mm a' }}</span>
-                                      <span class="movs__monto">S/ {{ m.monto | number:'1.2-2' }}</span>
+                                      <span class="movs__monto" [class.rojo]="m.tipo === 'GASTO'">{{ m.tipo === 'GASTO' ? '−' : '+' }}S/ {{ m.monto | number:'1.2-2' }}</span>
                                     </li>
                                   }
                                 </ul>
@@ -413,13 +416,13 @@
                           </ul>
                         }
                         @if (movsDigitales(c.id).length > 0) {
-                          <h5 class="movs-titulo-sec">Otros pagos (Yape/Plin)</h5>
+                          <h5 class="movs-titulo-sec">Otros movimientos digitales (Yape/Plin)</h5>
                           <ul class="movs movs--digital">
                             @for (m of movsDigitales(c.id); track m.id) {
-                              <li class="movs__item" [class.movs__item--candidato]="esCandidato(m, c)">
-                                <span class="movs__tipo movs__tipo--dig">{{ metodoLabel(m.metodoPago || '') }}</span>
-                                <span class="movs__desc">@if (m.pedidoNumero) { #{{ m.pedidoNumero }} }@if (m.clienteNombre) { {{ m.clienteNombre }} }@if (esCandidato(m, c)) { <span class="movs__flag">⚠</span> }</span>
-                                <span class="movs__monto">S/ {{ m.monto | number:'1.2-2' }}</span>
+                              <li class="movs__item" [class.movs__item--gasto]="m.tipo === 'GASTO'" [class.movs__item--candidato]="esCandidato(m, c)">
+                                <span class="movs__tipo movs__tipo--dig">{{ m.tipo === 'GASTO' ? 'Egreso' : 'Cobro' }} · {{ metodoLabel(m.metodoPago || '') }}</span>
+                                <span class="movs__desc">@if (m.pedidoNumero) { #{{ m.pedidoNumero }} }@if (m.clienteNombre) { {{ m.clienteNombre }} }@if (m.tipoGastoNombre) { {{ m.tipoGastoNombre }} }@if (m.descripcion) { · {{ m.descripcion }} }@if (esCandidato(m, c)) { <span class="movs__flag">⚠</span> }</span>
+                                <span class="movs__monto" [class.rojo]="m.tipo === 'GASTO'">{{ m.tipo === 'GASTO' ? '−' : '+' }}S/ {{ m.monto | number:'1.2-2' }}</span>
                               </li>
                             }
                           </ul>

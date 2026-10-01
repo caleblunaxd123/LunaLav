@@ -12,8 +12,9 @@
     </section>
   }
 
-  <!-- Respaldo local obligatorio (SUNAT): XML+CDR+PDF se guardan en disco al aceptar cada comprobante. -->
-  @if (!esDemoPublica) {
+  <!-- Respaldo local obligatorio (SUNAT): XML+CDR+PDF se guardan en disco al aceptar cada comprobante.
+       El respaldo masivo manual es solo para el administrador (el endpoint exige rol ADMIN). -->
+  @if (!esDemoPublica && esAdmin()) {
   <section class="card respaldo-fe">
     <div class="respaldo-fe__info">
       <strong>Respaldo local (SUNAT)</strong>

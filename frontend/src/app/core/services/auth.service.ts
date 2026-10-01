@@ -104,6 +104,16 @@ export class AuthService {
     return this.usuario()?.rol === rol;
   }
 
+  /**
+   * ¿El usuario tiene un permiso (módulo o sub-permiso fino)? El Administrador siempre sí.
+   * Para el resto, se cumple si la clave está en sus modulosPermitidos (que incluye tanto
+   * los módulos como los permisos finos activados por el admin).
+   */
+  puede(clave: string): boolean {
+    const u = this.usuario();
+    return u?.rol === 'ADMIN' || (u?.modulosPermitidos ?? []).includes(clave);
+  }
+
   private guardar(res: LoginResponse) {
     const s: SesionAlmacenada = {
       accessToken: res.accessToken, expira: res.expira, refreshToken: res.refreshToken, usuario: res.usuario

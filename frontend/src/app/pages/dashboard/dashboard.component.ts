@@ -74,8 +74,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.pasosOnboarding().some(p => !p.hecho)
   );
 
+  // Ve las finanzas del panel quien tenga Caja o Reportes Y el sub-permiso "ver montos"
+  // (el Administrador siempre; los trabajadores según lo active el admin en Roles y accesos).
   readonly puedeVerFinanzas = computed(() =>
-    this.tieneModulo('CAJA') || this.tieneModulo('REPORTES')
+    (this.tieneModulo('CAJA') || this.tieneModulo('REPORTES')) && this.auth.puede('INICIO_VER_MONTOS')
   );
 
   readonly progresoMeta = computed(() => {
