@@ -13,7 +13,7 @@ public sealed record VerificacionCodigo(int? Id, string? Error);
 /// 10 minutos, admite 5 intentos, un envío por minuto y 6 por día por correo.
 /// </summary>
 public sealed class RegistroVerificacionService(ISqlConnectionFactory db, GmailOAuthService gmail,
-    IConfiguration config, ILogger<RegistroVerificacionService> log)
+    IConfiguration config, IHostEnvironment env, ILogger<RegistroVerificacionService> log)
 {
     public const int MinutosVigencia = 10;
     public const int MaxIntentos = 5;
@@ -21,6 +21,18 @@ public sealed class RegistroVerificacionService(ISqlConnectionFactory db, GmailO
 
     /// <summary>Se puede desactivar (Registro:RequiereVerificacion=false) si el correo de salida no está disponible.</summary>
     public bool Requerida => config.GetValue("Registro:RequiereVerificacion", true);
+
+    /// <summary>
+    /// Carpeta donde un entorno de QA deja los correos de verificación en vez de enviarlos
+    /// (Registro:BuzonPruebas). Nunca se usa en Production, aunque esté configurada: allí el
+    /// código siempre sale por Gmail.
+    /// </summary>
+    public static string? BuzonPruebas(IHostEnvironment env, IConfiguration config)
+    {
+        if (env.IsProduction()) return null;
+        var ruta = config["Registro:BuzonPruebas"];
+        return string.IsNullOrWhiteSpace(ruta) ? null : ruta;
+    }
 
     public static string Normalizar(string email) => email.Trim().ToLowerInvariant();
 
@@ -48,17 +60,29 @@ public sealed class RegistroVerificacionService(ISqlConnectionFactory db, GmailO
         }
 
         var codigo = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
-        try
+        var asunto = $"Tu código de LunaLav: {codigo}";
+        var buzon = BuzonPruebas(env, config);
+        if (buzon is not null)
         {
-            await gmail.SendAsync(email, $"Tu código de LunaLav: {codigo}",
-                $"Hola,\n\nTu código para crear tu lavandería en LunaLav es:\n\n    {codigo}\n\n" +
-                $"Vence en {MinutosVigencia} minutos. Si no fuiste tú, ignora este correo.\n\nEquipo LunaLav",
-                null, null, null, null, ct, registrarEnBandeja: false);
+            Directory.CreateDirectory(buzon);
+            var archivo = Path.Combine(buzon, $"{DateTime.UtcNow:yyyyMMddHHmmssfff}-{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(email)))[..12]}.txt");
+            await File.WriteAllTextAsync(archivo, $"Para: {email}\nAsunto: {asunto}\n", ct);
+            log.LogWarning("Registro:BuzonPruebas activo ({Entorno}): el código no se envió por correo.", env.EnvironmentName);
         }
-        catch (Exception e) when (e is InvalidOperationException or HttpRequestException)
+        else
         {
-            log.LogError("No se pudo enviar el código de registro: {Error}", e.Message);
-            return "No pudimos enviar el código ahora. Inténtalo en unos minutos.";
+            try
+            {
+                await gmail.SendAsync(email, asunto,
+                    $"Hola,\n\nTu código para crear tu lavandería en LunaLav es:\n\n    {codigo}\n\n" +
+                    $"Vence en {MinutosVigencia} minutos. Si no fuiste tú, ignora este correo.\n\nEquipo LunaLav",
+                    null, null, null, null, ct, registrarEnBandeja: false);
+            }
+            catch (Exception e) when (e is InvalidOperationException or HttpRequestException)
+            {
+                log.LogError("No se pudo enviar el código de registro: {Error}", e.Message);
+                return "No pudimos enviar el código ahora. Inténtalo en unos minutos.";
+            }
         }
 
         await using (var conn = db.Create())

@@ -1,7 +1,7 @@
 <div class="alta">
   <header class="alta__header">
     <a href="/" aria-label="LunaLav, inicio"><img src="lunalav-logo-color.svg?v=brand-20260918" alt="LunaLav" /></a>
-    <a class="alta__ingresar" href="https://app.lunalav.pe/login">¿Ya tienes cuenta? Ingresar</a>
+    <a class="alta__ingresar" [href]="urlLogin()">¿Ya tienes cuenta? Ingresar</a>
   </header>
 
   <main class="alta__main">
@@ -117,7 +117,7 @@
           <div class="listo">
             <div class="listo__icono" aria-hidden="true">✓</div>
             <h2>¡{{ form.nombreNegocio }} ya está en LunaLav!</h2>
-            <p>Tu prueba gratis de {{ resultado()?.diasPrueba }} días está activa hasta el <b>{{ resultado()?.pruebaHasta }}</b>.
+            <p>Tu prueba gratis de {{ resultado()?.diasPrueba }} días está activa hasta el <b>{{ fechaFinTexto() }}</b>.
               Plan elegido: {{ planElegido().nombre }} (S/{{ planElegido().precio }} al mes después de la prueba).</p>
             <a class="boton" [href]="urlIngreso()">Entrar a mi lavandería</a>
             <h3>Tus primeros 10 minutos</h3>

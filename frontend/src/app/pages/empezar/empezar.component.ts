@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Title } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { Subject, debounceTime, map, switchMap } from 'rxjs';
 import {
@@ -39,6 +40,7 @@ export class EmpezarComponent implements OnInit {
   private readonly registro = inject(RegistroPublicoService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly title = inject(Title);
   private readonly slugCambios = new Subject<string>();
   private slugEditadoAMano = false;
 
@@ -66,6 +68,7 @@ export class EmpezarComponent implements OnInit {
   readonly planElegido = computed(() => this.planes.find(p => p.id === this.form.plan) ?? this.planes[0]);
 
   ngOnInit(): void {
+    this.title.setTitle('Prueba LunaLav gratis 14 días · Sistema para lavanderías en Perú');
     this.form.plan = planDesdeQuery(this.route.snapshot.queryParamMap.get('plan'));
     // Cada respuesta se aplica sólo si corresponde al código que hay escrito ahora: una respuesta
     // tardía de un código anterior no puede marcar el actual como disponible u ocupado.
@@ -173,10 +176,26 @@ export class EmpezarComponent implements OnInit {
     });
   }
 
+  /** Origen de la app: la web comercial (lunalav.pe) manda a app.lunalav.pe; app, staging y local usan el suyo. */
+  private origenApp(): string {
+    if (typeof window === 'undefined') return 'https://app.lunalav.pe';
+    const host = window.location.hostname;
+    return host === 'lunalav.pe' || host === 'www.lunalav.pe' ? 'https://app.lunalav.pe' : window.location.origin;
+  }
+
+  urlLogin(): string {
+    return `${this.origenApp()}/login`;
+  }
+
   urlIngreso(): string {
-    const slug = this.resultado()?.slug ?? this.form.slug;
-    const enApp = typeof window !== 'undefined' && window.location.hostname.startsWith('app.');
-    return `${enApp ? '' : 'https://app.lunalav.pe'}/${slug}/login`;
+    return `${this.origenApp()}/${this.resultado()?.slug ?? this.form.slug}/login`;
+  }
+
+  /** "2026-11-06" -> "6 de noviembre de 2026" (fecha de calendario, sin desfase horario). */
+  fechaFinTexto(): string {
+    const iso = this.resultado()?.pruebaHasta;
+    if (!iso) return '';
+    return new Date(`${iso}T00:00:00Z`).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
   }
 
   private fallar(err: HttpErrorResponse): void {

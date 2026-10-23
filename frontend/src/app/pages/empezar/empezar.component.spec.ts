@@ -72,6 +72,15 @@ describe('EmpezarComponent', () => {
     expect(component.disponibilidad()?.estado).toBe('ocupado');
   }));
 
+  it('muestra la fecha de fin legible y la dirección completa en el mismo origen fuera de lunalav.pe', () => {
+    component.resultado.set({ negocioId: 9, slug: 'lav-x', pruebaHasta: '2026-11-06', diasPrueba: 14 });
+    expect(component.fechaFinTexto()).toContain('noviembre');
+    expect(component.fechaFinTexto()).toContain('2026');
+    expect(component.fechaFinTexto()).toMatch(/^6 /);
+    expect(component.urlIngreso()).toBe(`${window.location.origin}/lav-x/login`);
+    expect(component.urlLogin()).toBe(`${window.location.origin}/login`);
+  });
+
   it('no continúa con un slug inválido', () => {
     component.form.nombreNegocio = 'Lavandería Demo';
     component.form.slug = 'Slug inválido';

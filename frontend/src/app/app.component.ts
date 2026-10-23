@@ -46,6 +46,8 @@ export class AppComponent implements OnInit {
     if (r.startsWith('/seguimiento/')) return false;  // portal publico del cliente (incluye pago): jamas mostrar el nav interno
     if (r.startsWith('/repartidor/')) return false;  // portal publico del repartidor
     if (r.startsWith('/recibo-suscripcion/')) return false;  // recibo imprimible del propietario
+    // Páginas públicas de LunaLav: con una sesión abierta en el navegador tampoco llevan el nav interno.
+    if (['/empezar', '/privacidad', '/terminos', '/eliminar-cuenta', '/pagar/'].some(p => r.startsWith(p))) return false;
     if (this.esPlataforma()) return false;  // usa su propio header minimo
     return true;
   });
