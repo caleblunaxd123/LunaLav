@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /plataforma
+Disallow: /marketing
+Disallow: /login
+Disallow: /seleccionar-sede
+Disallow: /pagar
+Disallow: /recibo-suscripcion
+Disallow: /ticket
+Disallow: /seguimiento
+Disallow: /repartidor
+Disallow: /inicio
+Disallow: /pedidos
+Disallow: /clientes
+Disallow: /inventario
+Disallow: /reportes
+Disallow: /ajustes
+Disallow: /registrar
+Disallow: /registro-antiguo
+Disallow: /cuadre-caja
+Disallow: /promociones
+Disallow: /facturacion
+
+Sitemap: https://lunalav.pe/sitemap.xml
