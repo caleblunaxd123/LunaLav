@@ -13,10 +13,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
-      - run: dotnet restore Lavanderia.sln
-      - run: dotnet build Lavanderia.sln --configuration Release --no-restore
-      - run: dotnet test Lavanderia.sln --configuration Release --no-build
-      - run: dotnet format Lavanderia.sln --verify-no-changes --no-restore
+      - run: dotnet restore LunaLav.sln
+      - run: dotnet build LunaLav.sln --configuration Release --no-restore
+      - run: dotnet test LunaLav.sln --configuration Release --no-build
+      - run: dotnet format LunaLav.sln --verify-no-changes --no-restore
 
   frontend:
     runs-on: ubuntu-latest

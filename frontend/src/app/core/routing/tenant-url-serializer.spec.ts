@@ -20,6 +20,11 @@ describe('TenantUrlSerializer', () => {
     expect(tenant.slug()).toBeNull();
   });
 
+  it('conserva /empezar como ruta pública y no como empresa', () => {
+    expect(serializer.serialize(serializer.parse('/empezar?plan=FACTURA'))).toBe('/empezar?plan=FACTURA');
+    expect(tenant.slug()).toBeNull();
+  });
+
   it('sigue interpretando el primer segmento desconocido como empresa', () => {
     expect(serializer.serialize(serializer.parse('/lavanderia-demo/login'))).toBe('/lavanderia-demo/login');
     expect(tenant.slug()).toBe('lavanderia-demo');

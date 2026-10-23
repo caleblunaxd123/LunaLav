@@ -1,0 +1,135 @@
+<div class="alta">
+  <header class="alta__header">
+    <a href="/" aria-label="LunaLav, inicio"><img src="lunalav-logo-color.svg?v=brand-20260918" alt="LunaLav" /></a>
+    <a class="alta__ingresar" href="https://app.lunalav.pe/login">¿Ya tienes cuenta? Ingresar</a>
+  </header>
+
+  <main class="alta__main">
+    <section class="alta__intro">
+      <span class="alta__kicker">14 días gratis · sin tarjeta</span>
+      <h1>Crea tu lavandería en LunaLav</h1>
+      <p>En 3 pasos tendrás tu sistema listo para registrar el primer pedido hoy mismo.</p>
+    </section>
+
+    @if (paso() !== 'listo') {
+      <ol class="pasos" aria-label="Progreso del alta">
+        <li [class.activo]="paso() === 'negocio'" [class.hecho]="paso() !== 'negocio'"><b>1</b> Tu lavandería</li>
+        <li [class.activo]="paso() === 'cuenta'" [class.hecho]="paso() === 'codigo'"><b>2</b> Tu cuenta</li>
+        <li [class.activo]="paso() === 'codigo'"><b>3</b> Confirma tu correo</li>
+      </ol>
+    }
+
+    <div class="tarjeta">
+      @if (error()) {
+        <p class="alerta" role="alert">{{ error() }}</p>
+      }
+
+      @switch (paso()) {
+        @case ('negocio') {
+          <form (ngSubmit)="irACuenta()" novalidate>
+            <label>Nombre de tu lavandería
+              <input name="nombreNegocio" [(ngModel)]="form.nombreNegocio" (ngModelChange)="alCambiarNombre()"
+                maxlength="120" autocomplete="organization" placeholder="Ej. Lavandería Doña Memo" required />
+            </label>
+
+            <label>Código de empresa
+              <span class="ayuda">Será tu dirección: app.lunalav.pe/<b>{{ form.slug || 'tu-lavanderia' }}</b></span>
+              <input name="slug" [(ngModel)]="form.slug" (ngModelChange)="alCambiarSlug()" autocapitalize="none"
+                spellcheck="false" maxlength="50" placeholder="lavanderia-dona-memo" required />
+              @switch (disponibilidad()?.estado) {
+                @case ('disponible') { <span class="estado estado--ok">✓ Disponible</span> }
+                @case ('ocupado') { <span class="estado estado--mal">No disponible</span> }
+              }
+            </label>
+
+            <fieldset class="planes">
+              <legend>Plan después de la prueba</legend>
+              @for (p of planes; track p.id) {
+                <label class="plan" [class.plan--elegido]="form.plan === p.id">
+                  <input type="radio" name="plan" [value]="p.id" [(ngModel)]="form.plan" />
+                  <span class="plan__nombre">{{ p.nombre }}</span>
+                  <span class="plan__precio">S/{{ p.precio }}<small>/mes</small></span>
+                  <span class="plan__resumen">{{ p.resumen }}</span>
+                </label>
+              }
+            </fieldset>
+
+            @for (e of erroresNegocio(); track e) {
+              @if (form.nombreNegocio || form.slug) { <p class="error-campo">{{ e }}</p> }
+            }
+            <button class="boton" type="submit" [disabled]="erroresNegocio().length > 0">Continuar</button>
+          </form>
+        }
+
+        @case ('cuenta') {
+          <form (ngSubmit)="enviarCodigo()" novalidate>
+            <label>Tu nombre
+              <input name="nombreResponsable" maxlength="120" [(ngModel)]="form.nombreResponsable" autocomplete="name" required />
+            </label>
+            <div class="fila">
+              <label>Correo
+                <input name="email" type="email" maxlength="150" [(ngModel)]="form.email" autocomplete="email" required />
+              </label>
+              <label>Celular
+                <input name="celular" type="tel" maxlength="30" [(ngModel)]="form.celular" autocomplete="tel" placeholder="9xx xxx xxx" required />
+              </label>
+            </div>
+            <div class="fila">
+              <label>Usuario para ingresar
+                <input name="usuario" maxlength="50" [(ngModel)]="form.usuario" autocapitalize="none" autocomplete="username" required />
+              </label>
+              <label>Contraseña
+                <input name="password" type="password" [(ngModel)]="form.password" autocomplete="new-password" minlength="8" maxlength="100" required />
+              </label>
+            </div>
+            <label class="check">
+              <input name="aceptaTerminos" type="checkbox" [(ngModel)]="form.aceptaTerminos" />
+              <span>Acepto los <a href="/terminos" target="_blank" rel="noopener">términos</a> y la
+                <a href="/privacidad" target="_blank" rel="noopener">política de privacidad</a>.</span>
+            </label>
+
+            <div class="acciones">
+              <button class="boton boton--secundario" type="button" (click)="volver('negocio')">Atrás</button>
+              <button class="boton" type="submit" [disabled]="erroresCuenta().length > 0 || enviando()">
+                {{ enviando() ? 'Enviando código…' : 'Enviarme el código' }}
+              </button>
+            </div>
+          </form>
+        }
+
+        @case ('codigo') {
+          <form (ngSubmit)="crearLavanderia()" novalidate>
+            <p>Enviamos un código de 6 dígitos a <b>{{ form.email }}</b>. Revisa también la carpeta de spam.</p>
+            <label>Código
+              <input class="codigo" name="codigo" [(ngModel)]="form.codigo" inputmode="numeric" maxlength="6"
+                autocomplete="one-time-code" placeholder="000000" required />
+            </label>
+            <div class="acciones">
+              <button class="boton boton--secundario" type="button" (click)="volver('cuenta')">Cambiar correo</button>
+              <button class="boton" type="submit" [disabled]="!codigoValido() || enviando()">
+                {{ enviando() ? 'Creando tu lavandería…' : 'Crear mi lavandería' }}
+              </button>
+            </div>
+          </form>
+        }
+
+        @case ('listo') {
+          <div class="listo">
+            <div class="listo__icono" aria-hidden="true">✓</div>
+            <h2>¡{{ form.nombreNegocio }} ya está en LunaLav!</h2>
+            <p>Tu prueba gratis de {{ resultado()?.diasPrueba }} días está activa hasta el <b>{{ resultado()?.pruebaHasta }}</b>.
+              Plan elegido: {{ planElegido().nombre }} (S/{{ planElegido().precio }} al mes después de la prueba).</p>
+            <a class="boton" [href]="urlIngreso()">Entrar a mi lavandería</a>
+            <h3>Tus primeros 10 minutos</h3>
+            <ol class="primeros-pasos">
+              <li>Revisa tus servicios y precios en <b>Ajustes → Servicios</b>.</li>
+              <li>Registra tu primer pedido con un cliente real.</li>
+              <li>Invita a tu equipo en <b>Ajustes → Usuarios</b>.</li>
+            </ol>
+            <p class="ayuda">Guarda tu dirección: <b>{{ urlIngreso() }}</b></p>
+          </div>
+        }
+      }
+    </div>
+  </main>
+</div>

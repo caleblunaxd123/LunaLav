@@ -39,6 +39,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent)
   },
   {
+    // Alta autoservicio desde la web comercial (crea la lavandería con su prueba gratis).
+    path: 'empezar',
+    loadComponent: () => import('./pages/empezar/empezar.component').then(m => m.EmpezarComponent)
+  },
+  {
     path: 'privacidad',
     loadComponent: () => import('./pages/legal/legal.component').then(m => m.LegalComponent),
     data: { tipo: 'privacidad' }

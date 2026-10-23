@@ -1,4 +1,6 @@
 using Lavanderia.Api.Controllers;
+using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace Lavanderia.Api.Tests;
 
@@ -13,4 +15,17 @@ public class RegistroPlanesTests
     [InlineData("MULTISEDE", "PREMIUM")]
     public void PlanComercial_seGuardaConElCodigoDelPanel(string comercial, string interno)
         => Assert.Equal(interno, RegistroPublicoController.PlanInterno(comercial));
+
+    [Fact]
+    public async Task Empezar_esSlugReservado_sinConsultarLaBaseDeDatos()
+    {
+        var controller = new RegistroPublicoController(null!, null!);
+
+        var result = await controller.Disponible("Empezar", CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var body = JsonSerializer.SerializeToElement(ok.Value);
+        Assert.False(body.GetProperty("disponible").GetBoolean());
+        Assert.Contains("reservado", body.GetProperty("mensaje").GetString());
+    }
 }
