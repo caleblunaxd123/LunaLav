@@ -119,7 +119,7 @@
             <h2>¡{{ form.nombreNegocio }} ya está en LunaLav!</h2>
             <p>Tu prueba gratis de {{ resultado()?.diasPrueba }} días está activa hasta el <b>{{ fechaFinTexto() }}</b>.
               Plan elegido: {{ planElegido().nombre }} (S/{{ planElegido().precio }} al mes después de la prueba).</p>
-            <a class="boton" [href]="urlIngreso()">Entrar a mi lavandería</a>
+            <a class="boton" [href]="urlIngreso()" (click)="entrar($event)">Entrar a mi lavandería</a>
             <h3>Tus primeros 10 minutos</h3>
             <ol class="primeros-pasos">
               <li>Revisa tus servicios y precios en <b>Ajustes → Servicios</b>.</li>

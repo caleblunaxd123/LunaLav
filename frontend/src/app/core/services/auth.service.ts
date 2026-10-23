@@ -56,6 +56,12 @@ export class AuthService {
 
   /** Revoca el refresh token en el servidor (logout real) antes de limpiar la sesión local. */
   logout() {
+    this.cerrarSesion();
+    this.router.navigate(['/login']);
+  }
+
+  /** Logout sin navegar: la página que lo llama decide a dónde ir (p. ej. el login de otra empresa). */
+  cerrarSesion() {
     const refreshToken = this.sesion()?.refreshToken;
     this.limpiarSesionLocal();
     if (refreshToken) {
@@ -63,7 +69,6 @@ export class AuthService {
         catchError(() => of(null))
       ).subscribe();
     }
-    this.router.navigate(['/login']);
   }
 
   private limpiarSesionLocal() {
