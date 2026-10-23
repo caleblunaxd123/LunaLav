@@ -87,6 +87,10 @@ export const routes: Routes = [
       {
         path: 'interesados',
         loadComponent: () => import('./pages/plataforma-interesados/plataforma-interesados.component').then(m => m.PlataformaInteresadosComponent)
+      },
+      {
+        path: 'metricas',
+        loadComponent: () => import('./pages/plataforma-metricas/plataforma-metricas.component').then(m => m.PlataformaMetricasComponent)
       }
     ]
   },

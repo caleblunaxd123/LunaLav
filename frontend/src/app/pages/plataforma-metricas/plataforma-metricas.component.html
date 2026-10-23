@@ -1,0 +1,47 @@
+<main class="metricas">
+  <header class="cabecera">
+    <div><h1>Métricas</h1><p>Embudo y actividad de negocios reales</p></div>
+    <button type="button" (click)="cargar()" [disabled]="cargando()">Actualizar</button>
+  </header>
+  @if (cargando() && !datos()) { <p role="status">Cargando métricas…</p> }
+  @if (error()) { <p role="alert">No se pudieron cargar las métricas. Inténtalo de nuevo.</p> }
+  @if (datos(); as d) {
+    <section aria-label="Indicadores clave" class="kpis">
+      @for (kpi of kpis(); track kpi.etiqueta) {
+        <article class="tarjeta"><strong>{{ kpi.valor }}</strong><span>{{ kpi.etiqueta }}</span></article>
+      }
+      <article class="tarjeta"><strong>S/ {{ d.mrr | number:'1.2-2' }}</strong><span>MRR</span></article>
+      <article class="tarjeta"><strong>{{ d.conversionPruebaPago | number:'1.0-2' }} %</strong><span>Conversión prueba a pago</span></article>
+    </section>
+    <p class="nota">Conversión = negocios que pagan ÷ negocios cuya prueba terminó o ya se convirtieron. MRR = suma de montos mensuales de negocios que pagan.</p>
+    <section class="panel" aria-labelledby="embudo-title">
+      <h2 id="embudo-title">Embudo</h2>
+      <p class="nota">Cada etapa se cuenta por separado. Los registros iniciados incluyen candidatos aún sin negocio; se deduplican por correo y no se muestran correos.</p>
+      @for (etapa of etapas(); track etapa.codigo) {
+        <div class="fila-embudo"><span>{{ etapa.etiqueta }}</span><div class="barra"><div [style.width.%]="etapa.ancho"></div></div><strong>{{ etapa.total }}</strong></div>
+      }
+      <p class="nota">Registros autónomos confirmados: {{ d.registrosConfirmadosAutonomos }} · Suscripciones TEST activas: {{ d.suscripcionesTest }} · Negocios excluidos: {{ d.excluidos }}</p>
+    </section>
+    <section class="panel" aria-labelledby="negocios-title">
+      <h2 id="negocios-title">Negocios reales</h2>
+      <div class="tabla-wrap"><table>
+        <thead><tr><th>Slug</th><th>Alta</th><th>Plan</th><th>Estado</th><th>Días de prueba</th><th>Primer ingreso</th><th>Pedidos</th><th>Último pedido</th><th>Situación</th></tr></thead>
+        <tbody>
+          @for (n of d.negocios; track n.slug) {
+            <tr><td>{{ n.slug }}</td><td>{{ n.fechaCreacion | date:'dd/MM/yyyy' }}</td><td>{{ n.plan }}</td><td>{{ n.estado }}</td>
+              <td>{{ n.diasRestantesPrueba ?? '—' }}</td><td>{{ n.primerLogin ? 'Sí' : 'No' }}</td>
+              <td>{{ n.pedidosTotales }}</td><td>{{ n.ultimoPedidoFecha ? (n.ultimoPedidoFecha | date:'dd/MM/yyyy') : '—' }}</td>
+              <td>{{ motivo(n.motivoAbandono) }}</td></tr>
+          } @empty { <tr><td colspan="9">Aún no hay negocios reales.</td></tr> }
+        </tbody>
+      </table></div>
+    </section>
+    <section class="panel" aria-labelledby="excluidos-title">
+      <h2 id="excluidos-title">Excluidos ({{ d.excluidos }})</h2>
+      <div class="tabla-wrap"><table><thead><tr><th>Slug</th><th>Motivo</th></tr></thead><tbody>
+        @for (n of d.negociosExcluidos; track n.slug) { <tr><td>{{ n.slug }}</td><td>{{ motivoExclusion(n.motivo) }}</td></tr> }
+        @empty { <tr><td colspan="2">No hay negocios excluidos.</td></tr> }
+      </tbody></table></div>
+    </section>
+  }
+</main>

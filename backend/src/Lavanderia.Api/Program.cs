@@ -92,6 +92,7 @@ builder.Services.AddMemoryCache();
 
 // Infra
 builder.Services.AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
+builder.Services.AddScoped<MetricasPlataformaService>();
 
 // Repositorios (transient — sin estado)
 builder.Services.AddTransient<IUsuarioRepository, UsuarioRepository>();
@@ -135,7 +136,7 @@ var dataProtection = builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 if (OperatingSystem.IsWindows()) dataProtection.ProtectKeysWithDpapi();
 builder.Services.AddTransient<SecretProtector>();
-  builder.Services.AddHttpClient<SunatSoapClient>(client => client.Timeout = TimeSpan.FromSeconds(45));
+builder.Services.AddHttpClient<SunatSoapClient>(client => client.Timeout = TimeSpan.FromSeconds(45));
 builder.Services.AddHttpClient<GeocodificacionService>();
 builder.Services.AddHttpClient<GooglePlacesService>(client => client.Timeout = TimeSpan.FromSeconds(20));
 // Cobro recurrente de la mensualidad con tarjeta (Culqi). Llaves en Culqi:PublicKey / Culqi:SecretKey.
@@ -156,8 +157,8 @@ builder.Services.AddHttpClient<GmailOAuthService>(client => client.Timeout = Tim
 //   APISUNAT               → PSE en la nube (listo para activar cuando lleguen
 //                             ApiSunat:PersonaId y ApiSunat:PersonaToken de Mekias).
 builder.Services.Configure<Lavanderia.Api.Services.Facturacion.ApiSunatOptions>(builder.Configuration.GetSection("ApiSunat"));
-  builder.Services.AddHttpClient<Lavanderia.Api.Services.Facturacion.ApiSunatProvider>(client =>
-      client.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddHttpClient<Lavanderia.Api.Services.Facturacion.ApiSunatProvider>(client =>
+    client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddTransient<SunatDirectoProvider>();
 builder.Services.AddTransient<IFacturacionElectronicaProvider>(sp => sp.GetRequiredService<SunatDirectoProvider>());
 builder.Services.AddTransient<IFacturacionElectronicaProvider>(sp => sp.GetRequiredService<Lavanderia.Api.Services.Facturacion.ApiSunatProvider>());

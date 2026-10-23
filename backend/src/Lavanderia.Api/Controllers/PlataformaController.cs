@@ -2,6 +2,7 @@ using Lavanderia.Api.Domain;
 using Lavanderia.Api.Dtos;
 using Lavanderia.Api.Repositories;
 using Lavanderia.Api.Infrastructure;
+using Lavanderia.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,7 +19,13 @@ public class PlataformaController : ControllerBase
 {
     private readonly IConfiguracionPlataformaRepository _cfg;
     private readonly ISqlConnectionFactory _db;
-    public PlataformaController(IConfiguracionPlataformaRepository cfg, ISqlConnectionFactory db) { _cfg = cfg; _db = db; }
+    private readonly MetricasPlataformaService _metricas;
+    public PlataformaController(IConfiguracionPlataformaRepository cfg, ISqlConnectionFactory db, MetricasPlataformaService metricas)
+    { _cfg = cfg; _db = db; _metricas = metricas; }
+
+    [HttpGet("metricas")]
+    public async Task<ActionResult<MetricasPlataformaDto>> Metricas(CancellationToken ct)
+        => Ok(await _metricas.ObtenerAsync(ct));
 
     [HttpGet("interesados")]
     public async Task<ActionResult<List<InteresadoDemoDto>>> Interesados(CancellationToken ct)

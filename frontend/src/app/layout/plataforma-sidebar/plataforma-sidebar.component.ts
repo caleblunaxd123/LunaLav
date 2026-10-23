@@ -29,6 +29,7 @@ export class PlataformaSidebarComponent {
 
   readonly general: NavLink[] = [
     { label: 'Empresas', path: '/plataforma', icono: 'bank', exact: true },
+    { label: 'Métricas', path: '/plataforma/metricas', icono: 'chart' },
     { label: 'Nueva empresa', path: '/plataforma/nueva', icono: 'plus' },
   ];
   readonly administracion: NavLink[] = [
