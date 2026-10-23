@@ -11,10 +11,16 @@ export const authGuard: CanActivateFn = () => {
 };
 
 /** Evita mostrar el formulario de acceso junto con una sesion ya iniciada. */
-export const guestGuard: CanActivateFn = () => {
+export const guestGuard: CanActivateFn = (route) => {
   const auth = inject(AuthService);
   const router = inject(Router);
   if (!auth.autenticado()) return true;
+  // Viene del alta (/empezar): la sesión guardada es de otra lavandería; se cierra para que el
+  // dueño pueda entrar a la que acaba de crear. Sirve aunque el alta se hiciera en otro dominio.
+  if (route.queryParamMap.get('cuentaNueva') === '1') {
+    auth.cerrarSesion();
+    return true;
+  }
 
   const usuario = auth.usuario();
   if (usuario?.rol === 'PROPIETARIO') return router.createUrlTree(['/plataforma']);

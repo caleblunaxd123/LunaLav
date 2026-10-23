@@ -45,15 +45,24 @@ if (-not $SinCompilar) {
 }
 if (Test-Path (Join-Path $publishDir "appsettings.Local.json")) { throw "appsettings.Local.json no debe existir en QA." }
 
-function New-Secret([int]$n) { -join ((48..57) + (65..90) + (97..122) | Get-Random -Count $n | ForEach-Object { [char]$_ }) }
-New-Item -ItemType Directory -Force (Join-Path $qaState "buzon"), (Join-Path $qaState "keys"), (Join-Path $qaState "fotos") | Out-Null
-
+# Credenciales de QA: se generan una vez y se reutilizan (la base QA ya sembró los usuarios con ellas).
+$secretos = Join-Path $qaState "secretos"
+New-Item -ItemType Directory -Force (Join-Path $qaState "buzon"), (Join-Path $qaState "keys"), (Join-Path $qaState "fotos"), $secretos | Out-Null
+function Get-OrCreateSecret([string]$Nombre, [int]$Bytes = 24) {
+    $ruta = Join-Path $secretos $Nombre
+    if (-not (Test-Path -LiteralPath $ruta)) {
+        $buffer = New-Object byte[] $Bytes
+        [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($buffer)
+        [Convert]::ToBase64String($buffer) | Set-Content -LiteralPath $ruta -Encoding ascii -NoNewline
+    }
+    return (Get-Content -LiteralPath $ruta -Raw).Trim()
+}
 $env:ASPNETCORE_ENVIRONMENT = "QA"
 $env:ASPNETCORE_URLS = "http://127.0.0.1:$Port"
 $env:ConnectionStrings__Sql = $connection
-$env:Jwt__SecretKey = New-Secret 62
-$env:SeedAdmin__Password = New-Secret 20
-$env:SeedPropietario__Password = New-Secret 24
+$env:Jwt__SecretKey = Get-OrCreateSecret "jwt.txt" 48
+$env:SeedAdmin__Password = Get-OrCreateSecret "admin-demo.txt" 18
+$env:SeedPropietario__Password = Get-OrCreateSecret "propietario.txt" 18
 $env:DataProtection__KeysPath = Join-Path $qaState "keys"
 $env:Fotos__Directorio = Join-Path $qaState "fotos"
 $env:Registro__BuzonPruebas = Join-Path $qaState "buzon"
@@ -64,6 +73,7 @@ $env:Gmail__ClientId = ""
 $env:Gmail__ClientSecret = ""
 
 Write-Host "LunaLav QA en http://127.0.0.1:$Port (base LunaLavQA, buzón $($env:Registro__BuzonPruebas))"
+Write-Host "Credenciales QA (usuarios admin y propietario): $secretos"
 # La raíz de contenido (wwwroot, appsettings) es la carpeta publicada, no la carpeta desde donde se lanza.
 Set-Location $publishDir
 & dotnet (Join-Path $publishDir "Lavanderia.Api.dll")

@@ -3,7 +3,6 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { environment } from '../../../environments/environment';
-import { AuthService } from '../../core/services/auth.service';
 import { EmpezarComponent } from './empezar.component';
 
 describe('EmpezarComponent', () => {
@@ -78,30 +77,8 @@ describe('EmpezarComponent', () => {
     expect(component.fechaFinTexto()).toContain('noviembre');
     expect(component.fechaFinTexto()).toContain('2026');
     expect(component.fechaFinTexto()).toMatch(/^6 /);
-    expect(component.urlIngreso()).toBe(`${window.location.origin}/lav-x/login`);
+    expect(component.urlIngreso()).toBe(`${window.location.origin}/lav-x/login?cuentaNueva=1`);
     expect(component.urlLogin()).toBe(`${window.location.origin}/login`);
-  });
-
-  it('con una sesión de otra lavandería abierta, "Entrar" la cierra y navega al login de la nueva', () => {
-    const auth = TestBed.inject(AuthService);
-    spyOn(auth, 'autenticado').and.returnValue(true);
-    const cerrar = spyOn(auth, 'cerrarSesion');
-    const navegar = spyOn(component, 'navegar');
-    component.resultado.set({ negocioId: 9, slug: 'lav-nueva', pruebaHasta: '2026-11-06', diasPrueba: 14 });
-    const evento = new MouseEvent('click', { cancelable: true });
-    component.entrar(evento);
-    expect(cerrar).toHaveBeenCalled();
-    expect(evento.defaultPrevented).toBeTrue();
-    expect(navegar).toHaveBeenCalledWith(`${window.location.origin}/lav-nueva/login`);
-  });
-
-  it('sin sesión abierta, "Entrar" deja que el enlace funcione normalmente', () => {
-    const auth = TestBed.inject(AuthService);
-    const cerrar = spyOn(auth, 'cerrarSesion');
-    const evento = new MouseEvent('click', { cancelable: true });
-    component.entrar(evento);
-    expect(cerrar).not.toHaveBeenCalled();
-    expect(evento.defaultPrevented).toBeFalse();
   });
 
   it('no continúa con un slug inválido', () => {

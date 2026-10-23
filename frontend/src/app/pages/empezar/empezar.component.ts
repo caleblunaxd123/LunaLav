@@ -5,7 +5,6 @@ import { FormsModule } from '@angular/forms';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { Subject, debounceTime, map, switchMap } from 'rxjs';
-import { AuthService } from '../../core/services/auth.service';
 import {
   DisponibilidadSlug,
   PlanComercial,
@@ -42,7 +41,6 @@ export class EmpezarComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly title = inject(Title);
-  private readonly auth = inject(AuthService);
   private readonly slugCambios = new Subject<string>();
   private slugEditadoAMano = false;
 
@@ -189,23 +187,13 @@ export class EmpezarComponent implements OnInit {
     return `${this.origenApp()}/login`;
   }
 
-  /**
-   * Si el navegador ya tenía la sesión de otra lavandería, el guard de invitados no dejaría abrir
-   * el login de la nueva: se cierra esa sesión y se navega con recarga completa (contexto limpio).
-   */
-  entrar(evento: Event): void {
-    if (!this.auth.autenticado()) return;
-    evento.preventDefault();
-    this.auth.cerrarSesion();
-    this.navegar(this.urlIngreso());
-  }
-
-  /** Separado para poder probarlo: window.location.assign no se puede espiar en el navegador. */
-  navegar(url: string): void {
-    window.location.assign(url);
-  }
-
   urlIngreso(): string {
+    // cuentaNueva=1: el login cierra la sesión de otra lavandería que el navegador tuviera abierta (guestGuard).
+    return `${this.urlGuardar()}?cuentaNueva=1`;
+  }
+
+  /** Dirección de acceso que el dueño debe guardar (sin parámetros). */
+  urlGuardar(): string {
     return `${this.origenApp()}/${this.resultado()?.slug ?? this.form.slug}/login`;
   }
 
